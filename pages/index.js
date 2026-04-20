@@ -26,9 +26,20 @@ export default function Home() {
   const [selectedDay, setSelectedDay] = useState(null);
   const { maxWeddingsPerWeek, businessName, contactPhone, contactEmail } = CALENDAR_CONFIG;
 
+// Ganti useEffect lama dengan ini
   useEffect(() => {
-    const stored = localStorage.getItem("wedding_events");
-    if (stored) setEvents(JSON.parse(stored));
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          setEvents(data);
+        }
+      } catch (err) {
+        console.error("Gagal memuat data:", err);
+      }
+    };
+    fetchEvents();
   }, []);
 
   const year = currentDate.getFullYear();
@@ -244,7 +255,7 @@ export default function Home() {
             gap:16, flexWrap:"wrap", justifyContent:"space-between",
           }}>
             <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7 }}>
-              Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol sebelah ini.
+              Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol bawah ini.
             </p>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
               <a href="https://docs.google.com/forms/d/e/1FAIpQLSfgSo7CPIy5KrUKB2qKaoNP2yfDShnUlrn9PqAXtBGj0CRG-g/viewform" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
