@@ -248,7 +248,7 @@ export default function Home() {
             </p>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
               <a href="https://docs.google.com/forms/d/e/1FAIpQLSfgSo7CPIy5KrUKB2qKaoNP2yfDShnUlrn9PqAXtBGj0CRG-g/viewform" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
-  🌐 
+  🌐</a>
             </div>
           </div>
         </main>
