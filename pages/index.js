@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { CALENDAR_CONFIG } from "../lib/config";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const DAYS = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+const DAYS = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"];
 
 function getWeekKey(date) {
   const d = new Date(date);
@@ -34,6 +35,7 @@ export default function Home() {
   const month = currentDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Monday-first offset
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
 
   const today = new Date();
@@ -51,9 +53,10 @@ export default function Home() {
     return { status: "available" };
   }
 
-  const selectedEvents = selectedDay
-    ? events.filter(e => e.date === `${year}-${String(month+1).padStart(2,"0")}-${String(selectedDay).padStart(2,"0")}`)
-    : [];
+  const selectedDateStr = selectedDay
+    ? `${year}-${String(month+1).padStart(2,"0")}-${String(selectedDay).padStart(2,"0")}`
+    : null;
+  const selectedEvents = selectedDateStr ? events.filter(e => e.date === selectedDateStr) : [];
 
   return (
     <>
@@ -62,76 +65,104 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
+      <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
         {/* Header */}
         <header style={{
-          background: "var(--dark)", color: "var(--cream)", padding: "0 32px",
+          background: "linear-gradient(135deg, #0d6ecc 0%, #1a8fff 60%, #42b0ff 100%)",
+          padding: "0 32px",
+          height: 72,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          height: 70, borderBottom: "2px solid var(--gold)"
+          boxShadow: "0 4px 24px rgba(13,110,204,0.35)",
+          position: "sticky", top: 0, zIndex: 100,
         }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 300, letterSpacing: 2, color: "var(--gold-light)" }}>
-              {businessName}
-            </h1>
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "var(--muted)", textTransform: "uppercase" }}>Wedding Calendar</p>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{
+              width: 42, height: 42, borderRadius: 10,
+              background: "rgba(255,255,255,0.2)",
+              backdropFilter: "blur(8px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden", padding: 4,
+              border: "1.5px solid rgba(255,255,255,0.35)",
+            }}>
+              <img src="/logo.png" alt="Logo" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+            </div>
+            <div>
+              <h1 style={{ color:"#fff", fontSize:20, fontWeight:400, letterSpacing:1, lineHeight:1.1 }}>
+                {businessName}
+              </h1>
+              <p style={{ color:"rgba(255,255,255,0.75)", fontSize:10, letterSpacing:2, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Wedding Calendar</p>
+            </div>
           </div>
-          <Link href="/admin" className="btn btn-outline" style={{ fontSize: 11, padding: "7px 18px" }}>
+          <Link href="/admin" className="btn btn-ghost" style={{ fontSize:12 }}>
             Admin Login
           </Link>
         </header>
 
-        <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
-          {/* Legend */}
-          <div style={{ display: "flex", gap: 24, marginBottom: 32, flexWrap: "wrap" }}>
-            {[
-              { color: "#27674a", label: "Tersedia" },
-              { color: "#c8a96e", label: "Sudah Dipesan" },
-              { color: "#c0392b", label: "Penuh (Minggu ini)" },
-              { color: "#ccc", label: "Sudah Lewat" },
-            ].map(({ color, label }) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 14, height: 14, borderRadius: "50%", background: color }} />
-                <span style={{ fontSize: 12, color: "var(--muted)", letterSpacing: 0.5 }}>{label}</span>
-              </div>
-            ))}
+        <main style={{ maxWidth:960, margin:"0 auto", padding:"36px 20px" }}>
+          {/* Hero strip */}
+          <div style={{
+            background: "linear-gradient(135deg, #1a8fff 0%, #0d6ecc 100%)",
+            borderRadius: 16, padding: "28px 36px", marginBottom: 32,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            boxShadow: "var(--shadow-lg)", flexWrap: "wrap", gap: 16,
+          }}>
+            <div>
+              <h2 style={{ color:"#fff", fontSize:28, fontWeight:300, letterSpacing:1, marginBottom:6 }}>
+                Cek Ketersediaan Tanggal
+              </h2>
+              <p style={{ color:"rgba(255,255,255,0.8)", fontSize:13, lineHeight:1.6 }}>
+                Kami melayani maks. <strong>{maxWeddingsPerWeek} pernikahan per minggu</strong> untuk reservasi hubungi staff Altion.
+              </p>
+            </div>
+            <div style={{ display:"flex", gap:20 }}>
+              {[
+                { color:"#0fb87a", label:"Tersedia" },
+                { color:"rgba(255,255,255,0.9)", label:"Dipesan", border:"1px solid rgba(255,255,255,0.5)" },
+                { color:"#ff6b6b", label:"Penuh" },
+              ].map(({ color, label, border }) => (
+                <div key={label} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ width:10, height:10, borderRadius:"50%", background:color, border: border || "none", flexShrink:0 }} />
+                  <span style={{ color:"rgba(255,255,255,0.9)", fontSize:12, fontWeight:500 }}>{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Calendar */}
-          <div style={{
-            background: "var(--white)", borderRadius: 4, boxShadow: "var(--shadow)",
-            overflow: "hidden", border: "1px solid #e8ddd0"
-          }}>
+          {/* Calendar card */}
+          <div className="card" style={{ overflow:"hidden", marginBottom:24 }}>
             {/* Month nav */}
             <div style={{
-              background: "var(--dark)", padding: "20px 28px",
-              display: "flex", alignItems: "center", justifyContent: "space-between"
+              background: "linear-gradient(135deg, #0a4f9a, #1a8fff)",
+              padding: "20px 32px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
-              <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>‹</button>
-              <div style={{ textAlign: "center" }}>
-                <h2 style={{ color: "var(--gold-light)", fontSize: 26, fontWeight: 300, letterSpacing: 3 }}>
-                  {MONTHS[month]}
-                </h2>
-                <span style={{ color: "var(--muted)", fontSize: 12, letterSpacing: 2 }}>{year}</span>
+              <button onClick={() => setCurrentDate(new Date(year, month-1, 1))}
+                style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
+                  width:36, height:36, borderRadius:8, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                ‹
+              </button>
+              <div style={{ textAlign:"center" }}>
+                <h2 style={{ color:"#fff", fontSize:28, fontWeight:300, letterSpacing:3 }}>{MONTHS[month]}</h2>
+                <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12, letterSpacing:3 }}>{year}</span>
               </div>
-              <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>›</button>
+              <button onClick={() => setCurrentDate(new Date(year, month+1, 1))}
+                style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
+                  width:36, height:36, borderRadius:8, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                ›
+              </button>
             </div>
 
             {/* Day headers */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", background: "#f5f0ea" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", background:"var(--bg2)", borderBottom:"1px solid var(--border)" }}>
               {DAYS.map(d => (
-                <div key={d} style={{
-                  textAlign: "center", padding: "12px 0",
-                  fontSize: 10, letterSpacing: 2, color: "var(--muted)", textTransform: "uppercase", fontWeight: 500
-                }}>{d}</div>
+                <div key={d} style={{ textAlign:"center", padding:"12px 0", fontSize:10, fontWeight:700, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>
               ))}
             </div>
 
             {/* Days grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, background: "#e8ddd0" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
               {Array.from({ length: startOffset }).map((_, i) => (
-                <div key={`empty-${i}`} style={{ background: "var(--cream)", minHeight: 64 }} />
+                <div key={`e-${i}`} style={{ minHeight:76, background:"#fafcff", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
               ))}
               {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                 const { status, event } = getDayStatus(day);
@@ -139,84 +170,86 @@ export default function Home() {
                 const isSelected = selectedDay === day;
                 const isToday = new Date(dateStr).toDateString() === today.toDateString();
 
-                const bgColor = {
-                  booked: "#fff8f0",
-                  full: "#fff5f5",
-                  past: "#f8f8f8",
-                  available: "var(--white)",
-                }[status];
-
-                const dotColor = {
-                  booked: "var(--gold)",
-                  full: "var(--red)",
-                  past: "#ddd",
-                  available: "var(--green)",
+                const statusStyles = {
+                  booked: { bg:"#e8f4ff", dot:"#1a8fff", textColor:"var(--dark)" },
+                  full:   { bg:"#fff0f0", dot:"#e53e3e", textColor:"#999" },
+                  past:   { bg:"#fafafa", dot:"#ddd",    textColor:"#ccc" },
+                  available:{ bg:"#fff",  dot:"#0fb87a", textColor:"var(--dark)" },
                 }[status];
 
                 return (
                   <div key={day}
                     onClick={() => status === "booked" ? setSelectedDay(isSelected ? null : day) : null}
                     style={{
-                      background: isSelected ? "#fff3e0" : bgColor,
-                      minHeight: 64, padding: "10px 10px 8px",
+                      minHeight: 76,
+                      background: isSelected ? "#dbeeff" : statusStyles.bg,
+                      borderRight: "1px solid var(--border)",
+                      borderBottom: "1px solid var(--border)",
+                      padding: "10px 10px 8px",
                       cursor: status === "booked" ? "pointer" : "default",
-                      display: "flex", flexDirection: "column", alignItems: "flex-start",
+                      display: "flex", flexDirection:"column",
+                      outline: isSelected ? "2px solid var(--blue-2)" : "none",
+                      outlineOffset: -2,
                       transition: "background 0.15s",
-                      outline: isSelected ? "2px solid var(--gold)" : "none",
+                      position: "relative",
                     }}
                   >
-                    <span style={{
-                      fontSize: 14, fontWeight: isToday ? 700 : 400,
-                      color: status === "past" ? "#bbb" : isToday ? "var(--gold-dark)" : "var(--dark)",
-                      background: isToday ? "#fff3e0" : "none",
-                      borderRadius: "50%", width: 26, height: 26,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>{day}</span>
                     <div style={{
-                      width: 7, height: 7, borderRadius: "50%",
-                      background: dotColor, marginTop: "auto", marginLeft: 2
-                    }} />
-                    {status === "booked" && event && (
-                      <span style={{
-                        fontSize: 9, color: "var(--gold-dark)", letterSpacing: 0.3,
-                        marginTop: 2, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-                      }}>{event.couple}</span>
-                    )}
+                      width: 26, height: 26, borderRadius: 6,
+                      background: isToday ? "linear-gradient(135deg,#1a8fff,#0d6ecc)" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <span style={{ fontSize:13, fontWeight: isToday ? 700 : 400, color: isToday ? "#fff" : statusStyles.textColor, fontFamily:"Plus Jakarta Sans,sans-serif" }}>
+                        {day}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop:"auto" }}>
+                      <div style={{ width:7, height:7, borderRadius:"50%", background:statusStyles.dot }} />
+                      {status === "booked" && event && (
+                        <span style={{ fontSize:9, color:"var(--blue-dark)", display:"block", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>
+                          {event.couple}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Selected day popup */}
+          {/* Selected event detail */}
           {selectedDay && selectedEvents.length > 0 && (
-            <div style={{
-              marginTop: 24, background: "var(--white)", border: "1px solid var(--gold-light)",
-              borderRadius: 4, padding: "24px 28px", boxShadow: "var(--shadow)"
-            }}>
-              <h3 style={{ fontSize: 20, fontWeight: 400, marginBottom: 16, color: "var(--gold-dark)" }}>
+            <div className="card" style={{ padding:"24px 28px", borderLeft:"4px solid var(--blue-2)", marginBottom:24 }}>
+              <h3 style={{ fontSize:22, fontWeight:400, marginBottom:16, color:"var(--blue-dark)" }}>
                 {selectedDay} {MONTHS[month]} {year}
               </h3>
               {selectedEvents.map((e, i) => (
-                <div key={i} style={{ borderTop: "1px solid #f0e8dc", paddingTop: 14, marginTop: 14 }}>
-                  <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, marginBottom: 6 }}>💍 {e.couple}</p>
-                  {e.venue && <p style={{ fontSize: 13, color: "var(--muted)" }}>📍 {e.venue}</p>}
-                  {e.time && <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>🕐 {e.time}</p>}
-                  {e.notes && <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8, fontStyle: "italic" }}>{e.notes}</p>}
+                <div key={i} style={{ borderTop: i > 0 ? "1px solid var(--border)" : "none", paddingTop: i > 0 ? 14 : 0 }}>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, marginBottom:8, color:"var(--dark)" }}>💍 {e.couple}</p>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:16 }}>
+                    {e.venue && <span style={{ fontSize:13, color:"var(--muted)", display:"flex", alignItems:"center", gap:5 }}>📍 {e.venue}</span>}
+                    {e.time && <span style={{ fontSize:13, color:"var(--muted)", display:"flex", alignItems:"center", gap:5 }}>🕐 {e.time}</span>}
+                  </div>
+                  {e.notes && <p style={{ fontSize:12, color:"var(--muted)", marginTop:8, fontStyle:"italic" }}>{e.notes}</p>}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Info limit */}
+          {/* Contact strip */}
           <div style={{
-            marginTop: 32, padding: "18px 24px", background: "#f5f0ea",
-            borderLeft: "3px solid var(--gold)", borderRadius: "0 4px 4px 0"
+            background:"var(--white)", borderRadius:12, padding:"20px 28px",
+            border:"1px solid var(--border)", display:"flex", alignItems:"center",
+            gap:16, flexWrap:"wrap", justifyContent:"space-between",
           }}>
-            <p style={{ fontSize: 13, color: "var(--mid)", lineHeight: 1.7 }}>
-              <strong>Informasi:</strong> Kami melayani maksimal <strong>{maxWeddingsPerWeek} pernikahan per minggu</strong> untuk memastikan setiap momen mendapat perhatian penuh.
-              Hubungi kami untuk reservasi: <strong>{contactPhone}</strong> atau <strong>{contactEmail}</strong>
+            <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7 }}>
+              Tertarik menggunakan jasa kami? Hubungi kami untuk reservasi
             </p>
+            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+              <a href={`tel:${contactPhone}`} className="btn btn-outline" style={{ fontSize:12 }}>📞 {contactPhone}</a>
+              <a href={`mailto:${contactEmail}`} className="btn btn-primary" style={{ fontSize:12 }}>✉️ {contactEmail}</a>
+            </div>
           </div>
         </main>
       </div>

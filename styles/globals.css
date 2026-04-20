@@ -1,40 +1,118 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --gold: #c8a96e;
-  --gold-light: #e8d5b0;
-  --gold-dark: #9a7a44;
-  --cream: #faf7f2;
-  --dark: #1a1614;
-  --mid: #4a3f35;
-  --muted: #8a7a6e;
+  --blue-1: #1a8fff;
+  --blue-2: #2196f3;
+  --blue-3: #42b0ff;
+  --blue-4: #64c8ff;
+  --blue-dark: #0d6ecc;
+  --blue-deeper: #0a4f9a;
+  --blue-glass: rgba(33, 150, 243, 0.12);
+  --blue-glass2: rgba(33, 150, 243, 0.06);
+  --bg: #f0f6ff;
+  --bg2: #e8f2ff;
   --white: #ffffff;
-  --red: #c0392b;
-  --green: #27674a;
-  --shadow: 0 4px 30px rgba(26,22,20,0.10);
+  --dark: #0d1b2e;
+  --mid: #1e3a5f;
+  --muted: #6b90b8;
+  --border: #c5daf5;
+  --green: #0fb87a;
+  --red: #e53e3e;
+  --shadow-sm: 0 2px 12px rgba(33,150,243,0.10);
+  --shadow: 0 6px 32px rgba(33,150,243,0.16);
+  --shadow-lg: 0 16px 64px rgba(33,150,243,0.22);
+  --radius: 12px;
+  --radius-sm: 8px;
 }
 
 body {
-  font-family: 'Jost', sans-serif;
-  background: var(--cream);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
   color: var(--dark);
   min-height: 100vh;
 }
 
-h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
+h1, h2, h3, h4 { font-family: 'Cormorant Garamond', serif; }
+
+/* Gradient text utility */
+.grad-text {
+  background: linear-gradient(135deg, var(--blue-1), var(--blue-deeper));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 24px; border-radius: 2px; border: none; cursor: pointer;
-  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500;
-  letter-spacing: 1.5px; text-transform: uppercase; transition: all 0.2s;
-  text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 0.3px; transition: all 0.2s; text-decoration: none;
+  white-space: nowrap;
 }
-.btn-gold { background: var(--gold); color: var(--white); }
-.btn-gold:hover { background: var(--gold-dark); }
-.btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
-.btn-outline:hover { background: var(--gold); color: var(--white); }
-.btn-danger { background: var(--red); color: var(--white); padding: 6px 14px; font-size: 11px; }
-.btn-danger:hover { opacity: 0.85; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue-1), var(--blue-dark));
+  color: var(--white);
+  box-shadow: 0 4px 14px rgba(26,143,255,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(26,143,255,0.45); }
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--blue-2);
+  color: var(--blue-2);
+}
+.btn-outline:hover { background: var(--blue-glass); }
+.btn-ghost {
+  background: rgba(255,255,255,0.15);
+  color: var(--white);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(8px);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.25); }
+.btn-danger {
+  background: var(--red);
+  color: var(--white);
+  padding: 6px 14px;
+  font-size: 11px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.btn-danger:hover { opacity: 0.85; transform: none; }
+
+/* Card */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Input */
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: var(--dark);
+  background: var(--white);
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.input:focus {
+  border-color: var(--blue-2);
+  box-shadow: 0 0 0 3px rgba(33,150,243,0.12);
+}
+
+/* Label */
+.label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}

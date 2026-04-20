@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { CALENDAR_CONFIG } from "../../lib/config";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const DAYS = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+const DAYS = ["Sen","Sel","Rab","Kam","Jum","Sab","Min"];
 
 function getWeekKey(date) {
   const d = new Date(date);
@@ -25,14 +24,13 @@ export default function AdminPanel() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
-  const [form, setForm] = useState({ couple: "", venue: "", time: "", notes: "" });
+  const [form, setForm] = useState({ couple:"", venue:"", time:"", notes:"" });
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
-  const { maxWeddingsPerWeek } = CALENDAR_CONFIG;
+  const { maxWeddingsPerWeek, businessName } = CALENDAR_CONFIG;
 
   useEffect(() => {
-    const auth = sessionStorage.getItem("admin_auth");
-    if (auth === "true") setIsLoggedIn(true);
+    if (sessionStorage.getItem("admin_auth") === "true") setIsLoggedIn(true);
     const stored = localStorage.getItem("wedding_events");
     if (stored) setEvents(JSON.parse(stored));
   }, []);
@@ -41,17 +39,12 @@ export default function AdminPanel() {
     e.preventDefault();
     setLoginError("");
     const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ username, password }),
     });
     const data = await res.json();
-    if (data.success) {
-      sessionStorage.setItem("admin_auth", "true");
-      setIsLoggedIn(true);
-    } else {
-      setLoginError(data.message);
-    }
+    if (data.success) { sessionStorage.setItem("admin_auth","true"); setIsLoggedIn(true); }
+    else setLoginError(data.message);
   }
 
   function saveEvents(newEvents) {
@@ -65,17 +58,13 @@ export default function AdminPanel() {
     if (!form.couple.trim()) return setFormError("Nama pasangan wajib diisi");
     const weekKey = getWeekKey(selectedDate);
     const count = events.filter(ev => getWeekKey(ev.date) === weekKey).length;
-    if (count >= maxWeddingsPerWeek) {
-      return setFormError("Minggu ini sudah penuh (maks. " + maxWeddingsPerWeek + " wedding)");
-    }
-    const already = events.find(ev => ev.date === selectedDate);
-    if (already) return setFormError("Tanggal ini sudah ada event");
-    const newEvents = [...events, { ...form, date: selectedDate, id: Date.now() }];
-    saveEvents(newEvents);
-    setForm({ couple: "", venue: "", time: "", notes: "" });
+    if (count >= maxWeddingsPerWeek) return setFormError(`Minggu ini sudah penuh (maks. ${maxWeddingsPerWeek})`);
+    if (events.find(ev => ev.date === selectedDate)) return setFormError("Tanggal ini sudah ada event");
+    saveEvents([...events, { ...form, date:selectedDate, id:Date.now() }]);
+    setForm({ couple:"", venue:"", time:"", notes:"" });
     setShowForm(false);
     setSuccess("Event berhasil ditambahkan!");
-    setTimeout(() => setSuccess(""), 3000);
+    setTimeout(() => setSuccess(""), 3500);
   }
 
   function handleDelete(id) {
@@ -83,10 +72,7 @@ export default function AdminPanel() {
     saveEvents(events.filter(e => e.id !== id));
   }
 
-  function logout() {
-    sessionStorage.removeItem("admin_auth");
-    setIsLoggedIn(false);
-  }
+  function logout() { sessionStorage.removeItem("admin_auth"); setIsLoggedIn(false); }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -96,38 +82,70 @@ export default function AdminPanel() {
   const today = new Date(); today.setHours(0,0,0,0);
 
   function getDayStatus(day) {
-    const dateStr = year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     const event = events.find(e => e.date === dateStr);
-    if (event) return { status: "booked", event };
+    if (event) return { status:"booked", event };
     const weekKey = getWeekKey(dateStr);
     const count = events.filter(e => getWeekKey(e.date) === weekKey).length;
-    if (count >= maxWeddingsPerWeek) return { status: "full" };
-    const d = new Date(dateStr);
-    if (d < today) return { status: "past" };
-    return { status: "available" };
+    if (count >= maxWeddingsPerWeek) return { status:"full" };
+    if (new Date(dateStr) < today) return { status:"past" };
+    return { status:"available" };
   }
 
+  // ─── LOGIN ───
   if (!isLoggedIn) return (
     <>
-      <Head><title>Admin Login - Wedding Calendar</title></Head>
-      <div style={{ minHeight:"100vh", background:"var(--dark)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-        <div style={{ background:"var(--cream)", width:"100%", maxWidth:400, borderRadius:4, overflow:"hidden", boxShadow:"0 20px 60px rgba(0,0,0,0.4)" }}>
-          <div style={{ background:"var(--dark)", padding:"28px 32px", textAlign:"center", borderBottom:"2px solid var(--gold)" }}>
-            <h1 style={{ color:"var(--gold-light)", fontSize:24, fontWeight:300, letterSpacing:3 }}>Admin Panel</h1>
-            <p style={{ color:"var(--muted)", fontSize:11, letterSpacing:2, marginTop:4, textTransform:"uppercase" }}>Wedding Calendar</p>
+      <Head><title>Admin Login — {businessName}</title></Head>
+      <div style={{
+        minHeight:"100vh",
+        background:"linear-gradient(135deg, #0a4f9a 0%, #1a8fff 50%, #42b0ff 100%)",
+        display:"flex", alignItems:"center", justifyContent:"center", padding:20,
+      }}>
+        {/* Decorative circles */}
+        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"rgba(255,255,255,0.06)", pointerEvents:"none" }} />
+        <div style={{ position:"fixed", bottom:-100, left:-60, width:300, height:300, borderRadius:"50%", background:"rgba(255,255,255,0.05)", pointerEvents:"none" }} />
+
+        <div style={{ background:"#fff", width:"100%", maxWidth:420, borderRadius:20, overflow:"hidden", boxShadow:"0 24px 80px rgba(10,79,154,0.4)" }}>
+          <div style={{
+            background:"linear-gradient(135deg, #0d6ecc, #1a8fff)",
+            padding:"36px 36px 28px",
+            textAlign:"center",
+          }}>
+            <div style={{
+              width:64, height:64, borderRadius:16,
+              background:"rgba(255,255,255,0.2)",
+              backdropFilter:"blur(8px)",
+              border:"2px solid rgba(255,255,255,0.4)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              margin:"0 auto 16px", padding:8, overflow:"hidden",
+            }}>
+              <img src="/logo.png" alt="Logo" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+            </div>
+            <h1 style={{ color:"#fff", fontSize:26, fontWeight:400, letterSpacing:1 }}>{businessName}</h1>
+            <p style={{ color:"rgba(255,255,255,0.75)", fontSize:11, letterSpacing:2, marginTop:4, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Admin Panel</p>
           </div>
-          <form onSubmit={handleLogin} style={{ padding:"32px" }}>
-            {loginError && <div style={{ background:"#fff0f0", border:"1px solid #f5c6c6", color:"var(--red)", padding:"10px 14px", borderRadius:2, marginBottom:20, fontSize:13 }}>{loginError}</div>}
-            {[{label:"Username",value:username,setter:setUsername,type:"text"},{label:"Password",value:password,setter:setPassword,type:"password"}].map(({label,value,setter,type}) => (
+
+          <form onSubmit={handleLogin} style={{ padding:"32px 36px" }}>
+            {loginError && (
+              <div style={{ background:"#fff0f0", border:"1px solid #fed7d7", color:"#c53030", padding:"10px 14px", borderRadius:8, marginBottom:20, fontSize:13 }}>
+                ⚠️ {loginError}
+              </div>
+            )}
+            {[
+              { label:"Username", value:username, setter:setUsername, type:"text", placeholder:"Masukkan username" },
+              { label:"Password", value:password, setter:setPassword, type:"password", placeholder:"Masukkan password" },
+            ].map(({ label, value, setter, type, placeholder }) => (
               <div key={label} style={{ marginBottom:18 }}>
-                <label style={{ display:"block", fontSize:10, letterSpacing:2, color:"var(--muted)", textTransform:"uppercase", marginBottom:6 }}>{label}</label>
-                <input type={type} value={value} onChange={e=>setter(e.target.value)}
-                  style={{ width:"100%", padding:"10px 14px", border:"1px solid #ddd", borderRadius:2, fontSize:14, fontFamily:"Jost,sans-serif", background:"var(--white)" }} required />
+                <label className="label">{label}</label>
+                <input type={type} value={value} onChange={e => setter(e.target.value)}
+                  placeholder={placeholder} className="input" required />
               </div>
             ))}
-            <button type="submit" className="btn btn-gold" style={{ width:"100%", marginTop:8, padding:"12px" }}>Masuk</button>
+            <button type="submit" className="btn btn-primary" style={{ width:"100%", marginTop:4, padding:"12px", fontSize:14 }}>
+              Masuk ke Dashboard
+            </button>
             <div style={{ marginTop:20, textAlign:"center" }}>
-              <Link href="/" style={{ fontSize:12, color:"var(--muted)", textDecoration:"none" }}>Kembali ke Kalender</Link>
+              <Link href="/" style={{ fontSize:12, color:"var(--muted)", textDecoration:"none" }}>← Kembali ke Kalender Publik</Link>
             </div>
           </form>
         </div>
@@ -135,97 +153,227 @@ export default function AdminPanel() {
     </>
   );
 
+  // ─── DASHBOARD ───
+  const thisMonthEvents = events.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+
   return (
     <>
-      <Head><title>Admin Dashboard - Wedding Calendar</title></Head>
-      <div style={{ minHeight:"100vh", background:"var(--cream)" }}>
-        <header style={{ background:"var(--dark)", padding:"0 32px", height:70, display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:"2px solid var(--gold)" }}>
-          <div>
-            <h1 style={{ color:"var(--gold-light)", fontSize:20, fontWeight:300, letterSpacing:2 }}>Dashboard Admin</h1>
-            <p style={{ color:"var(--muted)", fontSize:10, letterSpacing:2, textTransform:"uppercase" }}>Wedding Calendar</p>
+      <Head><title>Admin Dashboard — {businessName}</title></Head>
+      <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
+
+        {/* Header */}
+        <header style={{
+          background:"linear-gradient(135deg, #0d6ecc 0%, #1a8fff 60%, #42b0ff 100%)",
+          padding:"0 32px", height:72,
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          boxShadow:"0 4px 24px rgba(13,110,204,0.35)",
+          position:"sticky", top:0, zIndex:100,
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{
+              width:42, height:42, borderRadius:10,
+              background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              overflow:"hidden", padding:4,
+              border:"1.5px solid rgba(255,255,255,0.35)",
+            }}>
+              <img src="/logo.png" alt="Logo" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+            </div>
+            <div>
+              <h1 style={{ color:"#fff", fontSize:18, fontWeight:400, letterSpacing:0.5, lineHeight:1.1 }}>{businessName}</h1>
+              <p style={{ color:"rgba(255,255,255,0.7)", fontSize:10, letterSpacing:2, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Dashboard Admin</p>
+            </div>
           </div>
-          <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-            <Link href="/" className="btn btn-outline" style={{ fontSize:11, padding:"7px 16px" }}>Lihat Kalender</Link>
-            <button onClick={logout} className="btn btn-danger" style={{ fontSize:11 }}>Logout</button>
+          <div style={{ display:"flex", gap:10 }}>
+            <Link href="/" className="btn btn-ghost" style={{ fontSize:12 }}>Lihat Kalender</Link>
+            <button onClick={logout} className="btn btn-danger" style={{ fontSize:12 }}>Logout</button>
           </div>
         </header>
-        <main style={{ maxWidth:1000, margin:"0 auto", padding:"32px 20px" }}>
-          {success && <div style={{ background:"#f0fff4", border:"1px solid #9ae6b4", color:"var(--green)", padding:"12px 20px", borderRadius:2, marginBottom:24, fontSize:13 }}>Berhasil ditambahkan!</div>}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:16, marginBottom:32 }}>
-            {[{label:"Total Event",value:events.length},{label:"Bulan Ini",value:events.filter(e=>{const d=new Date(e.date);return d.getMonth()===month&&d.getFullYear()===year;}).length},{label:"Maks/Minggu",value:maxWeddingsPerWeek}].map(({label,value})=>(
-              <div key={label} style={{ background:"var(--white)", padding:"20px 24px", borderRadius:4, border:"1px solid #e8ddd0", textAlign:"center" }}>
-                <div style={{ fontFamily:"Cormorant Garamond,serif", fontSize:36, color:"var(--gold-dark)", lineHeight:1 }}>{value}</div>
-                <div style={{ fontSize:10, color:"var(--muted)", letterSpacing:2, textTransform:"uppercase", marginTop:6 }}>{label}</div>
+
+        <main style={{ maxWidth:1080, margin:"0 auto", padding:"32px 20px" }}>
+          {/* Success toast */}
+          {success && (
+            <div style={{
+              background:"#f0fff4", border:"1px solid #9ae6b4", color:"#276749",
+              padding:"12px 20px", borderRadius:10, marginBottom:24, fontSize:13,
+              display:"flex", alignItems:"center", gap:8,
+            }}>
+              ✅ {success}
+            </div>
+          )}
+
+          {/* Stats */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:16, marginBottom:32 }}>
+            {[
+              { label:"Total Event", value:events.length, icon:"💍" },
+              { label:"Bulan Ini", value:thisMonthEvents.length, icon:"📅" },
+              { label:"Maks/Minggu", value:maxWeddingsPerWeek, icon:"⚙️" },
+            ].map(({ label, value, icon }) => (
+              <div key={label} className="card" style={{ padding:"20px 24px", textAlign:"center" }}>
+                <div style={{ fontSize:24, marginBottom:8 }}>{icon}</div>
+                <div style={{
+                  fontFamily:"'Cormorant Garamond',serif", fontSize:40,
+                  background:"linear-gradient(135deg,#1a8fff,#0d6ecc)",
+                  WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+                  lineHeight:1,
+                }}>{value}</div>
+                <div style={{ fontSize:10, color:"var(--muted)", letterSpacing:1.5, textTransform:"uppercase", marginTop:6, fontWeight:600 }}>{label}</div>
               </div>
             ))}
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, alignItems:"start" }}>
-            <div style={{ background:"var(--white)", borderRadius:4, border:"1px solid #e8ddd0", overflow:"hidden" }}>
-              <div style={{ background:"var(--dark)", padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <button onClick={()=>setCurrentDate(new Date(year,month-1,1))} style={{ background:"none", border:"none", color:"var(--gold)", fontSize:20, cursor:"pointer" }}>&#8249;</button>
-                <h2 style={{ color:"var(--gold-light)", fontSize:20, fontWeight:300, letterSpacing:2 }}>{MONTHS[month]} {year}</h2>
-                <button onClick={()=>setCurrentDate(new Date(year,month+1,1))} style={{ background:"none", border:"none", color:"var(--gold)", fontSize:20, cursor:"pointer" }}>&#8250;</button>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:24, alignItems:"start" }}>
+            {/* Calendar */}
+            <div className="card" style={{ overflow:"hidden" }}>
+              <div style={{
+                background:"linear-gradient(135deg, #0a4f9a, #1a8fff)",
+                padding:"18px 24px", display:"flex", alignItems:"center", justifyContent:"space-between",
+              }}>
+                <button onClick={() => setCurrentDate(new Date(year,month-1,1))}
+                  style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
+                    width:34, height:34, borderRadius:8, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  ‹
+                </button>
+                <h2 style={{ color:"#fff", fontSize:22, fontWeight:300, letterSpacing:2 }}>{MONTHS[month]} {year}</h2>
+                <button onClick={() => setCurrentDate(new Date(year,month+1,1))}
+                  style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
+                    width:34, height:34, borderRadius:8, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  ›
+                </button>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", background:"#f5f0ea" }}>
-                {DAYS.map(d=><div key={d} style={{ textAlign:"center", padding:"10px 0", fontSize:9, letterSpacing:2, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>)}
+
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", background:"var(--bg2)", borderBottom:"1px solid var(--border)" }}>
+                {DAYS.map(d => <div key={d} style={{ textAlign:"center", padding:"10px 0", fontSize:9, fontWeight:700, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>)}
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:1, background:"#e8ddd0" }}>
-                {Array.from({length:startOffset}).map((_,i)=><div key={i} style={{ background:"var(--cream)", minHeight:56 }}/>)}
-                {Array.from({length:daysInMonth},(_,i)=>i+1).map(day=>{
-                  const dateStr=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
-                  const {status,event}=getDayStatus(day);
-                  const isSelected=selectedDate===dateStr;
-                  const isToday=new Date(dateStr).toDateString()===today.toDateString();
-                  const canAdd=status==="available";
-                  return(
-                    <div key={day} onClick={()=>{if(canAdd){setSelectedDate(dateStr);setShowForm(true);setFormError("");}}}
-                      style={{ background:isSelected?"#fff3e0":status==="booked"?"#fff8f0":status==="full"?"#fff5f5":status==="past"?"#f8f8f8":"var(--white)", minHeight:56, padding:"8px 6px", cursor:canAdd?"pointer":"default", display:"flex", flexDirection:"column", outline:isSelected?"2px solid var(--gold)":"none" }}>
-                      <span style={{ fontSize:13, color:status==="past"?"#ccc":isToday?"var(--gold-dark)":"var(--dark)", fontWeight:isToday?700:400 }}>{day}</span>
-                      {status==="booked"&&<span style={{ fontSize:8, color:"var(--gold)", marginTop:"auto", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{event.couple}</span>}
-                      {status==="available"&&<div style={{ width:6, height:6, borderRadius:"50%", background:"var(--green)", marginTop:"auto" }}/>}
-                      {status==="full"&&<div style={{ width:6, height:6, borderRadius:"50%", background:"var(--red)", marginTop:"auto" }}/>}
+
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
+                {Array.from({ length:startOffset }).map((_,i) => (
+                  <div key={i} style={{ minHeight:64, background:"#fafcff", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
+                ))}
+                {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
+                  const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                  const { status, event } = getDayStatus(day);
+                  const isSelected = selectedDate === dateStr;
+                  const isToday = new Date(dateStr).toDateString() === today.toDateString();
+                  const canAdd = status === "available";
+
+                  const dotColor = { booked:"#1a8fff", full:"#e53e3e", past:"#ddd", available:"#0fb87a" }[status];
+                  const bg = isSelected ? "#dbeeff" : status === "booked" ? "#e8f4ff" : status === "full" ? "#fff0f0" : status === "past" ? "#fafafa" : "#fff";
+
+                  return (
+                    <div key={day}
+                      onClick={() => { if(canAdd){ setSelectedDate(dateStr); setShowForm(true); setFormError(""); } }}
+                      style={{
+                        minHeight:64, background:bg, padding:"8px 8px 6px",
+                        borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)",
+                        cursor:canAdd?"pointer":"default",
+                        display:"flex", flexDirection:"column",
+                        outline:isSelected?"2px solid var(--blue-2)":"none", outlineOffset:-2,
+                        transition:"background 0.12s",
+                      }}
+                    >
+                      <div style={{
+                        width:24, height:24, borderRadius:6,
+                        background:isToday?"linear-gradient(135deg,#1a8fff,#0d6ecc)":"transparent",
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                      }}>
+                        <span style={{ fontSize:12, fontWeight:isToday?700:400, color:isToday?"#fff":status==="past"?"#ccc":"var(--dark)", fontFamily:"Plus Jakarta Sans,sans-serif" }}>
+                          {day}
+                        </span>
+                      </div>
+                      <div style={{ marginTop:"auto" }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:dotColor }} />
+                        {status==="booked"&&event&&(
+                          <span style={{ fontSize:8, color:"var(--blue-dark)", display:"block", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>
+                            {event.couple}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <p style={{ padding:"12px 16px", fontSize:11, color:"var(--muted)", background:"#faf7f2" }}>Klik tanggal tersedia (hijau) untuk menambah event</p>
+
+              <div style={{ padding:"10px 16px", background:"var(--bg2)", borderTop:"1px solid var(--border)" }}>
+                <p style={{ fontSize:11, color:"var(--muted)", display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ display:"inline-block", width:8, height:8, borderRadius:"50%", background:"#0fb87a" }} />
+                  Klik tanggal <strong>hijau</strong> untuk menambah event
+                </p>
+              </div>
             </div>
+
+            {/* Right column */}
             <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-              {showForm&&(
-                <div style={{ background:"var(--white)", borderRadius:4, border:"1px solid var(--gold-light)", padding:"24px", boxShadow:"var(--shadow)" }}>
-                  <h3 style={{ fontSize:18, fontWeight:400, marginBottom:20, color:"var(--gold-dark)" }}>Tambah Event</h3>
-                  <p style={{ fontSize:12, color:"var(--muted)", marginBottom:16 }}>Tanggal: {selectedDate}</p>
-                  {formError&&<div style={{ background:"#fff0f0", color:"var(--red)", padding:"8px 12px", fontSize:12, borderRadius:2, marginBottom:14 }}>{formError}</div>}
+              {/* Add form */}
+              {showForm && (
+                <div className="card" style={{ padding:24, borderTop:"3px solid var(--blue-2)" }}>
+                  <h3 style={{ fontSize:20, fontWeight:400, marginBottom:4, color:"var(--blue-dark)" }}>Tambah Event</h3>
+                  <p style={{ fontSize:12, color:"var(--muted)", marginBottom:18, fontFamily:"Plus Jakarta Sans,sans-serif" }}>
+                    📅 {selectedDate}
+                  </p>
+                  {formError && (
+                    <div style={{ background:"#fff0f0", color:"#c53030", padding:"8px 12px", fontSize:12, borderRadius:8, marginBottom:14, border:"1px solid #fed7d7" }}>
+                      ⚠️ {formError}
+                    </div>
+                  )}
                   <form onSubmit={handleAddEvent}>
-                    {[{label:"Nama Pasangan *",key:"couple",placeholder:"Budi & Siti"},{label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom Hotel XYZ"},{label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},{label:"Catatan",key:"notes",placeholder:"Informasi tambahan..."}].map(({label,key,placeholder})=>(
+                    {[
+                      { label:"Nama Pasangan *", key:"couple", placeholder:"Budi & Siti" },
+                      { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
+                      { label:"Jam Acara", key:"time", placeholder:"10:00 WIB" },
+                      { label:"Catatan", key:"notes", placeholder:"Info tambahan..." },
+                    ].map(({ label, key, placeholder }) => (
                       <div key={key} style={{ marginBottom:14 }}>
-                        <label style={{ display:"block", fontSize:10, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase", marginBottom:5 }}>{label}</label>
-                        <input value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={placeholder}
-                          style={{ width:"100%", padding:"9px 12px", border:"1px solid #ddd", borderRadius:2, fontSize:13, fontFamily:"Jost,sans-serif" }}/>
+                        <label className="label">{label}</label>
+                        <input value={form[key]} onChange={e => setForm({ ...form, [key]:e.target.value })}
+                          placeholder={placeholder} className="input" />
                       </div>
                     ))}
-                    <div style={{ display:"flex", gap:10, marginTop:4 }}>
-                      <button type="submit" className="btn btn-gold" style={{ flex:1 }}>Simpan</button>
-                      <button type="button" onClick={()=>setShowForm(false)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
+                    <div style={{ display:"flex", gap:10, marginTop:8 }}>
+                      <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan</button>
+                      <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
                     </div>
                   </form>
                 </div>
               )}
-              <div style={{ background:"var(--white)", borderRadius:4, border:"1px solid #e8ddd0", overflow:"hidden" }}>
-                <div style={{ padding:"16px 20px", borderBottom:"1px solid #f0e8dc", background:"#faf7f2" }}>
-                  <h3 style={{ fontSize:16, fontWeight:400, color:"var(--mid)" }}>Semua Event ({events.length})</h3>
+
+              {/* Event list */}
+              <div className="card" style={{ overflow:"hidden" }}>
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid var(--border)", background:"var(--bg2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <h3 style={{ fontSize:18, fontWeight:400, color:"var(--mid)" }}>Semua Event</h3>
+                  <span style={{
+                    background:"linear-gradient(135deg,#1a8fff,#0d6ecc)",
+                    color:"#fff", fontSize:12, fontWeight:600,
+                    padding:"2px 10px", borderRadius:20, fontFamily:"Plus Jakarta Sans,sans-serif",
+                  }}>{events.length}</span>
                 </div>
-                <div style={{ maxHeight:400, overflowY:"auto" }}>
-                  {events.length===0&&<p style={{ padding:"24px", textAlign:"center", color:"var(--muted)", fontSize:13 }}>Belum ada event</p>}
-                  {[...events].sort((a,b)=>a.date.localeCompare(b.date)).map(event=>(
-                    <div key={event.id} style={{ padding:"14px 20px", borderBottom:"1px solid #f5f0ea", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                      <div>
-                        <p style={{ fontFamily:"Cormorant Garamond,serif", fontSize:16 }}>{event.couple}</p>
-                        <p style={{ fontSize:11, color:"var(--muted)", marginTop:3 }}>{event.date}</p>
-                        {event.venue&&<p style={{ fontSize:11, color:"var(--muted)" }}>{event.venue}</p>}
-                        {event.time&&<p style={{ fontSize:11, color:"var(--muted)" }}>{event.time}</p>}
+                <div style={{ maxHeight:460, overflowY:"auto" }}>
+                  {events.length === 0 && (
+                    <div style={{ padding:"32px", textAlign:"center" }}>
+                      <p style={{ fontSize:28, marginBottom:8 }}>💍</p>
+                      <p style={{ fontSize:13, color:"var(--muted)" }}>Belum ada event</p>
+                    </div>
+                  )}
+                  {[...events].sort((a,b) => a.date.localeCompare(b.date)).map(event => (
+                    <div key={event.id} style={{
+                      padding:"14px 20px", borderBottom:"1px solid var(--border)",
+                      display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12,
+                      transition:"background 0.1s",
+                    }}>
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17, color:"var(--dark)", marginBottom:2 }}>
+                          💍 {event.couple}
+                        </p>
+                        <p style={{ fontSize:11, color:"var(--blue-2)", fontWeight:600, marginBottom:2 }}>{event.date}</p>
+                        {event.venue && <p style={{ fontSize:11, color:"var(--muted)" }}>📍 {event.venue}</p>}
+                        {event.time && <p style={{ fontSize:11, color:"var(--muted)" }}>🕐 {event.time}</p>}
                       </div>
-                      <button onClick={()=>handleDelete(event.id)} className="btn btn-danger">Hapus</button>
+                      <button onClick={() => handleDelete(event.id)} className="btn btn-danger" style={{ flexShrink:0 }}>
+                        Hapus
+                      </button>
                     </div>
                   ))}
                 </div>
