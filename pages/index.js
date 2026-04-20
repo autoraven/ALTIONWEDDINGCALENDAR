@@ -247,7 +247,8 @@ export default function Home() {
               Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol sebelah ini.
             </p>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-              <a href={`mailto:${contactEmail}`} className="btn btn-primary" style={{ fontSize:12 }}>✉️ {contactEmail}</a>
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSfgSo7CPIy5KrUKB2qKaoNP2yfDShnUlrn9PqAXtBGj0CRG-g/viewform" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
+  🌐 
             </div>
           </div>
         </main>
