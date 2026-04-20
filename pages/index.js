@@ -244,10 +244,9 @@ export default function Home() {
             gap:16, flexWrap:"wrap", justifyContent:"space-between",
           }}>
             <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7 }}>
-              Tertarik menggunakan jasa kami? Hubungi kami untuk reservasi
+              Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol sebelah ini.
             </p>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-              <a href={`tel:${contactPhone}`} className="btn btn-outline" style={{ fontSize:12 }}>📞 {contactPhone}</a>
               <a href={`mailto:${contactEmail}`} className="btn btn-primary" style={{ fontSize:12 }}>✉️ {contactEmail}</a>
             </div>
           </div>
