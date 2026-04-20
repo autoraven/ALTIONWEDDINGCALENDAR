@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #c8a96e;
+  --gold-light: #e8d5b0;
+  --gold-dark: #9a7a44;
+  --cream: #faf7f2;
+  --dark: #1a1614;
+  --mid: #4a3f35;
+  --muted: #8a7a6e;
+  --white: #ffffff;
+  --red: #c0392b;
+  --green: #27674a;
+  --shadow: 0 4px 30px rgba(26,22,20,0.10);
+}
+
+body {
+  font-family: 'Jost', sans-serif;
+  background: var(--cream);
+  color: var(--dark);
+  min-height: 100vh;
+}
+
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 24px; border-radius: 2px; border: none; cursor: pointer;
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 500;
+  letter-spacing: 1.5px; text-transform: uppercase; transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-gold { background: var(--gold); color: var(--white); }
+.btn-gold:hover { background: var(--gold-dark); }
+.btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
+.btn-outline:hover { background: var(--gold); color: var(--white); }
+.btn-danger { background: var(--red); color: var(--white); padding: 6px 14px; font-size: 11px; }
+.btn-danger:hover { opacity: 0.85; }
