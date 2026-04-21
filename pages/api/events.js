@@ -11,20 +11,26 @@ async function sendDiscordNotification(event, action = "add") {
   if (!DISCORD_WEBHOOK_URL) return;
 
   const isAdd = action === "add";
+  const isWedding = event.event_type === "wedding";
   const dateFormatted = new Date(event.date).toLocaleDateString("id-ID", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
   const payload = {
-    content: isAdd ? "@here Ada booking wedding baru! 💍" : "@here Satu wedding telah dihapus.",
+    content: isAdd
+      ? `@here Ada booking ${isWedding ? "wedding 💍" : "event 🎉"} baru!`
+      : "@here Satu event telah dihapus.",
     embeds: [{
-      title: isAdd ? "💍 Wedding Baru Ditambahkan!" : "🗑️ Wedding Dihapus",
-      color: isAdd ? 0x0fb87a : 0xe53e3e,
+      title: isAdd
+        ? (isWedding ? "💍 Wedding Baru Ditambahkan!" : "🎉 Event Baru Ditambahkan!")
+        : "🗑️ Event Dihapus",
+      color: isAdd ? (isWedding ? 0x1a8fff : 0x0fb87a) : 0xe53e3e,
       fields: [
-        { name: "👫 Pasangan", value: event.couple || "-", inline: true },
-        { name: "📅 Tanggal",  value: dateFormatted,       inline: true },
-        { name: "🏛️ Venue",   value: event.venue || "-",  inline: true },
-        { name: "🕐 Waktu",   value: event.time  || "-",  inline: true },
+        { name: isWedding ? "👫 Pasangan" : "📌 Nama Event", value: event.couple || "-", inline: true },
+        { name: "📅 Tanggal", value: dateFormatted, inline: true },
+        { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
+        { name: "🕐 Waktu",  value: event.time  || "-", inline: true },
+        ...(event.addon ? [{ name: "✨ Add On", value: event.addon }] : []),
         ...(event.notes ? [{ name: "📝 Catatan", value: event.notes }] : []),
       ],
       footer: { text: "ALTION Wedding Calendar" },
@@ -44,7 +50,6 @@ async function sendDiscordNotification(event, action = "add") {
 }
 
 export default async function handler(req, res) {
-  // GET - ambil semua events
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("wedding_events")
@@ -54,19 +59,17 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // POST - tambah event baru
   if (req.method === "POST") {
-    const { couple, venue, time, notes, date } = req.body;
-    if (!couple || !date) return res.status(400).json({ error: "Nama pasangan dan tanggal wajib diisi" });
+    const { couple, venue, time, notes, addon, date, event_type } = req.body;
+    if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
 
-    // created_at pakai waktu Indonesia (WIB = UTC+7)
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const created_at = wib.toISOString().replace("Z", "+07:00");
 
     const { data, error } = await supabase
       .from("wedding_events")
-      .insert([{ couple, venue, time, notes, date, created_at }])
+      .insert([{ couple, venue, time, notes, addon, date, event_type, created_at }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
@@ -75,7 +78,6 @@ export default async function handler(req, res) {
     return res.status(201).json(data);
   }
 
-  // DELETE - hapus event
   if (req.method === "DELETE") {
     const { id } = req.query;
 
