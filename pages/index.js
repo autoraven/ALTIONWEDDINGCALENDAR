@@ -252,7 +252,7 @@ export default function Home() {
             </p>
             <div style={{ display:"flex", justifyContent:"center" }}>
               <a href="https://forms.gle/zRcoKT4nPckRDT2s5" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
-                🌐
+                🌐 BOOKLET & FORM PENDAFTARAN 🌐
               </a>
             </div>
           </div>
