@@ -257,6 +257,9 @@ export default function Home() {
             </div>
           </div>
         </main>
+        <footer style={{ textAlign:"center", padding:"24px 0 16px", color:"var(--muted)", fontSize:11, opacity:0.5 }}>
+          Created by GG. All rights reserved.
+        </footer>
       </div>
     </>
   );
