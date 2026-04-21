@@ -248,7 +248,7 @@ export default function Home() {
             border:"1px solid var(--border)",
           }}>
             <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7, marginBottom:16 }}>
-              Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol sebelah ini.
+              Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol dibawah ini.
             </p>
             <div style={{ display:"flex", justifyContent:"center" }}>
               <a href="https://forms.gle/zRcoKT4nPckRDT2s5" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
