@@ -214,7 +214,7 @@ export default function AdminPanel() {
               { label:"Total Event", value:events.length, icon:"📅" },
               { label:"Bulan Ini", value:thisMonthEvents.length, icon:"🗓️" },
               { label:"Wedding", value:events.filter(e=>e.event_type==="wedding").length, icon:"💍" },
-              { label:"Event Biasa", value:events.filter(e=>e.event_type==="event").length, icon:"🎉" },
+              { label:"Event", value:events.filter(e=>e.event_type==="event").length, icon:"🎉" },
             ].map(({ label, value, icon }) => (
               <div key={label} className="card" style={{ padding:"20px 24px", textAlign:"center" }}>
                 <div style={{ fontSize:24, marginBottom:8 }}>{icon}</div>
@@ -339,7 +339,7 @@ export default function AdminPanel() {
                           onMouseLeave={e => e.currentTarget.style.borderColor="var(--border)"}
                         >
                           <div style={{ fontSize:24, marginBottom:6 }}>🎉</div>
-                          <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>Event Biasa</div>
+                          <div style={{ fontSize:13, fontWeight:600, color:"var(--dark)" }}>Event</div>
                         </button>
                       </div>
                       <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ width:"100%", marginTop:12 }}>Batal</button>
@@ -352,7 +352,7 @@ export default function AdminPanel() {
                       {/* Badge tipe */}
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
                         <span style={{ background: eventType==="wedding" ? "rgba(26,143,255,0.1)" : "rgba(15,184,122,0.1)", color: eventType==="wedding" ? "var(--blue-dark)" : "#0a6b50", fontSize:12, fontWeight:600, padding:"4px 12px", borderRadius:20 }}>
-                          {eventType==="wedding" ? "💍 Wedding" : "🎉 Event Biasa"}
+                          {eventType==="wedding" ? "💍 Wedding" : "🎉 Event"}
                         </span>
                         <button type="button" onClick={() => setEventType("")} style={{ fontSize:11, color:"var(--muted)", background:"none", border:"none", cursor:"pointer", textDecoration:"underline" }}>
                           Ganti
