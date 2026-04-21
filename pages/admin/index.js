@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { CALENDAR_CONFIG } from "../../lib/config";
@@ -27,143 +27,165 @@ export default function AdminPanel() {
   const [form, setForm] = useState({ couple:"", venue:"", time:"", notes:"" });
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
   const { maxWeddingsPerWeek, businessName } = CALENDAR_CONFIG;
 
-  useEffect(() => {
-    if (sessionStorage.getItem("admin_auth") === "true") setIsLoggedIn(true);
-    const stored = localStorage.getItem("wedding_events");
-    if (stored) setEvents(JSON.parse(stored));
+  const fetchEvents = useCallback(async () => {
+    try {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      if (Array.isArray(data)) setEvents(data);
+    } catch (err) {
+      console.error("Gagal fetch events:", err);
+    }
   }, []);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("admin_auth") === "true") {
+      setIsLoggedIn(true);
+      fetchEvents();
+    }
+  }, [fetchEvents]);
 
   async function handleLogin(e) {
     e.preventDefault();
     setLoginError("");
+    setLoading(true);
     const res = await fetch("/api/auth", {
-      method:"POST", headers:{"Content-Type":"application/json"},
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
     const data = await res.json();
-    if (data.success) { sessionStorage.setItem("admin_auth","true"); setIsLoggedIn(true); }
-    else setLoginError(data.message);
+    setLoading(false);
+    if (data.success) {
+      sessionStorage.setItem("admin_auth", "true");
+      setIsLoggedIn(true);
+      fetchEvents();
+    } else {
+      setLoginError(data.message);
+    }
   }
 
-  function saveEvents(newEvents) {
-    setEvents(newEvents);
-    localStorage.setItem("wedding_events", JSON.stringify(newEvents));
-  }
-
-  function handleAddEvent(e) {
+  async function handleAddEvent(e) {
     e.preventDefault();
     setFormError("");
     if (!form.couple.trim()) return setFormError("Nama pasangan wajib diisi");
+
     const weekKey = getWeekKey(selectedDate);
     const count = events.filter(ev => getWeekKey(ev.date) === weekKey).length;
     if (count >= maxWeddingsPerWeek) return setFormError(`Minggu ini sudah penuh (maks. ${maxWeddingsPerWeek})`);
     if (events.find(ev => ev.date === selectedDate)) return setFormError("Tanggal ini sudah ada event");
-    saveEvents([...events, { ...form, date:selectedDate, id:Date.now() }]);
+
+    setLoading(true);
+    const res = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, date: selectedDate }),
+    });
+    const data = await res.json();
+    setLoading(false);
+
+    if (data.error) return setFormError(data.error);
+
+    setEvents(prev => [...prev, data]);
     setForm({ couple:"", venue:"", time:"", notes:"" });
     setShowForm(false);
-    setSuccess("Event berhasil ditambahkan!");
-    setTimeout(() => setSuccess(""), 3500);
+    setSuccess("✅ Event berhasil ditambahkan & notif Discord terkirim!");
+    setTimeout(() => setSuccess(""), 4000);
   }
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
     if (!confirm("Hapus event ini?")) return;
-    saveEvents(events.filter(e => e.id !== id));
+    setLoading(true);
+    const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+    setLoading(false);
+    if (res.ok) {
+      setEvents(prev => prev.filter(e => e.id !== id));
+      setSuccess("🗑️ Event dihapus, notif Discord terkirim.");
+      setTimeout(() => setSuccess(""), 3000);
+    }
   }
 
-  function logout() { sessionStorage.removeItem("admin_auth"); setIsLoggedIn(false); }
+  function logout() {
+    sessionStorage.removeItem("admin_auth");
+    setIsLoggedIn(false);
+  }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
   function getDayStatus(day) {
     const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    const event = events.find(e => e.date === dateStr);
-    if (event) return { status:"booked", event };
+    const hasEvent = events.find(e => e.date === dateStr);
+    if (hasEvent) return { status: "booked", event: hasEvent };
     const weekKey = getWeekKey(dateStr);
-    const count = events.filter(e => getWeekKey(e.date) === weekKey).length;
-    if (count >= maxWeddingsPerWeek) return { status:"full" };
-    if (new Date(dateStr) < today) return { status:"past" };
-    return { status:"available" };
+    const count = events.filter(ev => getWeekKey(ev.date) === weekKey).length;
+    if (count >= maxWeddingsPerWeek) return { status: "full" };
+    const d = new Date(dateStr);
+    if (d < today) return { status: "past" };
+    return { status: "available" };
   }
 
-  // ─── LOGIN ───
-  if (!isLoggedIn) return (
-    <>
-      <Head><title>Admin Login — {businessName}</title></Head>
-      <div style={{
-        minHeight:"100vh",
-        background:"linear-gradient(135deg, #0a4f9a 0%, #1a8fff 50%, #42b0ff 100%)",
-        display:"flex", alignItems:"center", justifyContent:"center", padding:20,
-      }}>
-        {/* Decorative circles */}
-        <div style={{ position:"fixed", top:-120, right:-80, width:400, height:400, borderRadius:"50%", background:"rgba(255,255,255,0.06)", pointerEvents:"none" }} />
-        <div style={{ position:"fixed", bottom:-100, left:-60, width:300, height:300, borderRadius:"50%", background:"rgba(255,255,255,0.05)", pointerEvents:"none" }} />
+  function handleDayClick(day) {
+    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const { status } = getDayStatus(day);
+    if (status === "available") {
+      setSelectedDate(dateStr);
+      setForm({ couple:"", venue:"", time:"", notes:"" });
+      setFormError("");
+      setShowForm(true);
+    }
+  }
 
-        <div style={{ background:"#fff", width:"100%", maxWidth:420, borderRadius:20, overflow:"hidden", boxShadow:"0 24px 80px rgba(10,79,154,0.4)" }}>
-          <div style={{
-            background:"linear-gradient(135deg, #0d6ecc, #1a8fff)",
-            padding:"36px 36px 28px",
-            textAlign:"center",
-          }}>
-            <div style={{
-              width:64, height:64, borderRadius:16,
-              background:"rgba(255,255,255,0.2)",
-              backdropFilter:"blur(8px)",
-              border:"2px solid rgba(255,255,255,0.4)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              margin:"0 auto 16px", padding:8, overflow:"hidden",
-            }}>
-              <img src="/logo.png" alt="Logo" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+  // ── LOGIN SCREEN ──────────────────────────────────────────
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Head>
+          <title>Admin Login — {businessName}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </Head>
+        <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div className="card" style={{ width:"100%", maxWidth:400, padding:40 }}>
+            <div style={{ textAlign:"center", marginBottom:32 }}>
+              <h1 style={{ fontSize:28, fontWeight:400, letterSpacing:1 }}>{businessName}</h1>
+              <p style={{ color:"var(--muted)", fontSize:13, marginTop:4 }}>Admin Panel</p>
             </div>
-            <h1 style={{ color:"#fff", fontSize:26, fontWeight:400, letterSpacing:1 }}>{businessName}</h1>
-            <p style={{ color:"rgba(255,255,255,0.75)", fontSize:11, letterSpacing:2, marginTop:4, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Admin Panel</p>
+            <form onSubmit={handleLogin}>
+              <div style={{ marginBottom:16 }}>
+                <label className="label">Username</label>
+                <input className="input" value={username} onChange={e=>setUsername(e.target.value)} required autoFocus />
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label className="label">Password</label>
+                <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+              </div>
+              {loginError && <p style={{ color:"var(--red)", fontSize:13, marginBottom:12 }}>{loginError}</p>}
+              <button type="submit" className="btn btn-primary" style={{ width:"100%" }} disabled={loading}>
+                {loading ? "Masuk..." : "Masuk"}
+              </button>
+            </form>
           </div>
-
-          <form onSubmit={handleLogin} style={{ padding:"32px 36px" }}>
-            {loginError && (
-              <div style={{ background:"#fff0f0", border:"1px solid #fed7d7", color:"#c53030", padding:"10px 14px", borderRadius:8, marginBottom:20, fontSize:13 }}>
-                ⚠️ {loginError}
-              </div>
-            )}
-            {[
-              { label:"Username", value:username, setter:setUsername, type:"text", placeholder:"Masukkan username" },
-              { label:"Password", value:password, setter:setPassword, type:"password", placeholder:"Masukkan password" },
-            ].map(({ label, value, setter, type, placeholder }) => (
-              <div key={label} style={{ marginBottom:18 }}>
-                <label className="label">{label}</label>
-                <input type={type} value={value} onChange={e => setter(e.target.value)}
-                  placeholder={placeholder} className="input" required />
-              </div>
-            ))}
-            <button type="submit" className="btn btn-primary" style={{ width:"100%", marginTop:4, padding:"12px", fontSize:14 }}>
-              Masuk ke Dashboard
-            </button>
-            <div style={{ marginTop:20, textAlign:"center" }}>
-              <Link href="/" style={{ fontSize:12, color:"var(--muted)", textDecoration:"none" }}>← Kembali ke Kalender Publik</Link>
-            </div>
-          </form>
         </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  }
 
-  // ─── DASHBOARD ───
-  const thisMonthEvents = events.filter(e => {
-    const d = new Date(e.date);
-    return d.getMonth() === month && d.getFullYear() === year;
-  });
-
+  // ── ADMIN DASHBOARD ───────────────────────────────────────
   return (
     <>
-      <Head><title>Admin Dashboard — {businessName}</title></Head>
-      <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
+      <Head>
+        <title>Admin — {businessName}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
 
+      <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
         {/* Header */}
         <header style={{
           background:"linear-gradient(135deg, #0d6ecc 0%, #1a8fff 60%, #42b0ff 100%)",
@@ -173,212 +195,159 @@ export default function AdminPanel() {
           position:"sticky", top:0, zIndex:100,
         }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            <div style={{
-              width:42, height:42, borderRadius:10,
-              background:"rgba(255,255,255,0.2)", backdropFilter:"blur(8px)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              overflow:"hidden", padding:4,
-              border:"1.5px solid rgba(255,255,255,0.35)",
-            }}>
-              <img src="/logo.png" alt="Logo" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-            </div>
-            <div>
-              <h1 style={{ color:"#fff", fontSize:18, fontWeight:400, letterSpacing:0.5, lineHeight:1.1 }}>{businessName}</h1>
-              <p style={{ color:"rgba(255,255,255,0.7)", fontSize:10, letterSpacing:2, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Dashboard Admin</p>
-            </div>
+            <h1 style={{ fontSize:20, fontWeight:600, color:"#fff", letterSpacing:0.5 }}>{businessName}</h1>
+            <span style={{ background:"rgba(255,255,255,0.2)", color:"#fff", fontSize:11, fontWeight:600,
+              padding:"3px 10px", borderRadius:20, letterSpacing:1 }}>ADMIN</span>
           </div>
-          <div style={{ display:"flex", gap:10 }}>
-            <Link href="/" className="btn btn-ghost" style={{ fontSize:12 }}>Lihat Kalender</Link>
-            <button onClick={logout} className="btn btn-danger" style={{ fontSize:12 }}>Logout</button>
+          <div style={{ display:"flex", gap:12 }}>
+            <Link href="/" className="btn btn-ghost" style={{ fontSize:13 }}>Lihat Kalender</Link>
+            <button onClick={logout} className="btn btn-ghost" style={{ fontSize:13 }}>Logout</button>
           </div>
         </header>
 
-        <main style={{ maxWidth:1080, margin:"0 auto", padding:"32px 20px" }}>
-          {/* Success toast */}
+        <main style={{ maxWidth:900, margin:"0 auto", padding:"32px 16px" }}>
           {success && (
             <div style={{
-              background:"#f0fff4", border:"1px solid #9ae6b4", color:"#276749",
-              padding:"12px 20px", borderRadius:10, marginBottom:24, fontSize:13,
-              display:"flex", alignItems:"center", gap:8,
-            }}>
-              ✅ {success}
+              background:"rgba(15,184,122,0.1)", border:"1px solid var(--green)",
+              borderRadius:8, padding:"12px 18px", marginBottom:20,
+              color:"var(--green)", fontSize:14, fontWeight:500,
+            }}>{success}</div>
+          )}
+
+          {/* Kalender */}
+          <div className="card" style={{ padding:28, marginBottom:28 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <button onClick={()=>setCurrentDate(new Date(year, month-1, 1))} className="btn btn-outline" style={{ padding:"6px 16px" }}>‹</button>
+              <h2 style={{ fontSize:20, fontWeight:400 }}>{MONTHS[month]} {year}</h2>
+              <button onClick={()=>setCurrentDate(new Date(year, month+1, 1))} className="btn btn-outline" style={{ padding:"6px 16px" }}>›</button>
+            </div>
+
+            {/* Legend */}
+            <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:18, fontSize:12, color:"var(--muted)" }}>
+              {[
+                { color:"var(--green)", label:"Tersedia (klik untuk tambah)" },
+                { color:"#f59e0b", label:"Sudah dipesan" },
+                { color:"var(--red)", label:"Minggu penuh" },
+                { color:"#cbd5e1", label:"Lewat/tidak tersedia" },
+              ].map(({color,label}) => (
+                <div key={label} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <div style={{ width:12, height:12, borderRadius:3, background:color }} />
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Grid */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+              {DAYS.map(d => (
+                <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:600,
+                  color:"var(--muted)", padding:"6px 0", letterSpacing:0.5 }}>{d}</div>
+              ))}
+              {Array.from({length: startOffset}).map((_,i) => <div key={`e${i}`} />)}
+              {Array.from({length: daysInMonth}, (_,i) => i+1).map(day => {
+                const { status, event } = getDayStatus(day);
+                const isToday = new Date(year,month,day).toDateString() === today.toDateString();
+                const bg = {
+                  available: "rgba(15,184,122,0.12)",
+                  booked:    "rgba(245,158,11,0.15)",
+                  full:      "rgba(229,62,62,0.10)",
+                  past:      "rgba(203,213,225,0.3)",
+                }[status];
+                const textColor = {
+                  available: "var(--green)",
+                  booked:    "#92400e",
+                  full:      "var(--red)",
+                  past:      "#94a3b8",
+                }[status];
+                return (
+                  <div key={day} onClick={() => handleDayClick(day)}
+                    title={event ? `${event.couple} — ${event.venue}` : ""}
+                    style={{
+                      background: bg, color: textColor,
+                      borderRadius:8, padding:"10px 4px", textAlign:"center",
+                      cursor: status === "available" ? "pointer" : "default",
+                      border: isToday ? "2px solid var(--blue-2)" : "2px solid transparent",
+                      fontWeight: isToday ? 700 : 500,
+                      fontSize:14, transition:"all 0.15s",
+                      position:"relative",
+                    }}>
+                    {day}
+                    {status === "booked" && (
+                      <div style={{ position:"absolute", bottom:3, left:"50%", transform:"translateX(-50%)",
+                        width:5, height:5, borderRadius:"50%", background:"#f59e0b" }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Form Tambah Event */}
+          {showForm && (
+            <div className="card" style={{ padding:28, marginBottom:28, borderLeft:"4px solid var(--blue-2)" }}>
+              <h3 style={{ fontSize:16, fontWeight:600, marginBottom:20 }}>
+                ➕ Tambah Wedding — {new Date(selectedDate).toLocaleDateString("id-ID",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
+              </h3>
+              <form onSubmit={handleAddEvent}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  <div>
+                    <label className="label">Nama Pasangan *</label>
+                    <input className="input" placeholder="Budi & Ani" value={form.couple} onChange={e=>setForm({...form,couple:e.target.value})} required />
+                  </div>
+                  <div>
+                    <label className="label">Venue</label>
+                    <input className="input" placeholder="The Grand Ballroom" value={form.venue} onChange={e=>setForm({...form,venue:e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label">Waktu</label>
+                    <input className="input" type="time" value={form.time} onChange={e=>setForm({...form,time:e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="label">Catatan</label>
+                    <input className="input" placeholder="Catatan tambahan..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} />
+                  </div>
+                </div>
+                {formError && <p style={{ color:"var(--red)", fontSize:13, marginTop:10 }}>{formError}</p>}
+                <div style={{ display:"flex", gap:10, marginTop:18 }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? "Menyimpan..." : "💾 Simpan & Kirim ke Discord"}
+                  </button>
+                  <button type="button" className="btn btn-outline" onClick={()=>setShowForm(false)}>Batal</button>
+                </div>
+              </form>
             </div>
           )}
 
-          {/* Stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:16, marginBottom:32 }}>
-            {[
-              { label:"Total Event", value:events.length, icon:"💍" },
-              { label:"Bulan Ini", value:thisMonthEvents.length, icon:"📅" },
-              { label:"Maks/Minggu", value:maxWeddingsPerWeek, icon:"⚙️" },
-            ].map(({ label, value, icon }) => (
-              <div key={label} className="card" style={{ padding:"20px 24px", textAlign:"center" }}>
-                <div style={{ fontSize:24, marginBottom:8 }}>{icon}</div>
-                <div style={{
-                  fontFamily:"'Cormorant Garamond',serif", fontSize:40,
-                  background:"linear-gradient(135deg,#1a8fff,#0d6ecc)",
-                  WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-                  lineHeight:1,
-                }}>{value}</div>
-                <div style={{ fontSize:10, color:"var(--muted)", letterSpacing:1.5, textTransform:"uppercase", marginTop:6, fontWeight:600 }}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:24, alignItems:"start" }}>
-            {/* Calendar */}
-            <div className="card" style={{ overflow:"hidden" }}>
-              <div style={{
-                background:"linear-gradient(135deg, #0a4f9a, #1a8fff)",
-                padding:"18px 24px", display:"flex", alignItems:"center", justifyContent:"space-between",
-              }}>
-                <button onClick={() => setCurrentDate(new Date(year,month-1,1))}
-                  style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
-                    width:34, height:34, borderRadius:8, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  ‹
-                </button>
-                <h2 style={{ color:"#fff", fontSize:22, fontWeight:300, letterSpacing:2 }}>{MONTHS[month]} {year}</h2>
-                <button onClick={() => setCurrentDate(new Date(year,month+1,1))}
-                  style={{ background:"rgba(255,255,255,0.15)", border:"1.5px solid rgba(255,255,255,0.3)", color:"#fff",
-                    width:34, height:34, borderRadius:8, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  ›
-                </button>
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", background:"var(--bg2)", borderBottom:"1px solid var(--border)" }}>
-                {DAYS.map(d => <div key={d} style={{ textAlign:"center", padding:"10px 0", fontSize:9, fontWeight:700, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>)}
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
-                {Array.from({ length:startOffset }).map((_,i) => (
-                  <div key={i} style={{ minHeight:64, background:"#fafcff", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
+          {/* Daftar Events */}
+          <div className="card" style={{ padding:28 }}>
+            <h3 style={{ fontSize:16, fontWeight:600, marginBottom:20 }}>
+              📋 Semua Wedding ({events.length})
+            </h3>
+            {events.length === 0 ? (
+              <p style={{ color:"var(--muted)", textAlign:"center", padding:"24px 0" }}>
+                Belum ada wedding. Klik tanggal hijau di kalender untuk menambahkan.
+              </p>
+            ) : (
+              <div style={{ display:"grid", gap:10 }}>
+                {events.sort((a,b) => a.date.localeCompare(b.date)).map(ev => (
+                  <div key={ev.id} style={{
+                    display:"flex", alignItems:"center", justifyContent:"space-between",
+                    padding:"14px 18px", borderRadius:8, background:"var(--bg2)",
+                    border:"1px solid var(--border)",
+                  }}>
+                    <div style={{ display:"flex", gap:20, alignItems:"center", flexWrap:"wrap" }}>
+                      <span style={{ fontWeight:600, fontSize:14 }}>{ev.couple}</span>
+                      <span style={{ color:"var(--muted)", fontSize:13 }}>
+                        📅 {new Date(ev.date).toLocaleDateString("id-ID",{weekday:"short",year:"numeric",month:"short",day:"numeric"})}
+                      </span>
+                      {ev.venue && <span style={{ color:"var(--muted)", fontSize:13 }}>🏛️ {ev.venue}</span>}
+                      {ev.time && <span style={{ color:"var(--muted)", fontSize:13 }}>🕐 {ev.time}</span>}
+                    </div>
+                    <button onClick={()=>handleDelete(ev.id)} className="btn btn-danger" disabled={loading}>Hapus</button>
+                  </div>
                 ))}
-                {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
-                  const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                  const { status, event } = getDayStatus(day);
-                  const isSelected = selectedDate === dateStr;
-                  const isToday = new Date(dateStr).toDateString() === today.toDateString();
-                  const canAdd = status === "available";
-
-                  const dotColor = { booked:"#1a8fff", full:"#e53e3e", past:"#ddd", available:"#0fb87a" }[status];
-                  const bg = isSelected ? "#dbeeff" : status === "booked" ? "#e8f4ff" : status === "full" ? "#fff0f0" : status === "past" ? "#fafafa" : "#fff";
-
-                  return (
-                    <div key={day}
-                      onClick={() => { if(canAdd){ setSelectedDate(dateStr); setShowForm(true); setFormError(""); } }}
-                      style={{
-                        minHeight:64, background:bg, padding:"8px 8px 6px",
-                        borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)",
-                        cursor:canAdd?"pointer":"default",
-                        display:"flex", flexDirection:"column",
-                        outline:isSelected?"2px solid var(--blue-2)":"none", outlineOffset:-2,
-                        transition:"background 0.12s",
-                      }}
-                    >
-                      <div style={{
-                        width:24, height:24, borderRadius:6,
-                        background:isToday?"linear-gradient(135deg,#1a8fff,#0d6ecc)":"transparent",
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                      }}>
-                        <span style={{ fontSize:12, fontWeight:isToday?700:400, color:isToday?"#fff":status==="past"?"#ccc":"var(--dark)", fontFamily:"Plus Jakarta Sans,sans-serif" }}>
-                          {day}
-                        </span>
-                      </div>
-                      <div style={{ marginTop:"auto" }}>
-                        <div style={{ width:6, height:6, borderRadius:"50%", background:dotColor }} />
-                        {status==="booked"&&event&&(
-                          <span style={{ fontSize:8, color:"var(--blue-dark)", display:"block", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>
-                            {event.couple}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
-
-              <div style={{ padding:"10px 16px", background:"var(--bg2)", borderTop:"1px solid var(--border)" }}>
-                <p style={{ fontSize:11, color:"var(--muted)", display:"flex", alignItems:"center", gap:6 }}>
-                  <span style={{ display:"inline-block", width:8, height:8, borderRadius:"50%", background:"#0fb87a" }} />
-                  Klik tanggal <strong>hijau</strong> untuk menambah event
-                </p>
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-              {/* Add form */}
-              {showForm && (
-                <div className="card" style={{ padding:24, borderTop:"3px solid var(--blue-2)" }}>
-                  <h3 style={{ fontSize:20, fontWeight:400, marginBottom:4, color:"var(--blue-dark)" }}>Tambah Event</h3>
-                  <p style={{ fontSize:12, color:"var(--muted)", marginBottom:18, fontFamily:"Plus Jakarta Sans,sans-serif" }}>
-                    📅 {selectedDate}
-                  </p>
-                  {formError && (
-                    <div style={{ background:"#fff0f0", color:"#c53030", padding:"8px 12px", fontSize:12, borderRadius:8, marginBottom:14, border:"1px solid #fed7d7" }}>
-                      ⚠️ {formError}
-                    </div>
-                  )}
-                  <form onSubmit={handleAddEvent}>
-                    {[
-                      { label:"Nama Pasangan *", key:"couple", placeholder:"Budi & Siti" },
-                      { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
-                      { label:"Jam Acara", key:"time", placeholder:"10:00 WIB" },
-                      { label:"Catatan", key:"notes", placeholder:"Info tambahan..." },
-                    ].map(({ label, key, placeholder }) => (
-                      <div key={key} style={{ marginBottom:14 }}>
-                        <label className="label">{label}</label>
-                        <input value={form[key]} onChange={e => setForm({ ...form, [key]:e.target.value })}
-                          placeholder={placeholder} className="input" />
-                      </div>
-                    ))}
-                    <div style={{ display:"flex", gap:10, marginTop:8 }}>
-                      <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan</button>
-                      <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* Event list */}
-              <div className="card" style={{ overflow:"hidden" }}>
-                <div style={{ padding:"16px 20px", borderBottom:"1px solid var(--border)", background:"var(--bg2)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <h3 style={{ fontSize:18, fontWeight:400, color:"var(--mid)" }}>Semua Event</h3>
-                  <span style={{
-                    background:"linear-gradient(135deg,#1a8fff,#0d6ecc)",
-                    color:"#fff", fontSize:12, fontWeight:600,
-                    padding:"2px 10px", borderRadius:20, fontFamily:"Plus Jakarta Sans,sans-serif",
-                  }}>{events.length}</span>
-                </div>
-                <div style={{ maxHeight:460, overflowY:"auto" }}>
-                  {events.length === 0 && (
-                    <div style={{ padding:"32px", textAlign:"center" }}>
-                      <p style={{ fontSize:28, marginBottom:8 }}>💍</p>
-                      <p style={{ fontSize:13, color:"var(--muted)" }}>Belum ada event</p>
-                    </div>
-                  )}
-                  {[...events].sort((a,b) => a.date.localeCompare(b.date)).map(event => (
-                    <div key={event.id} style={{
-                      padding:"14px 20px", borderBottom:"1px solid var(--border)",
-                      display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12,
-                      transition:"background 0.1s",
-                    }}>
-                      <div style={{ minWidth:0 }}>
-                        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:17, color:"var(--dark)", marginBottom:2 }}>
-                          💍 {event.couple}
-                        </p>
-                        <p style={{ fontSize:11, color:"var(--blue-2)", fontWeight:600, marginBottom:2 }}>{event.date}</p>
-                        {event.venue && <p style={{ fontSize:11, color:"var(--muted)" }}>📍 {event.venue}</p>}
-                        {event.time && <p style={{ fontSize:11, color:"var(--muted)" }}>🕐 {event.time}</p>}
-                      </div>
-                      <button onClick={() => handleDelete(event.id)} className="btn btn-danger" style={{ flexShrink:0 }}>
-                        Hapus
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </main>
       </div>
