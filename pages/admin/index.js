@@ -113,7 +113,7 @@ export default function AdminPanel() {
   // ─── LOGIN ───
   if (!isLoggedIn) return (
     <>
-      <Head><title>Admin Login — {businessName}</title></Head>
+      <Head><title>Admin Login — {businessName}</title><link rel="icon" href="/favicon.ico" /></Head>
       <div style={{
         minHeight:"100vh",
         background:"linear-gradient(135deg, #0a4f9a 0%, #1a8fff 50%, #42b0ff 100%)",
@@ -179,7 +179,7 @@ export default function AdminPanel() {
 
   return (
     <>
-      <Head><title>Admin Dashboard — {businessName}</title></Head>
+      <Head><title>Admin Dashboard — {businessName}</title><link rel="icon" href="/favicon.ico" /></Head>
       <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
 
         {/* Header */}
@@ -340,7 +340,7 @@ export default function AdminPanel() {
                   <form onSubmit={handleAddEvent}>
                     {[
                       { label:"Nama Pasangan *", key:"couple", placeholder:"Budi & Siti" },
-                      { label:"Venue / Lokasi", key:"venue", placeholder:"Lapangan Golf" },
+                      { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
                       { label:"Jam Acara", key:"time", placeholder:"10:00 WIB" },
                       { label:"Catatan", key:"notes", placeholder:"Info tambahan..." },
                     ].map(({ label, key, placeholder }) => (

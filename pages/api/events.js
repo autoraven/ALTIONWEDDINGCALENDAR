@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Pakai service role key di server-side agar bisa write ke database
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -60,14 +59,19 @@ export default async function handler(req, res) {
     const { couple, venue, time, notes, date } = req.body;
     if (!couple || !date) return res.status(400).json({ error: "Nama pasangan dan tanggal wajib diisi" });
 
+    // created_at pakai waktu Indonesia (WIB = UTC+7)
+    const now = new Date();
+    const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const created_at = wib.toISOString().replace("Z", "+07:00");
+
     const { data, error } = await supabase
       .from("wedding_events")
-      .insert([{ couple, venue, time, notes, date }])
+      .insert([{ couple, venue, time, notes, date, created_at }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
 
-    sendDiscordNotification(data, "add"); // non-blocking
+    await sendDiscordNotification(data, "add");
     return res.status(201).json(data);
   }
 
@@ -82,7 +86,7 @@ export default async function handler(req, res) {
       .from("wedding_events").delete().eq("id", id);
     if (error) return res.status(500).json({ error: error.message });
 
-    if (eventData) sendDiscordNotification(eventData, "delete"); // non-blocking
+    if (eventData) await sendDiscordNotification(eventData, "delete");
     return res.status(200).json({ success: true });
   }
 

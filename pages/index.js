@@ -67,6 +67,7 @@ export default function Home() {
       <Head>
         <title>{businessName} — Kalender Jadwal</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
@@ -121,7 +122,7 @@ export default function Home() {
             <div style={{ display:"flex", gap:20 }}>
               {[
                 { color:"#0fb87a", label:"Tersedia" },
-                { color:"rgba(0, 0, 0, 0.9)", label:"Dipesan", border:"1px solid rgba(255,255,255,0.5)" },
+                { color:"rgba(255,255,255,0.9)", label:"Dipesan", border:"1px solid rgba(255,255,255,0.5)" },
                 { color:"#ff6b6b", label:"Penuh" },
               ].map(({ color, label, border }) => (
                 <div key={label} style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -175,7 +176,7 @@ export default function Home() {
                 const isToday = new Date(dateStr).toDateString() === today.toDateString();
 
                 const statusStyles = {
-                  booked: { bg:"#e8f4ff", dot:"#000000", textColor:"var(--dark)" },
+                  booked: { bg:"#e8f4ff", dot:"#1a8fff", textColor:"var(--dark)" },
                   full:   { bg:"#fff0f0", dot:"#e53e3e", textColor:"#999" },
                   past:   { bg:"#fafafa", dot:"#ddd",    textColor:"#ccc" },
                   available:{ bg:"#fff",  dot:"#0fb87a", textColor:"var(--dark)" },
@@ -244,13 +245,12 @@ export default function Home() {
           {/* Contact strip */}
           <div style={{
             background:"var(--white)", borderRadius:12, padding:"20px 28px",
-            border:"1px solid var(--border)", display:"flex", alignItems:"center",
-            gap:16, flexWrap:"wrap", justifyContent:"space-between",
+            border:"1px solid var(--border)",
           }}>
-            <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7 }}>
+            <p style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7, marginBottom:16 }}>
               Diharapkan untuk mengkonfirmasi pendafaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol sebelah ini.
             </p>
-            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", justifyContent:"center" }}>
               <a href="https://forms.gle/zRcoKT4nPckRDT2s5" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ fontSize:12 }}>
                 🌐
               </a>
