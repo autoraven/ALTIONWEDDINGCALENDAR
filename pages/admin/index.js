@@ -373,10 +373,10 @@ export default function AdminPanel() {
                             className="input" />
                         </div>
                         {[
-                          { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
+                          { label:"Venue / Lokasi", key:"venue", placeholder:"Lapangan Golf" },
                           { label:"Jam Acara", key:"time", placeholder:"10:00 WIB" },
                           { label:"Catatan", key:"notes", placeholder:"Info tambahan..." },
-                          { label:"Add On", key:"addon", placeholder:"Dekorasi, Catering, dll..." },
+                          { label:"Add On", key:"addon", placeholder:"Penyanyi, Fotografer, dll..." },
                         ].map(({ label, key, placeholder }) => (
                           <div key={key} style={{ marginBottom:14 }}>
                             <label className="label">{label}</label>
