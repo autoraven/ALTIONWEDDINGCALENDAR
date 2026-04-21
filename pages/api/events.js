@@ -33,7 +33,7 @@ async function sendDiscordNotification(event, action = "add") {
         ...(event.addon ? [{ name: "✨ Add On", value: event.addon }] : []),
         ...(event.notes ? [{ name: "📝 Catatan", value: event.notes }] : []),
       ],
-      footer: { text: "ALTION Wedding Calendar" },
+      footer: { text: "ALTION Event Calendar" },
       timestamp: new Date().toISOString(),
     }],
   };

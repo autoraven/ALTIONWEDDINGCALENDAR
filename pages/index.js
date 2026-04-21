@@ -93,7 +93,7 @@ export default function Home() {
                 Cek Ketersediaan Tanggal
               </h2>
               <p style={{ color:"rgba(255,255,255,0.8)", fontSize:13, lineHeight:1.6 }}>
-                Untuk reservasi hubungi staff Altion.
+                Kami hanya menerima event di Weekend. Untuk event weekdays, silakan hubungi staff Altion untuk reservasi.
               </p>
             </div>
             <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
