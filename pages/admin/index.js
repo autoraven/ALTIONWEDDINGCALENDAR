@@ -340,7 +340,7 @@ export default function AdminPanel() {
                   <form onSubmit={handleAddEvent}>
                     {[
                       { label:"Nama Pasangan *", key:"couple", placeholder:"Budi & Siti" },
-                      { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
+                      { label:"Venue / Lokasi", key:"venue", placeholder:"Lapangan Golf 662" },
                       { label:"Jam Acara", key:"time", placeholder:"10:00 WIB" },
                       { label:"Catatan", key:"notes", placeholder:"Info tambahan..." },
                     ].map(({ label, key, placeholder }) => (
