@@ -2,13 +2,13 @@
 
 /* ─── VARIABLES ─────────────────────────────────────────── */
 :root {
-  --navy:       #1e3a6e;
-  --navy-mid:   #1880eb;
+  --navy:       #0a1628;
+  --navy-mid:   #0f2150;
   --blue-1:     #1535a0;
   --blue-2:     #1e60d5;
   --blue-3:     #4080f0;
   --blue-light: #dbeafe;
-  --blue-dark:  #1e3a6e;
+  --blue-dark:  #0f2150;
   --accent:     #4f8ef7;
 
   --green:      #10b981;
@@ -21,8 +21,8 @@
   --card:       #ffffff;
   --border:     #d1ddf7;
 
-  --dark:       #1e3a6e;
-  --mid:        #1880eb; 
+  --dark:       #0a1628;
+  --mid:        #1e3a6e;
   --muted:      #6b7db3;
 
   --shadow-sm:  0 1px 4px rgba(10,22,40,0.08);
@@ -41,166 +41,6 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
-  overflow-x: hidden;
-}
-
-/* ─── ANIMATED BACKGROUND ────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 700px 500px at 10% 20%, rgba(30, 96, 213, 0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 400px at 90% 80%, rgba(64, 128, 240, 0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 400px 300px at 50% 50%, rgba(30, 58, 110, 0.04) 0%, transparent 70%);
-  animation: bgShift 18s ease-in-out infinite alternate;
-}
-
-@keyframes bgShift {
-  0%   { opacity: 1; transform: scale(1) translateX(0); }
-  50%  { opacity: 0.85; transform: scale(1.04) translateX(-10px); }
-  100% { opacity: 1; transform: scale(1) translateX(10px); }
-}
-
-/* Floating orbs */
-.bg-orb {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-  filter: blur(60px);
-  opacity: 0;
-  animation: orbFloat 0.8s ease forwards;
-}
-
-.bg-orb-1 {
-  width: 420px; height: 420px;
-  top: -120px; left: -100px;
-  background: radial-gradient(circle, rgba(30,96,213,0.12) 0%, transparent 70%);
-  animation: orbFloat 0.8s ease forwards, orbDrift1 22s ease-in-out infinite 0.8s;
-}
-.bg-orb-2 {
-  width: 320px; height: 320px;
-  bottom: -80px; right: -60px;
-  background: radial-gradient(circle, rgba(64,128,240,0.10) 0%, transparent 70%);
-  animation: orbFloat 1s ease 0.2s forwards, orbDrift2 28s ease-in-out infinite 1s;
-}
-.bg-orb-3 {
-  width: 240px; height: 240px;
-  top: 40%; left: 60%;
-  background: radial-gradient(circle, rgba(30,58,110,0.08) 0%, transparent 70%);
-  animation: orbFloat 1.2s ease 0.4s forwards, orbDrift3 20s ease-in-out infinite 1.2s;
-}
-
-@keyframes orbFloat {
-  to { opacity: 1; }
-}
-@keyframes orbDrift1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(40px, 30px) scale(1.05); }
-  66%       { transform: translate(-20px, 50px) scale(0.97); }
-}
-@keyframes orbDrift2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(-50px, -30px) scale(1.06); }
-  66%       { transform: translate(30px, -50px) scale(0.95); }
-}
-@keyframes orbDrift3 {
-  0%, 100% { transform: translate(0, 0); }
-  50%       { transform: translate(-40px, 30px); }
-}
-
-/* Floating sparkle particles */
-.sparkle-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.sparkle {
-  position: absolute;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: rgba(64, 128, 240, 0.5);
-  animation: sparkleFloat linear infinite;
-}
-
-.sparkle::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: inherit;
-  filter: blur(2px);
-  opacity: 0.5;
-}
-
-.sparkle:nth-child(1)  { left:  5%; width:3px; height:3px; animation-duration:14s; animation-delay:0s;   background:rgba(30,96,213,0.4); }
-.sparkle:nth-child(2)  { left: 15%; width:5px; height:5px; animation-duration:18s; animation-delay:2s;   background:rgba(64,128,240,0.3); }
-.sparkle:nth-child(3)  { left: 28%; width:3px; height:3px; animation-duration:12s; animation-delay:4s;   background:rgba(30,96,213,0.45); }
-.sparkle:nth-child(4)  { left: 42%; width:4px; height:4px; animation-duration:20s; animation-delay:1s;   background:rgba(79,142,247,0.35); }
-.sparkle:nth-child(5)  { left: 57%; width:3px; height:3px; animation-duration:15s; animation-delay:6s;   background:rgba(30,96,213,0.4); }
-.sparkle:nth-child(6)  { left: 68%; width:6px; height:6px; animation-duration:22s; animation-delay:3s;   background:rgba(64,128,240,0.25); }
-.sparkle:nth-child(7)  { left: 79%; width:3px; height:3px; animation-duration:16s; animation-delay:8s;   background:rgba(30,96,213,0.4); }
-.sparkle:nth-child(8)  { left: 88%; width:4px; height:4px; animation-duration:19s; animation-delay:5s;   background:rgba(79,142,247,0.35); }
-.sparkle:nth-child(9)  { left: 95%; width:3px; height:3px; animation-duration:13s; animation-delay:9s;   background:rgba(30,96,213,0.4); }
-.sparkle:nth-child(10) { left: 33%; width:5px; height:5px; animation-duration:24s; animation-delay:7s;   background:rgba(64,128,240,0.3); }
-.sparkle:nth-child(11) { left: 73%; width:3px; height:3px; animation-duration:17s; animation-delay:11s;  background:rgba(30,96,213,0.35); }
-.sparkle:nth-child(12) { left: 50%; width:4px; height:4px; animation-duration:21s; animation-delay:13s;  background:rgba(79,142,247,0.3); }
-
-@keyframes sparkleFloat {
-  0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-  5%   { opacity: 1; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
-}
-
-/* Diamond ring decorations */
-.ring-deco {
-  position: fixed;
-  border-radius: 50%;
-  border: 1px solid rgba(30, 96, 213, 0.08);
-  pointer-events: none;
-  z-index: 0;
-  animation: ringPulse ease-in-out infinite;
-}
-
-.ring-deco-1 {
-  width: 300px; height: 300px;
-  top: 15%; right: -80px;
-  border-color: rgba(30, 96, 213, 0.07);
-  animation-duration: 8s;
-  animation-delay: 0s;
-}
-.ring-deco-2 {
-  width: 200px; height: 200px;
-  top: 13%; right: -30px;
-  border-color: rgba(64, 128, 240, 0.06);
-  animation-duration: 8s;
-  animation-delay: 0.5s;
-}
-.ring-deco-3 {
-  width: 180px; height: 180px;
-  bottom: 20%; left: -50px;
-  border-color: rgba(30, 96, 213, 0.06);
-  animation-duration: 10s;
-  animation-delay: 1s;
-}
-.ring-deco-4 {
-  width: 280px; height: 280px;
-  bottom: 17%; left: -90px;
-  border-color: rgba(64, 128, 240, 0.05);
-  animation-duration: 10s;
-  animation-delay: 1.5s;
-}
-
-@keyframes ringPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.04); opacity: 0.6; }
 }
 
 /* ─── TYPOGRAPHY ─────────────────────────────────────────── */
@@ -222,8 +62,6 @@ h1, h2, h3, h4 {
   border-radius: 20px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  position: relative;
-  z-index: 1;
 }
 
 /* ─── INPUTS ─────────────────────────────────────────────── */
@@ -285,23 +123,7 @@ h1, h2, h3, h4 {
   background: linear-gradient(135deg, var(--blue-3) 0%, var(--blue-1) 100%);
   color: #fff;
   box-shadow: 0 4px 16px rgba(30,96,213,0.35);
-  position: relative;
-  overflow: hidden;
 }
-
-.btn-primary::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
-}
-
-.btn-primary:hover::after {
-  transform: translateX(100%);
-}
-
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(30,96,213,0.45);
@@ -346,130 +168,7 @@ h1, h2, h3, h4 {
 
 /* ─── ANIMATIONS ─────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-up { animation: fadeUp 0.5s ease forwards; }
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* Staggered page load animations */
-@keyframes slideInDown {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-/* Page element entrance classes */
-.anim-header {
-  animation: slideInDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.anim-hero {
-  opacity: 0;
-  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-}
-
-.anim-calendar {
-  opacity: 0;
-  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
-}
-
-.anim-contact {
-  opacity: 0;
-  animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
-}
-
-/* Stat cards stagger */
-.anim-stat {
-  opacity: 0;
-  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-.anim-stat:nth-child(1) { animation-delay: 0.1s; }
-.anim-stat:nth-child(2) { animation-delay: 0.18s; }
-.anim-stat:nth-child(3) { animation-delay: 0.26s; }
-.anim-stat:nth-child(4) { animation-delay: 0.34s; }
-
-/* Calendar day hover animation */
-.cal-day-interactive {
-  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
-}
-.cal-day-interactive:hover {
-  transform: scale(1.04);
-  z-index: 2;
-  box-shadow: 0 4px 16px rgba(30,96,213,0.14);
-}
-
-/* Today pulse */
-@keyframes todayPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(26, 143, 255, 0.4); }
-  50%       { box-shadow: 0 0 0 6px rgba(26, 143, 255, 0); }
-}
-.today-badge {
-  animation: todayPulse 2.5s ease-in-out infinite;
-}
-
-/* Header shimmer */
-@keyframes headerShimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-/* Month transition */
-@keyframes monthSlideIn {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes monthSlideInLeft {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.month-enter {
-  animation: monthSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-.month-enter-left {
-  animation: monthSlideInLeft 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Event detail card entrance */
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); max-height: 0; }
-  to   { opacity: 1; transform: translateY(0); max-height: 400px; }
-}
-.detail-enter {
-  animation: slideDown 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Success / error message */
-@keyframes notifSlide {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.notif-enter {
-  animation: notifSlide 0.3s ease forwards;
-}
-
-/* Floating ring animation for login page */
-@keyframes loginRing {
-  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.5; }
-  50%       { transform: rotate(180deg) scale(1.1); opacity: 0.8; }
-}
-
-/* Spin slow */
-@keyframes spinSlow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
+.fade-up { animation: fadeUp 0.4s ease forwards; }
