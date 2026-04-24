@@ -74,7 +74,7 @@ export default function Home() {
             </div>
             <div>
               <h1 style={{ color:"#fff", fontSize:20, fontWeight:400, letterSpacing:1, lineHeight:1.1 }}>{businessName}</h1>
-              <p style={{ color:"rgba(255,255,255,0.75)", fontSize:10, letterSpacing:2, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Wedding Calendar</p>
+              <p style={{ color:"rgba(255,255,255,0.75)", fontSize:10, letterSpacing:2, textTransform:"uppercase", fontFamily:"Plus Jakarta Sans,sans-serif" }}>Event Calendar</p>
             </div>
           </div>
           <Link href="/admin" className="btn btn-ghost" style={{ fontSize:12 }}>Admin Login</Link>
