@@ -257,12 +257,31 @@ export default function Home() {
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
 
-              {/* Label with slide animation */}
-              <div style={{ textAlign:"center",position:"relative",zIndex:1,minWidth:160,overflow:"hidden",height:52 }}>
-                <div key={labelKey} className={direction==="next"?"label-enter-next":direction==="prev"?"label-enter-prev":""}>
-                  <h2 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,lineHeight:1.1 }}>{MONTHS[month]}</h2>
-                  <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{year}</span>
-                </div>
+              {/* Label with horizontal overlay */}
+              <div style={{ textAlign:"center",position:"relative",zIndex:1,minWidth:160,height:52,overflow:"hidden" }}>
+                {/* exiting label */}
+                {isAnimating && (
+                  <div className={direction==="next"?"label-exit-next":"label-exit-prev"}
+                    style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
+                    <h2 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,lineHeight:1.1 }}>{MONTHS[month]}</h2>
+                    <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{year}</span>
+                  </div>
+                )}
+                {/* entering label */}
+                {pendingDate && (
+                  <div className={direction==="next"?"label-enter-next":"label-enter-prev"}
+                    style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
+                    <h2 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,lineHeight:1.1 }}>{MONTHS[pendingDate.getMonth()]}</h2>
+                    <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{pendingDate.getFullYear()}</span>
+                  </div>
+                )}
+                {/* static label when not animating */}
+                {!isAnimating && !pendingDate && (
+                  <div style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
+                    <h2 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,lineHeight:1.1 }}>{MONTHS[month]}</h2>
+                    <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{year}</span>
+                  </div>
+                )}
               </div>
 
               <button onClick={()=>changeMonth(1)} disabled={isAnimating}
