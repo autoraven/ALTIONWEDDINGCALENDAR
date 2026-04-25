@@ -87,13 +87,16 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [calAnim, setCalAnim] = useState(""); // "next" | "prev" | ""
   const [monthAnim, setMonthAnim] = useState(""); // "month-exit-next" | "month-exit-prev" | ""
-  const [displayMonth, setDisplayMonth] = useState(MONTHS[month]);
-  const [displayYear, setDisplayYear] = useState(year);
+  const [displayMonth, setDisplayMonth] = useState("");
+  const [displayYear, setDisplayYear] = useState("");
   const animTimeout = useRef(null);
   const { businessName } = CALENDAR_CONFIG;
 
   useEffect(() => {
     setMounted(true);
+    const initialDate = new Date();
+    setDisplayMonth(MONTHS[initialDate.getMonth()]);
+    setDisplayYear(initialDate.getFullYear());
     fetch("/api/events").then(r => r.json()).then(d => { if (Array.isArray(d)) setEvents(d); });
   }, []);
 
@@ -125,7 +128,7 @@ export default function Home() {
       setDisplayMonth(MONTHS[month]);
       setDisplayYear(year);
     }
-  }, [month, year, monthAnim]);
+  }, [currentDate, monthAnim]);
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;

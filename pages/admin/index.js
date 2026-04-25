@@ -73,8 +73,8 @@ export default function AdminPanel() {
   const [mounted, setMounted] = useState(false);
   const [calAnim, setCalAnim] = useState("");
   const [monthAnim, setMonthAnim] = useState("");
-  const [displayMonth, setDisplayMonth] = useState(MONTHS[month]);
-  const [displayYear, setDisplayYear] = useState(year);
+  const [displayMonth, setDisplayMonth] = useState("");
+  const [displayYear, setDisplayYear] = useState("");
   const animTimeout = useRef(null);
   const { businessName } = CALENDAR_CONFIG;
 
@@ -86,6 +86,9 @@ export default function AdminPanel() {
 
   useEffect(() => {
     setMounted(true);
+    const initialDate = new Date();
+    setDisplayMonth(MONTHS[initialDate.getMonth()]);
+    setDisplayYear(initialDate.getFullYear());
     if (sessionStorage.getItem("admin_auth") === "true") {
       setIsLoggedIn(true);
       fetchEvents();
@@ -152,7 +155,7 @@ export default function AdminPanel() {
       setDisplayMonth(MONTHS[month]);
       setDisplayYear(year);
     }
-  }, [month, year, monthAnim]);
+  }, [currentDate, monthAnim]);
   const firstDay = new Date(year,month,1).getDay();
   const daysInMonth = new Date(year,month+1,0).getDate();
   const startOffset = firstDay===0?6:firstDay-1;
