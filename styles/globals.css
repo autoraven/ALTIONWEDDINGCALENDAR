@@ -82,23 +82,28 @@ h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color
 
 /* ── CALENDAR SLIDE ANIMATIONS ── */
 @keyframes slideFromRight {
-  from { opacity:0; transform:translateX(40px); }
+  from { opacity:0; transform:translateX(60px); }
   to   { opacity:1; transform:translateX(0); }
 }
 @keyframes slideFromLeft {
-  from { opacity:0; transform:translateX(-40px); }
+  from { opacity:0; transform:translateX(-60px); }
   to   { opacity:1; transform:translateX(0); }
 }
-@keyframes slideOutLeft {
-  from { opacity:1; transform:translateX(0); }
-  to   { opacity:0; transform:translateX(-40px); }
+.cal-slide-next { animation:slideFromRight 0.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+.cal-slide-prev { animation:slideFromLeft  0.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* ── MONTH YEAR SLIDE ANIMATIONS ── */
+.month-slide-next { animation:monthSlideFromRight 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+.month-slide-prev { animation:monthSlideFromLeft  0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+@keyframes monthSlideFromRight {
+  from { opacity:0; transform:translateX(25px); }
+  to   { opacity:1; transform:translateX(0); }
 }
-@keyframes slideOutRight {
-  from { opacity:1; transform:translateX(0); }
-  to   { opacity:0; transform:translateX(40px); }
+@keyframes monthSlideFromLeft {
+  from { opacity:0; transform:translateX(-25px); }
+  to   { opacity:1; transform:translateX(0); }
 }
-.cal-slide-next { animation:slideFromRight 0.32s cubic-bezier(0.16,1,0.3,1) forwards; }
-.cal-slide-prev { animation:slideFromLeft  0.32s cubic-bezier(0.16,1,0.3,1) forwards; }
 
 /* ── PAGE ANIMATIONS ── */
 @keyframes fadeUp   { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }

@@ -72,6 +72,7 @@ export default function AdminPanel() {
   const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
   const [calAnim, setCalAnim] = useState("");
+  const [monthYearAnim, setMonthYearAnim] = useState("");
   const animTimeout = useRef(null);
   const { businessName } = CALENDAR_CONFIG;
 
@@ -90,13 +91,17 @@ export default function AdminPanel() {
   }, [fetchEvents]);
 
   function changeMonth(dir) {
-    const cls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
-    setCalAnim(cls);
+    const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
+    const monthCls = dir === 1 ? "month-slide-next" : "month-slide-prev";
+
+    setCalAnim(calCls);
+    setMonthYearAnim(monthCls);
     clearTimeout(animTimeout.current);
     animTimeout.current = setTimeout(() => {
       setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
       setCalAnim("");
-    }, 280);
+      setMonthYearAnim("");
+    }, 300);
   }
 
   async function handleLogin(e) {
@@ -260,9 +265,11 @@ export default function AdminPanel() {
                   onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.22)";e.currentTarget.style.transform="scale(1.12)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
                 >‹</button>
-                <div style={{ textAlign:"center", position:"relative", zIndex:1 }}>
-                  <h2 style={{ color:"#fff", fontSize:22, fontWeight:800, letterSpacing:-0.5 }}>{MONTHS[month]}</h2>
-                  <span style={{ color:"rgba(255,255,255,0.45)", fontSize:11, fontWeight:600, letterSpacing:2 }}>{year}</span>
+                <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:42 }}>
+                  <div className={monthYearAnim} style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)" }}>
+                    <h2 style={{ color:"#fff", fontSize:22, fontWeight:800, letterSpacing:-0.5, marginBottom:1 }}>{MONTHS[month]}</h2>
+                    <span style={{ color:"rgba(255,255,255,0.45)", fontSize:11, fontWeight:600, letterSpacing:2 }}>{year}</span>
+                  </div>
                 </div>
                 <button onClick={()=>changeMonth(1)}
                   style={{ background:"rgba(255,255,255,0.1)", border:"1.5px solid rgba(255,255,255,0.2)", color:"#fff", width:36, height:36, borderRadius:10, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", position:"relative", zIndex:1 }}
