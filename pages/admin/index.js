@@ -391,7 +391,7 @@ export default function AdminPanel() {
                             {event.event_type==="wedding"?"💍 Wedding":"🎉 Event"}
                           </span>
                         </div>
-                        <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:17,color:"var(--dark)",marginBottom:2 }}>{event.couple}</p>
+                        <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:17,color:"var(--dark)",marginBottom:2 }}>{event.couple}</p>
                         <p style={{ fontSize:11,color:"var(--blue-2)",fontWeight:700,marginBottom:2 }}>{event.date}</p>
                         {event.venue&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>📍 {event.venue}</p>}
                         {event.time&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>🕐 {event.time}</p>}

@@ -321,7 +321,7 @@ export default function Home() {
               <h3 style={{ fontSize:20,fontWeight:800,marginBottom:14,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
               {selectedEvents.map((e,i)=>(
                 <div key={i}>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
+                  <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:16 }}>
                     {e.venue&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>📍 {e.venue}</span>}
                     {e.time&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>🕐 {e.time}</span>}
