@@ -148,3 +148,60 @@ h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color
 .float-shape-1 { animation:floatY  8s ease-in-out infinite; }
 .float-shape-2 { animation:floatY2 11s ease-in-out infinite; }
 .float-shape-3 { animation:floatY3 9s ease-in-out infinite; }
+
+/* ── SMOOTH CALENDAR TRANSITION ── */
+.cal-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+/* bulan yang sedang aktif */
+@keyframes enterFromRight {
+  from { opacity:0; transform:translateX(100%); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@keyframes enterFromLeft {
+  from { opacity:0; transform:translateX(-100%); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@keyframes exitToLeft {
+  from { opacity:1; transform:translateX(0); }
+  to   { opacity:0; transform:translateX(-60%); }
+}
+@keyframes exitToRight {
+  from { opacity:1; transform:translateX(0); }
+  to   { opacity:0; transform:translateX(60%); }
+}
+
+.cal-enter-next { animation: enterFromRight 0.45s cubic-bezier(0.16,1,0.3,1) forwards; }
+.cal-enter-prev { animation: enterFromLeft  0.45s cubic-bezier(0.16,1,0.3,1) forwards; }
+.cal-exit-left  { animation: exitToLeft     0.35s cubic-bezier(0.4,0,1,1) forwards; pointer-events:none; position:absolute; inset:0; }
+.cal-exit-right { animation: exitToRight    0.35s cubic-bezier(0.4,0,1,1) forwards; pointer-events:none; position:absolute; inset:0; }
+
+/* month label transition */
+@keyframes labelEnterUp {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes labelEnterDown {
+  from { opacity:0; transform:translateY(-14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.label-enter-next { animation: labelEnterUp   0.38s cubic-bezier(0.16,1,0.3,1) forwards; }
+.label-enter-prev { animation: labelEnterDown 0.38s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* ── EXTRA DECORATIONS ── */
+@keyframes dashRotate {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -200; }
+}
+.dash-anim { animation: dashRotate 8s linear infinite; }
+.dash-anim-slow { animation: dashRotate 14s linear infinite; }
+
+@keyframes twinkle {
+  0%,100% { opacity:0.15; transform:scale(1); }
+  50%      { opacity:0.5;  transform:scale(1.4); }
+}
+.dot-twinkle { animation: twinkle 3s ease-in-out infinite; }
+.dot-twinkle-2 { animation: twinkle 4.5s ease-in-out infinite; animation-delay:1.2s; }
+.dot-twinkle-3 { animation: twinkle 3.8s ease-in-out infinite; animation-delay:2.4s; }
