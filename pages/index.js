@@ -97,19 +97,17 @@ export default function Home() {
     if (animDirection !== 0) {
       const timer = setTimeout(() => {
         setAnimDirection(0);
-      }, 500); // Increased duration to match animation timing
+      }, 400);
       return () => clearTimeout(timer);
     }
   }, [animDirection]);
 
   function changeMonth(dir) {
-    // Set anim direction
     setAnimDirection(dir);
     setSelectedDay(null);
-    // Update date after a small delay for better animation
     setTimeout(() => {
       setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
-    }, 100);
+    }, 50);
   }
 
   const year = currentDate.getFullYear();
@@ -203,12 +201,8 @@ export default function Home() {
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.2)";e.currentTarget.style.transform="scale(1.1)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
-              <div style={{ textAlign:"center", position:"relative", zIndex:1 }}>
-                <div style={{
-                  transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
-                  transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-30px)" : "translateX(30px)",
-                  opacity: animDirection === 0 ? 1 : 0.7 // Slight fade during transition
-                }}>
+              <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:50 }}>
+                <div style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)", transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-25px)" : "translateX(25px)" }}>
                   <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:-0.5, marginBottom:2 }}>{MONTHS[month]}</h2>
                   <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, letterSpacing:2 }}>{year}</span>
                 </div>
@@ -225,29 +219,18 @@ export default function Home() {
               {DAYS.map(d => <div key={d} style={{ textAlign:"center", padding:"12px 0", fontSize:10, fontWeight:700, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>)}
             </div>
 
-            {/* calendar grid */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(7,1fr)",
-              gap: "1px",
-              background: "var(--border)",
-              padding: "1px",
-              borderRadius: "12px",
-              overflow: "hidden",
-              position: "relative"
-            }}>
+            {/* grid with slide animation */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden", position:"relative" }}>
               <div style={{
                 position: "absolute",
                 inset: 0,
                 display: "grid",
                 gridTemplateColumns: "repeat(7,1fr)",
-                gap: "1px",
-                transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
-                transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-80px)" : "translateX(80px)",
-                opacity: animDirection === 0 ? 1 : 0.8 // Smooth opacity transition
+                transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+                transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-60px)" : "translateX(60px)"
               }}>
                 {Array.from({ length:startOffset }).map((_,i) => (
-                  <div key={`e-${i}`} style={{ minHeight:76, background:"var(--bg2)" }} />
+                  <div key={`e-${i}`} style={{ minHeight:76, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
                 ))}
                 {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
                 const { status, event } = getDayStatus(day);
