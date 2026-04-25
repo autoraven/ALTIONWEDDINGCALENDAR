@@ -229,17 +229,22 @@ export default function Home() {
                 <h2 style={{ color:"#fff",fontSize:32,fontWeight:800,letterSpacing:-1,marginBottom:10,lineHeight:1.1 }}>Cek Ketersediaan<br/>Tanggal</h2>
                 <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:340,fontWeight:400 }}>Untuk reservasi, konfirmasi terlebih dahulu bersama Staff Altion.</p>
               </div>
-              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-                {[
-                  {color:"#10b981",label:"Weekend — Tersedia",glow:"rgba(16,185,129,0.5)"},
-                  {color:"#ef4444",label:"Hari Kerja — Bersyarat",glow:"rgba(239,68,68,0.5)"},
-                  {color:"#4080f0",label:"Sudah Dipesan",glow:"rgba(64,128,240,0.5)"},
-                ].map(({color,label,glow})=>(
-                  <div key={label} style={{ display:"flex",alignItems:"center",gap:10 }}>
-                    <div style={{ width:8,height:8,borderRadius:"50%",background:color,flexShrink:0,boxShadow:`0 0 10px ${glow}` }}/>
-                    <span style={{ color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:500 }}>{label}</span>
-                  </div>
-                ))}
+              <div style={{ display:"flex",flexDirection:"column",gap:12,position:"relative",padding:"16px",background:"rgba(255,255,255,0.05)",borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(10px)" }}>
+                <div style={{ position:"absolute",top:0,left:0,right:0,bottom:0,borderRadius:12,background:"linear-gradient(135deg,rgba(255,255,255,0.02) 0%,rgba(64,128,240,0.05) 50%,rgba(255,255,255,0.02) 100%)",pointerEvents:"none" }}/>
+                <div style={{ position:"absolute",top:-20,right:-20,width:60,height:60,borderRadius:"50%",background:"rgba(64,128,240,0.08)",filter:"blur(20px)",pointerEvents:"none" }}/>
+                <div style={{ position:"absolute",bottom:-15,left:-10,width:40,height:40,borderRadius:"50%",background:"rgba(16,185,129,0.06)",filter:"blur(15px)",pointerEvents:"none" }}/>
+                <div style={{ position:"relative",zIndex:1 }}>
+                  {[
+                    {color:"#10b981",label:"Weekend — Tersedia",glow:"rgba(16,185,129,0.5)"},
+                    {color:"#ef4444",label:"Hari Kerja — Bersyarat",glow:"rgba(239,68,68,0.5)"},
+                    {color:"#4080f0",label:"Sudah Dipesan",glow:"rgba(64,128,240,0.5)"},
+                  ].map(({color,label,glow})=>(
+                    <div key={label} style={{ display:"flex",alignItems:"center",gap:10 }}>
+                      <div style={{ width:8,height:8,borderRadius:"50%",background:color,flexShrink:0,boxShadow:`0 0 10px ${glow}` }}/>
+                      <span style={{ color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:500 }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
