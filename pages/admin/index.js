@@ -75,9 +75,12 @@ export default function AdminPanel() {
   const { businessName } = CALENDAR_CONFIG;
 
   const fetchEvents = useCallback(async () => {
-    const res = await fetch("/api/events");
-    const data = await res.json();
-    if (Array.isArray(data)) setEvents(data);
+    // Mock data untuk testing tanpa database
+    const mockEvents = [
+      { id: 1, date: "2026-04-15", couple: "Budi & Siti", event_type: "wedding", venue: "Grand Ballroom", time: "10:00" },
+      { id: 2, date: "2026-04-20", couple: "Rina & Dono", event_type: "event", venue: "Garden Hall", time: "14:00" },
+    ];
+    setEvents(mockEvents);
   }, []);
 
   useEffect(() => {
@@ -92,18 +95,16 @@ export default function AdminPanel() {
     if (animDirection !== 0) {
       const timer = setTimeout(() => {
         setAnimDirection(0);
-      }, 400);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [animDirection]);
 
   function changeMonth(dir) {
-    const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
-    const monthCls = dir === 1 ? "month-slide-next" : "month-slide-prev";
-
+    setAnimDirection(dir);
     setTimeout(() => {
       setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
-    }, 50);
+    }, 100);
   }
 
   async function handleLogin(e) {
@@ -267,8 +268,12 @@ export default function AdminPanel() {
                   onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.22)";e.currentTarget.style.transform="scale(1.12)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
                 >‹</button>
-                <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:42 }}>
-                  <div style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)", transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-25px)" : "translateX(25px)" }}>
+                <div style={{ textAlign:"center", position:"relative", zIndex:1 }}>
+                  <div style={{
+                    transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+                    transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-30px)" : "translateX(30px)",
+                    opacity: animDirection === 0 ? 1 : 0.7
+                  }}>
                     <h2 style={{ color:"#fff", fontSize:22, fontWeight:800, letterSpacing:-0.5, marginBottom:1 }}>{MONTHS[month]}</h2>
                     <span style={{ color:"rgba(255,255,255,0.45)", fontSize:11, fontWeight:600, letterSpacing:2 }}>{year}</span>
                   </div>
