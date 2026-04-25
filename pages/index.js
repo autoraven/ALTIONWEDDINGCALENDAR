@@ -85,9 +85,7 @@ export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
   const [mounted, setMounted] = useState(false);
-  const [calAnim, setCalAnim] = useState(""); // "next" | "prev" | ""
-  const [monthYearAnim, setMonthYearAnim] = useState("");
-  const animTimeout = useRef(null);
+  const [animDirection, setAnimDirection] = useState(0); // 1 = next, -1 = prev, 0 = none
   const { businessName } = CALENDAR_CONFIG;
 
   useEffect(() => {
@@ -95,19 +93,19 @@ export default function Home() {
     fetch("/api/events").then(r => r.json()).then(d => { if (Array.isArray(d)) setEvents(d); });
   }, []);
 
-  function changeMonth(dir) {
-    const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
-    const monthCls = dir === 1 ? "month-slide-next" : "month-slide-prev";
+  useEffect(() => {
+    if (animDirection !== 0) {
+      const timer = setTimeout(() => {
+        setAnimDirection(0);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [animDirection]);
 
-    setCalAnim(calCls);
-    setMonthYearAnim(monthCls);
-    clearTimeout(animTimeout.current);
-    animTimeout.current = setTimeout(() => {
-      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
-      setSelectedDay(null);
-      setCalAnim("");
-      setMonthYearAnim("");
-    }, 300);
+  function changeMonth(dir) {
+    setAnimDirection(dir);
+    setSelectedDay(null);
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
   }
 
   const year = currentDate.getFullYear();
@@ -202,7 +200,7 @@ export default function Home() {
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
               <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:50 }}>
-                <div className={monthYearAnim} style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)" }}>
+                <div style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)", transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-25px)" : "translateX(25px)" }}>
                   <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:-0.5, marginBottom:2 }}>{MONTHS[month]}</h2>
                   <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, letterSpacing:2 }}>{year}</span>
                 </div>
@@ -220,37 +218,46 @@ export default function Home() {
             </div>
 
             {/* grid with slide animation */}
-            <div key={`${year}-${month}`} className={calAnim} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden" }}>
-              {Array.from({ length:startOffset }).map((_,i) => (
-                <div key={`e-${i}`} style={{ minHeight:76, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
-              ))}
-              {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
-                const { status, event } = getDayStatus(day);
-                const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                const isSelected = selectedDay === day;
-                const isToday = new Date(dateStr).toDateString() === today.toDateString();
-                const s = {
-                  booked:      { bg:"rgba(238,244,255,0.9)", dot:"#4080f0", tc:"var(--dark)" },
-                  conditional: { bg:"rgba(255,245,245,0.9)", dot:"#ef4444", tc:"#999" },
-                  past:        { bg:"rgba(250,250,250,0.5)", dot:"#ddd",    tc:"#ccc" },
-                  available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
-                }[status];
-                return (
-                  <div key={day} className="day-cell"
-                    onClick={() => status==="booked" ? setSelectedDay(isSelected?null:day) : null}
-                    style={{ minHeight:76, background:isSelected?"rgba(219,238,255,0.95)":s.bg, borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)", padding:"10px 10px 8px", cursor:status==="booked"?"pointer":"default", display:"flex", flexDirection:"column", outline:isSelected?"2px solid var(--blue-2)":"none", outlineOffset:-2 }}
-                  >
-                    <div style={{ width:26, height:26, borderRadius:8, background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <span style={{ fontSize:13, fontWeight:isToday?800:500, color:isToday?"#fff":s.tc }}>{day}</span>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden", position:"relative" }}>
+              <div style={{
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                gridTemplateColumns: "repeat(7,1fr)",
+                transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+                transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-60px)" : "translateX(60px)"
+              }}>
+                {Array.from({ length:startOffset }).map((_,i) => (
+                  <div key={`e-${i}`} style={{ minHeight:76, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
+                ))}
+                {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
+                  const { status, event } = getDayStatus(day);
+                  const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                  const isSelected = selectedDay === day;
+                  const isToday = new Date(dateStr).toDateString() === today.toDateString();
+                  const s = {
+                    booked:      { bg:"rgba(238,244,255,0.9)", dot:"#4080f0", tc:"var(--dark)" },
+                    conditional: { bg:"rgba(255,245,245,0.9)", dot:"#ef4444", tc:"#999" },
+                    past:        { bg:"rgba(250,250,250,0.5)", dot:"#ddd",    tc:"#ccc" },
+                    available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
+                  }[status];
+                  return (
+                    <div key={day} className="day-cell"
+                      onClick={() => status==="booked" ? setSelectedDay(isSelected?null:day) : null}
+                      style={{ minHeight:76, background:isSelected?"rgba(219,238,255,0.95)":s.bg, borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)", padding:"10px 10px 8px", cursor:status==="booked"?"pointer":"default", display:"flex", flexDirection:"column", outline:isSelected?"2px solid var(--blue-2)":"none", outlineOffset:-2 }}
+                    >
+                      <div style={{ width:26, height:26, borderRadius:8, background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <span style={{ fontSize:13, fontWeight:isToday?800:500, color:isToday?"#fff":s.tc }}>{day}</span>
+                      </div>
+                      <div style={{ marginTop:"auto" }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:s.dot, boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }} />
+                        {status==="booked"&&event&&<span style={{ fontSize:9, color:"var(--blue-1)", display:"block", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700 }}>{event.event_type==="wedding"?"💍":"🎉"} {event.couple}</span>}
+                        {status==="conditional"&&<span style={{ fontSize:7, color:"#ef4444", display:"block", marginTop:2, fontWeight:700 }}>Bersyarat</span>}
+                      </div>
                     </div>
-                    <div style={{ marginTop:"auto" }}>
-                      <div style={{ width:6, height:6, borderRadius:"50%", background:s.dot, boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }} />
-                      {status==="booked"&&event&&<span style={{ fontSize:9, color:"var(--blue-1)", display:"block", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:700 }}>{event.event_type==="wedding"?"💍":"🎉"} {event.couple}</span>}
-                      {status==="conditional"&&<span style={{ fontSize:7, color:"#ef4444", display:"block", marginTop:2, fontWeight:700 }}>Bersyarat</span>}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
