@@ -71,9 +71,7 @@ export default function AdminPanel() {
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [calAnim, setCalAnim] = useState("");
-  const [monthYearAnim, setMonthYearAnim] = useState("");
-  const animTimeout = useRef(null);
+  const [animDirection, setAnimDirection] = useState(0); // 1 = next, -1 = prev, 0 = none
   const { businessName } = CALENDAR_CONFIG;
 
   const fetchEvents = useCallback(async () => {
@@ -90,18 +88,22 @@ export default function AdminPanel() {
     }
   }, [fetchEvents]);
 
+  useEffect(() => {
+    if (animDirection !== 0) {
+      const timer = setTimeout(() => {
+        setAnimDirection(0);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [animDirection]);
+
   function changeMonth(dir) {
     const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
     const monthCls = dir === 1 ? "month-slide-next" : "month-slide-prev";
 
-    setCalAnim(calCls);
-    setMonthYearAnim(monthCls);
-    clearTimeout(animTimeout.current);
-    animTimeout.current = setTimeout(() => {
+    setTimeout(() => {
       setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
-      setCalAnim("");
-      setMonthYearAnim("");
-    }, 300);
+    }, 50);
   }
 
   async function handleLogin(e) {
@@ -266,7 +268,7 @@ export default function AdminPanel() {
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
                 >‹</button>
                 <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:42 }}>
-                  <div className={monthYearAnim} style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)" }}>
+                  <div style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)", transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-25px)" : "translateX(25px)" }}>
                     <h2 style={{ color:"#fff", fontSize:22, fontWeight:800, letterSpacing:-0.5, marginBottom:1 }}>{MONTHS[month]}</h2>
                     <span style={{ color:"rgba(255,255,255,0.45)", fontSize:11, fontWeight:600, letterSpacing:2 }}>{year}</span>
                   </div>
@@ -282,11 +284,19 @@ export default function AdminPanel() {
                 {DAYS.map(d=><div key={d} style={{ textAlign:"center", padding:"10px 0", fontSize:9, fontWeight:700, letterSpacing:1.5, color:"var(--muted)", textTransform:"uppercase" }}>{d}</div>)}
               </div>
 
-              <div key={`${year}-${month}`} className={calAnim} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden" }}>
-                {Array.from({length:startOffset}).map((_,i)=>(
-                  <div key={i} style={{ minHeight:64, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
-                ))}
-                {Array.from({length:daysInMonth},(_,i)=>i+1).map(day=>{
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden", position:"relative" }}>
+                <div style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7,1fr)",
+                  transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+                  transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-60px)" : "translateX(60px)"
+                }}>
+                  {Array.from({length:startOffset}).map((_,i)=>(
+                    <div key={i} style={{ minHeight:64, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
+                  ))}
+                  {Array.from({length:daysInMonth},(_,i)=>i+1).map(day=>{
                   const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
                   const{status,event}=getDayStatus(day);
                   const isSelected=selectedDate===dateStr;
@@ -313,6 +323,7 @@ export default function AdminPanel() {
                     </div>
                   );
                 })}
+                </div>
               </div>
 
               <div style={{ padding:"10px 16px", background:"rgba(232,238,247,0.8)", borderTop:"1px solid var(--border)", display:"flex", gap:16, flexWrap:"wrap", backdropFilter:"blur(4px)" }}>
