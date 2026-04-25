@@ -236,7 +236,7 @@ export default function Home() {
                 <img src="/logo.png" alt="" aria-hidden="true" style={{
                   position:"absolute",
                   right:-28, top:"50%", transform:"translateY(-50%)",
-                  width:250, height:250,
+                  width:260, height:260,
                   objectFit:"contain",
                   opacity:0.3,
                   pointerEvents:"none",
