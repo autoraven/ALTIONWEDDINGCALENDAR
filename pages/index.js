@@ -221,7 +221,7 @@ export default function Home() {
             <div style={{ position:"absolute",top:-60,right:-40,width:220,height:220,borderRadius:"50%",background:"rgba(64,128,240,0.2)",filter:"blur(40px)",pointerEvents:"none" }}/>
             <div className="ring-spin" style={{ position:"absolute",top:-20,right:40,width:180,height:180,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.07)",pointerEvents:"none",transformOrigin:"center" }}/>
             <div className="ring-spin-rev" style={{ position:"absolute",top:10,right:70,width:120,height:120,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.05)",pointerEvents:"none",transformOrigin:"center" }}/>
-            <div style={{ position:"relative",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:20 }}>
+            <div style={{ position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:20 }}>
               <div>
                 <p style={{ color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:700,letterSpacing:3.5,textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:8 }}>
                   <span style={{ display:"inline-block",width:28,height:1,background:"rgba(255,255,255,0.25)" }}/>Jadwal Tersedia
@@ -229,13 +229,27 @@ export default function Home() {
                 <h2 style={{ color:"#fff",fontSize:32,fontWeight:800,letterSpacing:-1,marginBottom:10,lineHeight:1.1 }}>Cek Ketersediaan<br/>Tanggal</h2>
                 <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:340,fontWeight:400 }}>Untuk reservasi, konfirmasi terlebih dahulu bersama Staff Altion.</p>
               </div>
-              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+
+              {/* Legend + logo watermark di belakangnya */}
+              <div style={{ position:"relative",display:"flex",flexDirection:"column",gap:12 }}>
+                {/* logo watermark tepat di belakang legend */}
+                <img src="/logo.png" alt="" aria-hidden="true" style={{
+                  position:"absolute",
+                  right:-28, top:"50%", transform:"translateY(-50%)",
+                  width:170, height:170,
+                  objectFit:"contain",
+                  opacity:0.1,
+                  pointerEvents:"none",
+                  userSelect:"none",
+                  filter:"brightness(0) invert(1)",
+                  zIndex:0,
+                }}/>
                 {[
                   {color:"#10b981",label:"Weekend — Tersedia",glow:"rgba(16,185,129,0.5)"},
                   {color:"#ef4444",label:"Hari Kerja — Bersyarat",glow:"rgba(239,68,68,0.5)"},
                   {color:"#4080f0",label:"Sudah Dipesan",glow:"rgba(64,128,240,0.5)"},
                 ].map(({color,label,glow})=>(
-                  <div key={label} style={{ display:"flex",alignItems:"center",gap:10 }}>
+                  <div key={label} style={{ display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:1 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:color,flexShrink:0,boxShadow:`0 0 10px ${glow}` }}/>
                     <span style={{ color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:500 }}>{label}</span>
                   </div>
@@ -321,7 +335,7 @@ export default function Home() {
               <h3 style={{ fontSize:20,fontWeight:800,marginBottom:14,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
               {selectedEvents.map((e,i)=>(
                 <div key={i}>
-                  <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:16 }}>
                     {e.venue&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>📍 {e.venue}</span>}
                     {e.time&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>🕐 {e.time}</span>}
@@ -346,7 +360,7 @@ export default function Home() {
           </div>
         </main>
 
-        <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG & Caramolly</footer>
+        <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG</footer>
       </div>
     </>
   );
