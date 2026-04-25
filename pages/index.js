@@ -85,29 +85,29 @@ export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
   const [mounted, setMounted] = useState(false);
-  const [animDirection, setAnimDirection] = useState(0); // 1 = next, -1 = prev, 0 = none
+  const [calAnim, setCalAnim] = useState(""); // "next" | "prev" | ""
+  const [monthYearAnim, setMonthYearAnim] = useState("");
+  const animTimeout = useRef(null);
   const { businessName } = CALENDAR_CONFIG;
-  
+
   useEffect(() => {
     setMounted(true);
     fetch("/api/events").then(r => r.json()).then(d => { if (Array.isArray(d)) setEvents(d); });
   }, []);
 
-  useEffect(() => {
-    if (animDirection !== 0) {
-      const timer = setTimeout(() => {
-        setAnimDirection(0);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [animDirection]);
-
   function changeMonth(dir) {
-    setAnimDirection(dir);
-    setSelectedDay(null);
-    setTimeout(() => {
+    const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
+    const monthCls = dir === 1 ? "month-slide-next" : "month-slide-prev";
+
+    setCalAnim(calCls);
+    setMonthYearAnim(monthCls);
+    clearTimeout(animTimeout.current);
+    animTimeout.current = setTimeout(() => {
       setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
-    }, 50);
+      setSelectedDay(null);
+      setCalAnim("");
+      setMonthYearAnim("");
+    }, 300);
   }
 
   const year = currentDate.getFullYear();
@@ -202,7 +202,7 @@ export default function Home() {
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
               <div style={{ textAlign:"center", position:"relative", zIndex:1, overflow:"hidden", height:50 }}>
-                <div style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)", transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-25px)" : "translateX(25px)" }}>
+                <div className={monthYearAnim} style={{ transition:"transform 0.3s cubic-bezier(0.16,1,0.3,1)" }}>
                   <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:-0.5, marginBottom:2 }}>{MONTHS[month]}</h2>
                   <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, letterSpacing:2 }}>{year}</span>
                 </div>
@@ -220,19 +220,11 @@ export default function Home() {
             </div>
 
             {/* grid with slide animation */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden", position:"relative" }}>
-              <div style={{
-                position: "absolute",
-                inset: 0,
-                display: "grid",
-                gridTemplateColumns: "repeat(7,1fr)",
-                transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
-                transform: animDirection === 0 ? "translateX(0)" : animDirection === 1 ? "translateX(-60px)" : "translateX(60px)"
-              }}>
-                {Array.from({ length:startOffset }).map((_,i) => (
-                  <div key={`e-${i}`} style={{ minHeight:76, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
-                ))}
-                {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
+            <div key={`${year}-${month}`} className={calAnim} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", overflow:"hidden" }}>
+              {Array.from({ length:startOffset }).map((_,i) => (
+                <div key={`e-${i}`} style={{ minHeight:76, background:"rgba(250,252,255,0.6)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }} />
+              ))}
+              {Array.from({ length:daysInMonth }, (_,i) => i+1).map(day => {
                 const { status, event } = getDayStatus(day);
                 const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
                 const isSelected = selectedDay === day;
@@ -259,7 +251,6 @@ export default function Home() {
                   </div>
                 );
               })}
-              </div>
             </div>
           </div>
 
