@@ -207,7 +207,7 @@ export default function Home() {
             </div>
             <div>
               <span style={{ color:"#fff",fontSize:17,fontWeight:800,letterSpacing:-0.5,display:"block",lineHeight:1.1 }}>{businessName}</span>
-              <span style={{ color:"rgba(255,255,255,0.45)",fontSize:9,letterSpacing:2.5,textTransform:"uppercase",fontWeight:600 }}>Wedding Calendar</span>
+              <span style={{ color:"rgba(255,255,255,0.45)",fontSize:9,letterSpacing:2.5,textTransform:"uppercase",fontWeight:600 }}>Event & Wedding Calendar</span>
             </div>
           </div>
           <Link href="/admin" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px",position:"relative" }}>Admin</Link>
