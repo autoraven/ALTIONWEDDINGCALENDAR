@@ -223,7 +223,7 @@ export default function AdminPanel() {
               { label:"Total Event", value:events.length, icon:"📅", color:"var(--blue-2)" },
               { label:"Bulan Ini",   value:thisMonthEvents.length, icon:"🗓️", color:"var(--blue-1)" },
               { label:"Wedding",     value:events.filter(e=>e.event_type==="wedding").length, icon:"💍", color:"#7c3aed" },
-              { label:"Event Biasa", value:events.filter(e=>e.event_type==="event").length,   icon:"🎉", color:"#059669" },
+              { label:"Event", value:events.filter(e=>e.event_type==="event").length,   icon:"🎉", color:"#059669" },
             ].map(({ label, value, icon, color }, idx) => (
               <div key={label} className={mounted?`card fade-up anim-delay-${idx+1}`:"card"} style={{ padding:"22px 24px", textAlign:"center", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", top:-10, right:-10, width:60, height:60, borderRadius:"50%", background:`${color}10`, pointerEvents:"none" }} />
@@ -326,7 +326,7 @@ export default function AdminPanel() {
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                         {[
                           { type:"wedding", icon:"💍", label:"Wedding" },
-                          { type:"event",   icon:"🎉", label:"Event Biasa" },
+                          { type:"event",   icon:"🎉", label:"Event" },
                         ].map(({ type, icon, label }) => (
                           <button key={type} type="button" onClick={() => setEventType(type)}
                             style={{ padding:"18px 10px", border:"2px solid var(--border)", borderRadius:14, background:"rgba(248,250,255,0.8)", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}
@@ -346,7 +346,7 @@ export default function AdminPanel() {
                     <>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
                         <span style={{ background:eventType==="wedding"?"rgba(30,96,213,0.1)":"rgba(5,150,105,0.1)", color:eventType==="wedding"?"var(--blue-1)":"#059669", fontSize:12, fontWeight:700, padding:"4px 12px", borderRadius:20 }}>
-                          {eventType==="wedding"?"💍 Wedding":"🎉 Event Biasa"}
+                          {eventType==="wedding"?"💍 Wedding":"🎉 Event"}
                         </span>
                         <button type="button" onClick={() => setEventType("")} style={{ fontSize:11, color:"var(--muted)", background:"none", border:"none", cursor:"pointer", textDecoration:"underline", fontWeight:600 }}>Ganti</button>
                       </div>
@@ -363,10 +363,10 @@ export default function AdminPanel() {
                           <input value={form.couple} onChange={e=>setForm({...form,couple:e.target.value})} placeholder={eventType==="wedding"?"Budi & Siti":"Nama event..."} className="input" />
                         </div>
                         {[
-                          { label:"Venue / Lokasi", key:"venue", placeholder:"Grand Ballroom Hotel XYZ" },
+                          { label:"Venue / Lokasi", key:"venue", placeholder:"662" },
                           { label:"Jam Acara",      key:"time",  placeholder:"10:00 WIB" },
                           { label:"Catatan",        key:"notes", placeholder:"Info tambahan..." },
-                          { label:"Add On",         key:"addon", placeholder:"Dekorasi, Catering, dll..." },
+                          { label:"Add On",         key:"addon", placeholder:"Penyanyi, Fotografer, MC, dll..." },
                         ].map(({ label, key, placeholder }) => (
                           <div key={key} style={{ marginBottom:14 }}>
                             <label className="label">{label}</label>
