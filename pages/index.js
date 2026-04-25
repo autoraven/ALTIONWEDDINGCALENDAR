@@ -238,7 +238,7 @@ export default function Home() {
                   right:-28, top:"50%", transform:"translateY(-50%)",
                   width:250, height:250,
                   objectFit:"contain",
-                  opacity:0.1,
+                  opacity:0.3,
                   pointerEvents:"none",
                   userSelect:"none",
                   filter:"brightness(0) invert(1)",
