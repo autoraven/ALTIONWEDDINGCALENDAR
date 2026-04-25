@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
 
 :root {
-  --navy:       #071220;
-  --navy-mid:   #0a1e42;
-  --blue-1:     #1a5fd4;
-  --blue-2:     #2b7be8;
-  --blue-3:     #42b8ff;
-  --blue-light: #d6eeff;
-  --blue-dark:  #0d2d6e;
-  --accent:     #5bc8ff;
+  --navy:       #0a1628;
+  --navy-mid:   #0f2150;
+  --blue-1:     #1535a0;
+  --blue-2:     #1e60d5;
+  --blue-3:     #4080f0;
+  --blue-light: #dbeafe;
+  --blue-dark:  #0f2150;
+  --accent:     #4f8ef7;
   --green:      #10b981;
   --red:        #ef4444;
   --amber:      #f59e0b;
