@@ -86,9 +86,6 @@ export default function Home() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [calAnim, setCalAnim] = useState(""); // "next" | "prev" | ""
-  const [monthAnim, setMonthAnim] = useState(""); // "month-exit-next" | "month-exit-prev" | ""
-  const [displayMonth, setDisplayMonth] = useState(MONTHS[month]);
-  const [displayYear, setDisplayYear] = useState(year);
   const animTimeout = useRef(null);
   const { businessName } = CALENDAR_CONFIG;
 
@@ -98,34 +95,18 @@ export default function Home() {
   }, []);
 
   function changeMonth(dir) {
-    const calCls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
-    const monthCls = dir === 1 ? "month-exit-next" : "month-exit-prev";
-
-    setCalAnim(calCls);
-    setMonthAnim(monthCls);
-
+    const cls = dir === 1 ? "cal-slide-next" : "cal-slide-prev";
+    setCalAnim(cls);
     clearTimeout(animTimeout.current);
     animTimeout.current = setTimeout(() => {
-      const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + dir, 1);
-      setCurrentDate(newDate);
+      setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
       setSelectedDay(null);
       setCalAnim("");
-    }, 200);
-
-    animTimeout.current = setTimeout(() => {
-      setMonthAnim("");
-    }, 350);
+    }, 280);
   }
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  useEffect(() => {
-    if (!monthAnim) {
-      setDisplayMonth(MONTHS[month]);
-      setDisplayYear(year);
-    }
-  }, [month, year, monthAnim]);
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
@@ -215,9 +196,9 @@ export default function Home() {
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.2)";e.currentTarget.style.transform="scale(1.1)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
-              <div className="month-text-wrapper" style={{ textAlign:"center", position:"relative", zIndex:1 }}>
-                <div className={`month-text ${monthAnim}`} style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:-0.5 }}>{displayMonth}</div>
-                <div className={`year-text ${monthAnim}`} style={{ color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, letterSpacing:2 }}>{displayYear}</div>
+              <div style={{ textAlign:"center", position:"relative", zIndex:1 }}>
+                <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:-0.5 }}>{MONTHS[month]}</h2>
+                <span style={{ color:"rgba(255,255,255,0.45)", fontSize:12, fontWeight:600, letterSpacing:2 }}>{year}</span>
               </div>
               <button onClick={() => changeMonth(1)}
                 style={{ background:"rgba(255,255,255,0.1)", border:"1.5px solid rgba(255,255,255,0.2)", color:"#fff", width:38, height:38, borderRadius:10, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", position:"relative", zIndex:1 }}
