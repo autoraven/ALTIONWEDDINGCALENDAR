@@ -357,7 +357,7 @@ export default function AdminPanel() {
                           <label className="label">{eventType==="wedding"?"Nama Pasangan *":"Nama Event *"}</label>
                           <input value={form.couple} onChange={e=>setForm({...form,couple:e.target.value})} placeholder={eventType==="wedding"?"Budi & Siti":"Nama event..."} className="input"/>
                         </div>
-                        {[{label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom"},{label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},{label:"Catatan",key:"notes",placeholder:"Info tambahan..."},{label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."}].map(({label,key,placeholder})=>(
+                        {[{label:"Venue / Lokasi",key:"venue",placeholder:"662"},{label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},{label:"Catatan",key:"notes",placeholder:"Info tambahan..."},{label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."}].map(({label,key,placeholder})=>(
                           <div key={key} style={{ marginBottom:14 }}>
                             <label className="label">{label}</label>
                             <input value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={placeholder} className="input"/>
