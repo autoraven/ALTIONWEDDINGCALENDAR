@@ -72,12 +72,21 @@ function CalendarGrid({ year, month, events, selectedDate, onDayClick, today }) 
     if(isWeekend(dateStr)) return{status:"available"};
     return{status:"conditional"};
   }
+  const totalCells = startOffset + daysInMonth;
+  const numRows = Math.ceil(totalCells / 7);
+  const cells = [
+    ...Array.from({length:startOffset}, (_,i) => ({ type:"empty", key:`e-${i}` })),
+    ...Array.from({length:daysInMonth}, (_,i) => ({ type:"day", day:i+1 })),
+    ...Array.from({length: numRows*7 - totalCells}, (_,i) => ({ type:"empty", key:`t-${i}` })),
+  ];
+
   return (
-    <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)" }}>
-      {Array.from({length:startOffset}).map((_,i)=>(
-        <div key={`e-${i}`} style={{ minHeight:64,background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
-      ))}
-      {Array.from({length:daysInMonth},(_,i)=>i+1).map(day=>{
+    <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gridTemplateRows:`repeat(${numRows},1fr)` }}>
+      {cells.map((cell) => {
+        if (cell.type==="empty") return (
+          <div key={cell.key} style={{ minHeight:64,background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
+        );
+        const{day}=cell;
         const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
         const{status,event}=getDayStatus(day);
         const isSelected=selectedDate===dateStr;
@@ -87,12 +96,18 @@ function CalendarGrid({ year, month, events, selectedDate, onDayClick, today }) 
           <div key={day} className="day-cell" onClick={()=>onDayClick(dateStr,status)}
             style={{ minHeight:64,background:isSelected?"rgba(219,238,255,0.95)":s.bg,padding:"8px 8px 6px",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",cursor:status!=="past"?"pointer":"default",display:"flex",flexDirection:"column",outline:isSelected?"2px solid var(--blue-2)":"none",outlineOffset:-2 }}
           >
-            <div style={{ width:24,height:24,borderRadius:7,background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}>
+            <div style={{ width:24,height:24,borderRadius:7,background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
               <span style={{ fontSize:12,fontWeight:isToday?800:500,color:isToday?"#fff":status==="past"?"#ccc":"var(--dark)" }}>{day}</span>
             </div>
-            <div style={{ marginTop:"auto" }}>
+            <div style={{ marginTop:"auto",minWidth:0 }}>
               <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
-              {status==="booked"&&event&&<span style={{ fontSize:8,color:"var(--blue-1)",display:"block",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:700 }}>{event.event_type==="wedding"?"💍":"🎉"} {event.couple}</span>}
+              {status==="booked"&&event&&(
+                <div style={{ fontSize:8,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,
+                  display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",
+                  overflow:"hidden",wordBreak:"break-word" }}>
+                  {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+                </div>
+              )}
               {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
             </div>
           </div>
@@ -216,6 +231,10 @@ export default function AdminPanel() {
         <BgDecor/>
         <header style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",padding:"0 40px",height:68,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 32px rgba(10,22,40,0.4)",position:"sticky",top:0,zIndex:100 }}>
           <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
+          {/* Logo decoration in header */}
+          <div style={{ position:"absolute",right:120,top:"50%",transform:"translateY(-50%)",width:80,height:80,opacity:0.06,pointerEvents:"none" }}>
+            <img src="/logo.png" alt="" style={{ width:"100%",height:"100%",objectFit:"contain",filter:"brightness(0) invert(1)" }}/>
+          </div>
           <div style={{ display:"flex",alignItems:"center",gap:14,position:"relative" }}>
             <div style={{ width:40,height:40,borderRadius:12,background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",padding:5,border:"1.5px solid rgba(255,255,255,0.2)" }}>
               <img src="/logo.png" alt="Logo" style={{ width:"100%",height:"100%",objectFit:"contain" }}/>
@@ -292,7 +311,7 @@ export default function AdminPanel() {
               </div>
 
               {/* overlay grid transition */}
-              <div className="cal-wrapper" style={{ minHeight:320 }}>
+              <div className="cal-wrapper">
                 {isAnimating&&pendingDate&&(
                   <div className={direction==="next"?"cal-exit-left":"cal-exit-right"}>
                     <CalendarGrid year={year} month={month} events={events} selectedDate={null} onDayClick={()=>{}} today={today.current}/>
@@ -357,7 +376,7 @@ export default function AdminPanel() {
                           <label className="label">{eventType==="wedding"?"Nama Pasangan *":"Nama Event *"}</label>
                           <input value={form.couple} onChange={e=>setForm({...form,couple:e.target.value})} placeholder={eventType==="wedding"?"Budi & Siti":"Nama event..."} className="input"/>
                         </div>
-                        {[{label:"Venue / Lokasi",key:"venue",placeholder:"662"},{label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},{label:"Catatan",key:"notes",placeholder:"Info tambahan..."},{label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."}].map(({label,key,placeholder})=>(
+                        {[{label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom"},{label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},{label:"Catatan",key:"notes",placeholder:"Info tambahan..."},{label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."}].map(({label,key,placeholder})=>(
                           <div key={key} style={{ marginBottom:14 }}>
                             <label className="label">{label}</label>
                             <input value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={placeholder} className="input"/>
@@ -391,7 +410,7 @@ export default function AdminPanel() {
                             {event.event_type==="wedding"?"💍 Wedding":"🎉 Event"}
                           </span>
                         </div>
-                        <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:17,color:"var(--dark)",marginBottom:2 }}>{event.couple}</p>
+                        <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:17,color:"var(--dark)",marginBottom:2 }}>{event.couple}</p>
                         <p style={{ fontSize:11,color:"var(--blue-2)",fontWeight:700,marginBottom:2 }}>{event.date}</p>
                         {event.venue&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>📍 {event.venue}</p>}
                         {event.time&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>🕐 {event.time}</p>}
@@ -405,7 +424,7 @@ export default function AdminPanel() {
             </div>
           </div>
         </main>
-        <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG & Caramolly</footer>
+        <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG</footer>
       </div>
     </>
   );

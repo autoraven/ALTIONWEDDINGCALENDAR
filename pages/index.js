@@ -111,12 +111,30 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
     return { status:"conditional" };
   }
 
+  // Hitung jumlah baris yang dibutuhkan
+  const totalCells = startOffset + daysInMonth;
+  const numRows = Math.ceil(totalCells / 7);
+
+  // Buat semua cells dalam array terurut (offset + hari)
+  const cells = [
+    ...Array.from({length:startOffset}, (_,i) => ({ type:"empty", key:`e-${i}` })),
+    ...Array.from({length:daysInMonth}, (_,i) => ({ type:"day", day:i+1 })),
+    // padding cells akhir agar grid penuh
+    ...Array.from({length: numRows*7 - totalCells}, (_,i) => ({ type:"empty", key:`t-${i}` })),
+  ];
+
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
-      {Array.from({length:startOffset}).map((_,i)=>(
-        <div key={`e-${i}`} style={{ minHeight:76,background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
-      ))}
-      {Array.from({length:daysInMonth},(_,i)=>i+1).map(day=>{
+    <div style={{
+      display:"grid",
+      gridTemplateColumns:"repeat(7,1fr)",
+      gridTemplateRows:`repeat(${numRows}, 1fr)`,
+    }}>
+      {cells.map((cell) => {
+        if (cell.type === "empty") return (
+          <div key={cell.key} style={{ background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",minHeight:76 }}/>
+        );
+
+        const { day } = cell;
         const { status, event } = getDayStatus(day);
         const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
         const isSelected = selectedDay === day;
@@ -130,14 +148,30 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
         return (
           <div key={day} className="day-cell"
             onClick={() => status==="booked" ? onSelectDay(isSelected?null:day) : null}
-            style={{ minHeight:76,background:isSelected?"rgba(219,238,255,0.95)":s.bg,borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",padding:"10px 10px 8px",cursor:status==="booked"?"pointer":"default",display:"flex",flexDirection:"column",outline:isSelected?"2px solid var(--blue-2)":"none",outlineOffset:-2 }}
+            style={{
+              background:isSelected?"rgba(219,238,255,0.95)":s.bg,
+              borderRight:"1px solid var(--border)",
+              borderBottom:"1px solid var(--border)",
+              padding:"10px 10px 8px",
+              cursor:status==="booked"?"pointer":"default",
+              display:"flex", flexDirection:"column",
+              minHeight:76,
+              outline:isSelected?"2px solid var(--blue-2)":"none",
+              outlineOffset:-2,
+            }}
           >
-            <div style={{ width:26,height:26,borderRadius:8,background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",display:"flex",alignItems:"center",justifyContent:"center" }}>
+            <div style={{ width:26,height:26,borderRadius:8,background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
               <span style={{ fontSize:13,fontWeight:isToday?800:500,color:isToday?"#fff":s.tc }}>{day}</span>
             </div>
-            <div style={{ marginTop:"auto" }}>
-              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
-              {status==="booked"&&event&&<span style={{ fontSize:9,color:"var(--blue-1)",display:"block",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:700 }}>{event.event_type==="wedding"?"💍":"🎉"} {event.couple}</span>}
+            <div style={{ marginTop:"auto",minWidth:0 }}>
+              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
+              {status==="booked"&&event&&(
+                <div style={{ fontSize:9,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,
+                  display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",
+                  overflow:"hidden",wordBreak:"break-word" }}>
+                  {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+                </div>
+              )}
               {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
             </div>
           </div>
@@ -311,7 +345,7 @@ export default function Home() {
             </div>
 
             {/* Grid with overlay transition */}
-            <div className="cal-wrapper" style={{ minHeight:380 }}>
+            <div className="cal-wrapper">
               {/* exiting grid */}
               {isAnimating && pendingDate && (
                 <div className={direction==="next"?"cal-exit-left":"cal-exit-right"}>
