@@ -261,9 +261,9 @@ export default function StaffPage() {
             ))}
           </div>
 
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20,alignItems:"start" }}>
+          <div style={{ columns:"340px",columnGap:20,columnFill:"balance" }}>
             {displayEvents.length === 0 && (
-              <div style={{ gridColumn:"1/-1",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
+              <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                 <p style={{ fontSize:32,marginBottom:12 }}>📅</p>
                 <p style={{ fontWeight:600,fontSize:14 }}>Tidak ada event {activeTab==="upcoming"?"mendatang":""}</p>
               </div>
@@ -275,7 +275,7 @@ export default function StaffPage() {
               const isOpen = selectedEvent?.id === event.id;
 
               return (
-                <div key={event.id} className={mounted?"card fade-up":"card"} style={{ overflow:"hidden",boxShadow:"var(--shadow)",opacity:isPast?0.8:1,transition:"transform 0.2s,box-shadow 0.2s" }}
+                <div key={event.id} className={mounted?"card fade-up":"card"} style={{ overflow:"hidden",boxShadow:"var(--shadow)",opacity:isPast?0.8:1,transition:"transform 0.2s,box-shadow 0.2s",breakInside:"avoid",marginBottom:20,display:"inline-block",width:"100%" }}
                   onMouseEnter={e=>{if(!isPast){e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="var(--shadow-lg)";}}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="var(--shadow)";}}
                 >
