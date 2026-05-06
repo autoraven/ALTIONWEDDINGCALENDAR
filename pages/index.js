@@ -244,7 +244,10 @@ export default function Home() {
               <span style={{ color:"rgba(255,255,255,0.45)",fontSize:9,letterSpacing:2.5,textTransform:"uppercase",fontWeight:600 }}>Event & Wedding Calendar</span>
             </div>
           </div>
-          <Link href="/admin" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px",position:"relative" }}>Admin</Link>
+          <div style={{ display:"flex",gap:10,position:"relative" }}>
+            <Link href="/staff" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>👥 Staff</Link>
+            <Link href="/admin" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Admin</Link>
+          </div>
         </header>
 
         <main style={{ maxWidth:900,margin:"0 auto",padding:"40px 20px",position:"relative",zIndex:1 }}>
