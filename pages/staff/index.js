@@ -17,7 +17,18 @@ function formatDate(dateStr) {
   });
 }
 
-function BgDecor() {
+function highlight(text, q) {
+  if (!q || !text) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background:"rgba(255,210,60,0.45)",borderRadius:3,padding:"0 1px",fontWeight:800 }}>{text.slice(idx, idx+q.length)}</mark>
+      {text.slice(idx+q.length)}
+    </>
+  );
+}
   return (
     <>
       <div className="bg-orb bg-orb-1"/><div className="bg-orb bg-orb-2"/>
@@ -64,6 +75,7 @@ export default function StaffPage() {
   const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [search, setSearch] = useState("");
   const { businessName } = CALENDAR_CONFIG;
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -137,7 +149,19 @@ export default function StaffPage() {
   }
 
   const upcomingEvents = events.filter(e => new Date(e.date) >= today);
-  const displayEvents = activeTab === "upcoming" ? upcomingEvents : events;
+  const baseEvents = activeTab === "upcoming" ? upcomingEvents : events;
+  const q = search.trim().toLowerCase();
+  const displayEvents = q
+    ? baseEvents.filter(e => {
+        const staffList = staffMap[e.id] || [];
+        return (
+          e.couple?.toLowerCase().includes(q) ||
+          e.venue?.toLowerCase().includes(q) ||
+          e.event_type?.toLowerCase().includes(q) ||
+          staffList.some(s => s.name.toLowerCase().includes(q) || s.role.toLowerCase().includes(q))
+        );
+      })
+    : baseEvents;
   const totalStaff = Object.values(staffMap).flat().length;
 
   if (!isLoggedIn) return (
@@ -244,28 +268,61 @@ export default function StaffPage() {
             </div>
           </div>
 
-          <div style={{ display:"flex",gap:8,marginBottom:20 }}>
-            {[
-              { key:"upcoming", label:"Event Mendatang", count:upcomingEvents.length },
-              { key:"all",      label:"Semua Event",     count:events.length },
-            ].map(({key,label,count})=>(
-              <button key={key} onClick={()=>setActiveTab(key)}
-                style={{ padding:"8px 18px",borderRadius:12,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.2s",border:"1.5px solid",
-                  borderColor: activeTab===key?"var(--blue-2)":"var(--border)",
-                  background:  activeTab===key?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"rgba(255,255,255,0.8)",
-                  color:       activeTab===key?"#fff":"var(--muted)",
-                  boxShadow:   activeTab===key?"0 4px 16px rgba(30,96,213,0.3)":"none",
-                }}>
-                {label} <span style={{ background:"rgba(255,255,255,0.2)",borderRadius:20,padding:"1px 8px",fontSize:11,marginLeft:4 }}>{count}</span>
-              </button>
-            ))}
+          {/* Toolbar: tabs + search */}
+          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:20,flexWrap:"wrap" }}>
+            <div style={{ display:"flex",gap:6,background:"rgba(255,255,255,0.85)",border:"1.5px solid var(--border)",borderRadius:14,padding:4,backdropFilter:"blur(8px)" }}>
+              {[
+                { key:"upcoming", label:"Mendatang", count:upcomingEvents.length },
+                { key:"all",      label:"Semua",     count:events.length },
+              ].map(({key,label,count})=>(
+                <button key={key} onClick={()=>setActiveTab(key)}
+                  style={{ padding:"7px 16px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.18s",border:"none",
+                    background: activeTab===key?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"transparent",
+                    color:      activeTab===key?"#fff":"var(--muted)",
+                    boxShadow:  activeTab===key?"0 2px 10px rgba(30,96,213,0.25)":"none",
+                  }}>
+                  {label}
+                  <span style={{ background:activeTab===key?"rgba(255,255,255,0.25)":"rgba(30,96,213,0.1)",color:activeTab===key?"#fff":"var(--blue-1)",borderRadius:20,padding:"1px 7px",fontSize:10,marginLeft:5,fontWeight:800 }}>{count}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search bar */}
+            <div style={{ flex:1,minWidth:200,position:"relative" }}>
+              <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none",color:"var(--muted)",lineHeight:1 }}>🔍</span>
+              <input
+                value={search}
+                onChange={e=>setSearch(e.target.value)}
+                placeholder="Cari event, venue, atau nama staff…"
+                style={{ width:"100%",paddingLeft:36,paddingRight:search?36:14,paddingTop:9,paddingBottom:9,border:"1.5px solid var(--border)",borderRadius:12,fontSize:13,fontWeight:500,background:"rgba(255,255,255,0.9)",backdropFilter:"blur(8px)",outline:"none",color:"var(--dark)",boxSizing:"border-box",transition:"border-color 0.15s, box-shadow 0.15s" }}
+                onFocus={e=>{e.target.style.borderColor="var(--blue-2)";e.target.style.boxShadow="0 0 0 3px rgba(30,96,213,0.1)";}}
+                onBlur={e=>{e.target.style.borderColor="var(--border)";e.target.style.boxShadow="none";}}
+              />
+              {search && (
+                <button onClick={()=>setSearch("")}
+                  style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:"var(--muted)",lineHeight:1 }}>
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Search result count */}
+            {q && (
+              <span style={{ fontSize:12,color:"var(--muted)",fontWeight:600,whiteSpace:"nowrap" }}>
+                {displayEvents.length === 0 ? "Tidak ditemukan" : `${displayEvents.length} hasil`}
+              </span>
+            )}
           </div>
 
           <div style={{ columns:"340px",columnGap:20,columnFill:"balance" }}>
             {displayEvents.length === 0 && (
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
-                <p style={{ fontSize:32,marginBottom:12 }}>📅</p>
-                <p style={{ fontWeight:600,fontSize:14 }}>Tidak ada event {activeTab==="upcoming"?"mendatang":""}</p>
+                <p style={{ fontSize:32,marginBottom:12 }}>{q?"🔍":"📅"}</p>
+                <p style={{ fontWeight:700,fontSize:14,color:"var(--dark)",marginBottom:4 }}>
+                  {q ? `Tidak ada hasil untuk "${search}"` : `Tidak ada event ${activeTab==="upcoming"?"mendatang":""}`}
+                </p>
+                {q && <p style={{ fontSize:12,color:"var(--muted)",marginBottom:12 }}>Coba kata kunci lain atau cek ejaan</p>}
+                {q && <button onClick={()=>setSearch("")} style={{ fontSize:12,padding:"7px 18px",borderRadius:10,border:"1.5px solid var(--border)",background:"#fff",cursor:"pointer",fontWeight:600,color:"var(--blue-1)" }}>Hapus pencarian</button>}
               </div>
             )}
 
@@ -290,9 +347,9 @@ export default function StaffPage() {
                           </span>
                           {isPast && <span style={{ fontSize:10,background:"rgba(0,0,0,0.25)",color:"rgba(255,255,255,0.6)",padding:"2px 8px",borderRadius:10,fontWeight:600 }}>Selesai</span>}
                         </div>
-                        <h3 style={{ color:"#fff",fontSize:15,fontWeight:800,letterSpacing:-0.3,marginBottom:4,lineHeight:1.2 }}>{event.couple}</h3>
+                        <h3 style={{ color:"#fff",fontSize:15,fontWeight:800,letterSpacing:-0.3,marginBottom:4,lineHeight:1.2 }}>{highlight(event.couple,q)}</h3>
                         <p style={{ color:"rgba(255,255,255,0.55)",fontSize:11,fontWeight:500 }}>📅 {formatDate(event.date)}</p>
-                        {event.venue&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>📍 {event.venue}</p>}
+                        {event.venue&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>📍 {highlight(event.venue,q)}</p>}
                         {event.time&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>🕐 {event.time}</p>}
                         {event.addon&&<p style={{ color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2 }}>✨ {event.addon}</p>}
                       </div>
@@ -321,8 +378,8 @@ export default function StaffPage() {
                                   <span style={{ color:"#fff",fontSize:11,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
                                 </div>
                                 <div style={{ minWidth:0 }}>
-                                  <p style={{ fontSize:12,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
-                                  <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>{s.role}</p>
+                                  <p style={{ fontSize:12,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{highlight(s.name,q)}</p>
+                                  <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>{highlight(s.role,q)}</p>
                                 </div>
                               </div>
                               {!isPast&&(
