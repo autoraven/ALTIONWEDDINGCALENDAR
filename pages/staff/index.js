@@ -230,7 +230,7 @@ export default function StaffPage() {
                   <span style={{ display:"inline-block",width:28,height:1,background:"rgba(255,255,255,0.25)" }}/>Staff Portal
                 </p>
                 <h2 style={{ color:"#fff",fontSize:28,fontWeight:800,letterSpacing:-1,marginBottom:8,lineHeight:1.1 }}>Daftar & Kelola Tim Event</h2>
-                <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:400 }}>Pilih event lalu daftarkan namamu. Notif Discord terkirim otomatis.</p>
+                <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:400 }}>Pilih event lalu daftarkan namamu.</p>
               </div>
               <div style={{ display:"flex",gap:14,flexWrap:"wrap" }}>
                 {[
