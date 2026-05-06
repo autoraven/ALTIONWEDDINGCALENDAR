@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { CALENDAR_CONFIG } from "../../lib/config";
+import { CALENDAR_CONFIG, STAFF_PASSWORD } from "../../lib/config";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const ROLES = ["Staff","Fotografer","Videografer","MC","Dekorasi","Katering","Musik","Koordinator","Lainnya"];
@@ -51,6 +51,9 @@ function BgDecor() {
 }
 
 export default function StaffPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [staffPwd, setStaffPwd] = useState("");
+  const [pwdError, setPwdError] = useState("");
   const [events, setEvents] = useState([]);
   const [staffMap, setStaffMap] = useState({});
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -66,8 +69,22 @@ export default function StaffPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetchAll();
+    if (sessionStorage.getItem("staff_auth") === "true") {
+      setIsLoggedIn(true);
+      fetchAll();
+    }
   }, []);
+
+  function handleStaffLogin(e) {
+    e.preventDefault();
+    if (staffPwd === STAFF_PASSWORD) {
+      sessionStorage.setItem("staff_auth", "true");
+      setIsLoggedIn(true);
+      fetchAll();
+    } else {
+      setPwdError("Password salah");
+    }
+  }
 
   async function fetchAll() {
     const [evRes, stRes] = await Promise.all([
@@ -122,6 +139,50 @@ export default function StaffPage() {
   const upcomingEvents = events.filter(e => new Date(e.date) >= today);
   const displayEvents = activeTab === "upcoming" ? upcomingEvents : events;
   const totalStaff = Object.values(staffMap).flat().length;
+
+  // ─── LOGIN SCREEN ───
+  if (!isLoggedIn) return (
+    <>
+      <Head>
+        <title>Staff Login — {businessName}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="icon" href="/favicon.ico"/>
+      </Head>
+      <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
+        <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none" }}/>
+        <div style={{ position:"absolute",top:-120,right:-80,width:500,height:500,borderRadius:"50%",background:"rgba(64,128,240,0.15)",filter:"blur(70px)",pointerEvents:"none" }}/>
+        <div style={{ position:"absolute",bottom:-100,left:-60,width:400,height:400,borderRadius:"50%",background:"rgba(21,53,160,0.2)",filter:"blur(60px)",pointerEvents:"none" }}/>
+        <div className="ring-spin" style={{ position:"absolute",top:"8%",left:"4%",width:280,height:280,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.05)",pointerEvents:"none",transformOrigin:"center" }}/>
+        <div className="ring-spin-rev" style={{ position:"absolute",bottom:"10%",right:"5%",width:220,height:220,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.06)",pointerEvents:"none",transformOrigin:"center" }}/>
+
+        <div className={mounted?"scale-in":""} style={{ background:"rgba(255,255,255,0.97)",width:"100%",maxWidth:420,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)",position:"relative",zIndex:1 }}>
+          <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"40px 40px 32px",textAlign:"center",position:"relative",overflow:"hidden" }}>
+            <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
+            <div style={{ position:"absolute",top:-30,right:-20,width:130,height:130,borderRadius:"50%",background:"rgba(255,255,255,0.05)",pointerEvents:"none" }}/>
+            <div style={{ width:68,height:68,borderRadius:18,background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",border:"2px solid rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",padding:8,overflow:"hidden",position:"relative",zIndex:1 }}>
+              <img src="/logo.png" alt="Logo" style={{ width:"100%",height:"100%",objectFit:"contain" }}/>
+            </div>
+            <h1 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,position:"relative",zIndex:1 }}>{businessName}</h1>
+            <p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,letterSpacing:3,marginTop:6,textTransform:"uppercase",fontWeight:600,position:"relative",zIndex:1 }}>Staff Portal</p>
+          </div>
+          <form onSubmit={handleStaffLogin} style={{ padding:"36px 40px" }}>
+            {pwdError && <div style={{ background:"#fff0f0",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:20,fontSize:13,fontWeight:500 }}>⚠️ {pwdError}</div>}
+            <div style={{ marginBottom:20 }}>
+              <label className="label">Password Staff</label>
+              <input type="password" value={staffPwd} onChange={e=>setStaffPwd(e.target.value)}
+                placeholder="Masukkan password..." className="input" required autoFocus/>
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"13px",fontSize:14 }}>
+              Masuk ke Staff Portal
+            </button>
+            <div style={{ marginTop:20,textAlign:"center" }}>
+              <Link href="/" style={{ fontSize:12,color:"var(--muted)",textDecoration:"none",fontWeight:500 }}>← Kembali ke Kalender</Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <>
@@ -206,7 +267,7 @@ export default function StaffPage() {
           </div>
 
           {/* EVENT CARDS */}
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20 }}>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20,alignItems:"start" }}>
             {displayEvents.length === 0 && (
               <div style={{ gridColumn:"1/-1",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                 <p style={{ fontSize:32,marginBottom:12 }}>📅</p>
