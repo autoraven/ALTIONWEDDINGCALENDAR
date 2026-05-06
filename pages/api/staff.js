@@ -7,7 +7,7 @@ const supabase = createClient(
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_STAFF_WEBHOOK_URL;
 
-async function sendDiscordNotification(type, staff, event) {
+async function sendDiscordNotification(type, staff, event, allStaff) {
   if (!DISCORD_WEBHOOK_URL) return;
 
   const isJoin = type === "join";
@@ -15,21 +15,30 @@ async function sendDiscordNotification(type, staff, event) {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
+  // Format full member list
+  const memberList = allStaff.length > 0
+    ? allStaff.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
+    : "_Belum ada staff_";
+
+  const eventLabel = `${event.event_type === "wedding" ? "💍" : "🎉"} ${event.couple}`;
+
   const payload = {
-    content: isJoin
-      ? `@here Staff baru bergabung ke event! 👋`
-      : `@here Staff keluar dari event. 👋`,
     embeds: [{
-      title: isJoin ? "✅ Staff Join Event" : "❌ Staff Keluar Event",
+      title: isJoin
+        ? `${staff.name} masuk event`
+        : `${staff.name} keluar dari event`,
+      description: isJoin
+        ? `**${staff.name}** (${staff.role || "Staff"}) telah bergabung ke **${eventLabel}**`
+        : `**${staff.name}** (${staff.role || "Staff"}) telah keluar dari **${eventLabel}**`,
       color: isJoin ? 0x10b981 : 0xef4444,
       fields: [
-        { name: "👤 Nama Staff",  value: staff.name,         inline: true },
-        { name: isJoin ? "📌 Posisi" : "📌 Posisi", value: staff.role || "Staff", inline: true },
-        { name: "📅 Tanggal",    value: dateFormatted,       inline: false },
-        { name: isJoin ? "💍 Event" : "💍 Event",
-          value: `${event.event_type === "wedding" ? "💍" : "🎉"} ${event.couple}`,
-          inline: true },
-        { name: "🏛️ Venue",     value: event.venue || "-",  inline: true },
+        { name: "📅 Tanggal", value: dateFormatted, inline: true },
+        { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
+        {
+          name: `👥 Daftar Staff (${allStaff.length} orang)`,
+          value: memberList,
+          inline: false,
+        },
       ],
       footer: { text: "ALTION Staff System" },
       timestamp: new Date().toISOString(),
@@ -91,7 +100,15 @@ export default async function handler(req, res) {
       .single();
     if (error) return res.status(500).json({ error: error.message });
 
-    if (event) await sendDiscordNotification("join", data, event);
+    if (event) {
+      // Ambil full list staff terbaru untuk event ini
+      const { data: allStaff } = await supabase
+        .from("event_staff")
+        .select("*")
+        .eq("event_id", event_id)
+        .order("joined_at", { ascending: true });
+      await sendDiscordNotification("join", data, event, allStaff || []);
+    }
     return res.status(201).json(data);
   }
 
@@ -107,7 +124,13 @@ export default async function handler(req, res) {
 
     if (staffData) {
       const event = staffData.wedding_events;
-      await sendDiscordNotification("leave", staffData, event || {});
+      // Ambil sisa staff setelah delete
+      const { data: allStaff } = await supabase
+        .from("event_staff")
+        .select("*")
+        .eq("event_id", staffData.event_id)
+        .order("joined_at", { ascending: true });
+      await sendDiscordNotification("leave", staffData, event || {}, allStaff || []);
     }
     return res.status(200).json({ success: true });
   }
