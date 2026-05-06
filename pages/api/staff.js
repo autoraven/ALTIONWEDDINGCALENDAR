@@ -38,7 +38,11 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
           name: `👥 Daftar Staff (${allStaff.length} orang)`,
           value: memberList,
           inline: false,
-        },
+        },          {
+            name: '🔗 Website',
+            value: '[Klik di sini untuk submit bukti](https://altioneventcalendar.vercel.app/staff)',
+            inline: false
+          },
       ],
       footer: { text: "ALTION Staff System" },
       timestamp: new Date().toISOString(),
