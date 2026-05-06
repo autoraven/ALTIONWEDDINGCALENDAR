@@ -40,7 +40,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
           inline: false,
         },          {
             name: '🔗 Website',
-            value: '[Klik di sini untuk submit bukti](https://altioneventcalendar.vercel.app/staff)',
+            value: '[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)',
             inline: false
           },
       ],
