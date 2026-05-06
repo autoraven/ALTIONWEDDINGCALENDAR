@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_STAFF_WEBHOOK_URL;
 
 async function sendDiscordNotification(type, staff, event) {
   if (!DISCORD_WEBHOOK_URL) return;
