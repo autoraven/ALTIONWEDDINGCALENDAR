@@ -29,6 +29,8 @@ function highlight(text, q) {
     </>
   );
 }
+
+function BgDecor() {
   return (
     <>
       <div className="bg-orb bg-orb-1"/><div className="bg-orb bg-orb-2"/>
