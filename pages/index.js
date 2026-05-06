@@ -19,7 +19,6 @@ function BgDecor() {
       <div className="bg-orb bg-orb-3" />
       <div className="bg-orb bg-orb-4" />
 
-      {/* dot grid */}
       <div style={{ position:"fixed",inset:0,zIndex:0,pointerEvents:"none",
         backgroundImage:"radial-gradient(circle,rgba(30,96,213,0.13) 1px,transparent 1px)",
         backgroundSize:"36px 36px",
@@ -27,7 +26,6 @@ function BgDecor() {
         WebkitMaskImage:"radial-gradient(ellipse 80% 80% at 50% 50%,black 0%,transparent 100%)",
       }}/>
 
-      {/* top-left: spinning dashed circle + crosshair */}
       <div className="float-shape-1" style={{ position:"fixed",top:70,left:36,zIndex:0,pointerEvents:"none",opacity:0.09 }}>
         <svg width="130" height="130" viewBox="0 0 130 130" fill="none">
           <circle cx="65" cy="65" r="60" stroke="#1e60d5" strokeWidth="1.4" strokeDasharray="9 7" className="ring-spin"/>
@@ -38,7 +36,7 @@ function BgDecor() {
         </svg>
       </div>
 
-      {/* top-right: rounded square + inner square */}
+
       <div className="float-shape-2" style={{ position:"fixed",top:140,right:44,zIndex:0,pointerEvents:"none",opacity:0.07,animationDelay:"1.5s" }}>
         <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
           <rect x="10" y="10" width="90" height="90" rx="20" stroke="#1535a0" strokeWidth="1.4" strokeDasharray="10 7" className="ring-spin-rev"/>
@@ -46,21 +44,21 @@ function BgDecor() {
         </svg>
       </div>
 
-      {/* mid-left: triangle */}
+
       <div className="float-shape-3" style={{ position:"fixed",top:"42%",left:22,zIndex:0,pointerEvents:"none",opacity:0.07,animationDelay:"0.8s" }}>
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
           <polygon points="36,4 70,66 2,66" stroke="#4080f0" strokeWidth="1.3" fill="none" strokeDasharray="6 5" className="dash-anim"/>
         </svg>
       </div>
 
-      {/* mid-right: diamond */}
+
       <div className="float-shape-1" style={{ position:"fixed",top:"38%",right:28,zIndex:0,pointerEvents:"none",opacity:0.07,animationDelay:"3s" }}>
         <svg width="68" height="68" viewBox="0 0 68 68" fill="none">
           <rect x="8" y="8" width="52" height="52" rx="4" stroke="#1e60d5" strokeWidth="1.2" transform="rotate(45 34 34)" fill="none" strokeDasharray="5 6" className="dash-anim-slow"/>
         </svg>
       </div>
 
-      {/* bottom-right: nested circles */}
+
       <div className="float-shape-2" style={{ position:"fixed",bottom:110,right:52,zIndex:0,pointerEvents:"none",opacity:0.08,animationDelay:"2s" }}>
         <svg width="150" height="150" viewBox="0 0 150 150" fill="none">
           <circle cx="75" cy="75" r="68" stroke="#1535a0" strokeWidth="1.2" strokeDasharray="10 8" className="ring-spin-rev"/>
@@ -69,14 +67,14 @@ function BgDecor() {
         </svg>
       </div>
 
-      {/* bottom-left: hexagon-ish */}
+
       <div className="float-shape-3" style={{ position:"fixed",bottom:180,left:48,zIndex:0,pointerEvents:"none",opacity:0.07,animationDelay:"1s" }}>
         <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
           <polygon points="40,4 74,22 74,58 40,76 6,58 6,22" stroke="#1e60d5" strokeWidth="1.2" fill="none" strokeDasharray="7 6" className="dash-anim"/>
         </svg>
       </div>
 
-      {/* twinkling dots scattered */}
+
       {[
         {x:"15%",y:"25%"},{x:"82%",y:"18%"},{x:"70%",y:"55%"},
         {x:"8%",y:"68%"},{x:"90%",y:"75%"},{x:"45%",y:"88%"},
@@ -85,7 +83,6 @@ function BgDecor() {
           style={{ position:"fixed",left:x,top:y,width:4,height:4,borderRadius:"50%",background:"#1e60d5",zIndex:0,pointerEvents:"none" }}/>
       ))}
 
-      {/* corner accent lines */}
       <div style={{ position:"fixed",top:0,left:0,zIndex:0,pointerEvents:"none",opacity:0.1 }}>
         <svg width="180" height="180"><path d="M0 90 L90 0" stroke="#1e60d5" strokeWidth="1"/><path d="M0 150 L150 0" stroke="#1e60d5" strokeWidth="0.4"/><path d="M0 40 L40 0" stroke="#1e60d5" strokeWidth="0.5"/></svg>
       </div>
@@ -96,7 +93,6 @@ function BgDecor() {
   );
 }
 
-// ── CALENDAR GRID ──
 function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -111,15 +107,13 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
     return { status:"conditional" };
   }
 
-  // Hitung jumlah baris yang dibutuhkan
   const totalCells = startOffset + daysInMonth;
   const numRows = Math.ceil(totalCells / 7);
 
-  // Buat semua cells dalam array terurut (offset + hari)
+
   const cells = [
     ...Array.from({length:startOffset}, (_,i) => ({ type:"empty", key:`e-${i}` })),
     ...Array.from({length:daysInMonth}, (_,i) => ({ type:"day", day:i+1 })),
-    // padding cells akhir agar grid penuh
     ...Array.from({length: numRows*7 - totalCells}, (_,i) => ({ type:"empty", key:`t-${i}` })),
   ];
 
@@ -232,7 +226,6 @@ export default function Home() {
       <div style={{ minHeight:"100vh",position:"relative",overflow:"hidden" }}>
         <BgDecor />
 
-        {/* HEADER */}
         <header style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",padding:"0 40px",height:68,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 32px rgba(10,22,40,0.4)",position:"sticky",top:0,zIndex:100 }}>
           <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
           <div style={{ display:"flex",alignItems:"center",gap:14,position:"relative" }}>
@@ -252,7 +245,6 @@ export default function Home() {
 
         <main style={{ maxWidth:900,margin:"0 auto",padding:"40px 20px",position:"relative",zIndex:1 }}>
 
-          {/* HERO */}
           <div className={mounted?"fade-up":""} style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",borderRadius:24,padding:"40px 44px",marginBottom:28,boxShadow:"0 16px 48px rgba(10,22,40,0.25)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",top:-60,right:-40,width:220,height:220,borderRadius:"50%",background:"rgba(64,128,240,0.2)",filter:"blur(40px)",pointerEvents:"none" }}/>
@@ -267,9 +259,7 @@ export default function Home() {
                 <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:340,fontWeight:400 }}>Untuk reservasi, konfirmasi terlebih dahulu bersama Staff Altion.</p>
               </div>
 
-              {/* Legend + logo watermark di belakangnya */}
               <div style={{ position:"relative",display:"flex",flexDirection:"column",gap:12 }}>
-                {/* logo watermark tepat di belakang legend */}
                 <img src="/logo.png" alt="" aria-hidden="true" style={{
                   position:"absolute",
                   right:-28, top:"50%", transform:"translateY(-50%)",
@@ -295,10 +285,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CALENDAR */}
           <div className={mounted?"card fade-up anim-delay-1":"card"} style={{ overflow:"hidden",marginBottom:24,boxShadow:"var(--shadow)" }}>
 
-            {/* Month header with smooth label transition */}
             <div style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",padding:"22px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden" }}>
               <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
 
@@ -308,9 +296,8 @@ export default function Home() {
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
               >‹</button>
 
-              {/* Label with horizontal overlay */}
+
               <div style={{ textAlign:"center",position:"relative",zIndex:1,minWidth:160,height:52,overflow:"hidden" }}>
-                {/* exiting label */}
                 {isAnimating && (
                   <div className={direction==="next"?"label-exit-next":"label-exit-prev"}
                     style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
@@ -318,7 +305,6 @@ export default function Home() {
                     <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{year}</span>
                   </div>
                 )}
-                {/* entering label */}
                 {pendingDate && (
                   <div className={direction==="next"?"label-enter-next":"label-enter-prev"}
                     style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
@@ -326,7 +312,6 @@ export default function Home() {
                     <span style={{ color:"rgba(255,255,255,0.45)",fontSize:12,fontWeight:600,letterSpacing:2 }}>{pendingDate.getFullYear()}</span>
                   </div>
                 )}
-                {/* static label when not animating */}
                 {!isAnimating && !pendingDate && (
                   <div style={{ position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }}>
                     <h2 style={{ color:"#fff",fontSize:26,fontWeight:800,letterSpacing:-0.5,lineHeight:1.1 }}>{MONTHS[month]}</h2>
@@ -342,20 +327,15 @@ export default function Home() {
               >›</button>
             </div>
 
-            {/* Day headers */}
             <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"var(--bg2)",borderBottom:"1px solid var(--border)" }}>
               {DAYS.map(d=><div key={d} style={{ textAlign:"center",padding:"12px 0",fontSize:10,fontWeight:700,letterSpacing:1.5,color:"var(--muted)",textTransform:"uppercase" }}>{d}</div>)}
             </div>
-
-            {/* Grid with overlay transition */}
             <div className="cal-wrapper">
-              {/* exiting grid */}
               {isAnimating && pendingDate && (
                 <div className={direction==="next"?"cal-exit-left":"cal-exit-right"}>
                   <CalendarGrid year={year} month={month} events={events} selectedDay={null} onSelectDay={()=>{}} today={today.current}/>
                 </div>
               )}
-              {/* entering grid */}
               {pendingDate ? (
                 <div className={direction==="next"?"cal-enter-next":"cal-enter-prev"}>
                   <CalendarGrid year={pendingDate.getFullYear()} month={pendingDate.getMonth()} events={events} selectedDay={null} onSelectDay={()=>{}} today={today.current}/>
@@ -365,8 +345,6 @@ export default function Home() {
               )}
             </div>
           </div>
-
-          {/* SELECTED EVENT */}
           {selectedDay && selectedEvents.length > 0 && (
             <div className="card scale-in" style={{ padding:"24px 28px",borderLeft:"4px solid var(--blue-2)",marginBottom:24,boxShadow:"var(--shadow)" }}>
               <h3 style={{ fontSize:20,fontWeight:800,marginBottom:14,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
@@ -382,7 +360,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* CONTACT */}
           <div className={mounted?"card fade-up anim-delay-2":"card"} style={{ padding:"24px 32px",boxShadow:"var(--shadow-sm)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",top:0,right:0,width:130,height:130,borderRadius:"0 20px 0 100%",background:"linear-gradient(135deg,rgba(30,96,213,0.07),transparent)",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",bottom:0,left:0,width:80,height:80,borderRadius:"0 100% 0 20px",background:"linear-gradient(315deg,rgba(64,128,240,0.05),transparent)",pointerEvents:"none" }}/>

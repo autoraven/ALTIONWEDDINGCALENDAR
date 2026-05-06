@@ -140,7 +140,6 @@ export default function StaffPage() {
   const displayEvents = activeTab === "upcoming" ? upcomingEvents : events;
   const totalStaff = Object.values(staffMap).flat().length;
 
-  // ─── LOGIN SCREEN ───
   if (!isLoggedIn) return (
     <>
       <Head>
@@ -195,7 +194,6 @@ export default function StaffPage() {
       <div style={{ minHeight:"100vh",position:"relative",overflow:"hidden" }}>
         <BgDecor/>
 
-        {/* HEADER */}
         <header style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",padding:"0 40px",height:68,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 32px rgba(10,22,40,0.4)",position:"sticky",top:0,zIndex:100 }}>
           <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
           <div style={{ display:"flex",alignItems:"center",gap:14,position:"relative" }}>
@@ -215,13 +213,11 @@ export default function StaffPage() {
 
         <main style={{ maxWidth:1100,margin:"0 auto",padding:"36px 20px",position:"relative",zIndex:1 }}>
 
-          {/* HERO */}
           <div className={mounted?"fade-up":""} style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",borderRadius:24,padding:"36px 44px",marginBottom:28,boxShadow:"0 16px 48px rgba(10,22,40,0.25)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",top:-50,right:-30,width:200,height:200,borderRadius:"50%",background:"rgba(64,128,240,0.2)",filter:"blur(40px)",pointerEvents:"none" }}/>
             <div className="ring-spin" style={{ position:"absolute",top:-20,right:40,width:160,height:160,borderRadius:"50%",border:"1px solid rgba(255,255,255,0.07)",pointerEvents:"none",transformOrigin:"center" }}/>
 
-            {/* logo watermark */}
             <img src="/logo.png" alt="" aria-hidden="true" style={{ position:"absolute",right:20,bottom:0,width:180,height:180,objectFit:"contain",opacity:0.07,pointerEvents:"none",filter:"brightness(0) invert(1)",zIndex:0 }}/>
 
             <div style={{ position:"relative",zIndex:1,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:20 }}>
@@ -248,7 +244,6 @@ export default function StaffPage() {
             </div>
           </div>
 
-          {/* TABS */}
           <div style={{ display:"flex",gap:8,marginBottom:20 }}>
             {[
               { key:"upcoming", label:"Event Mendatang", count:upcomingEvents.length },
@@ -266,7 +261,6 @@ export default function StaffPage() {
             ))}
           </div>
 
-          {/* EVENT CARDS */}
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:20,alignItems:"start" }}>
             {displayEvents.length === 0 && (
               <div style={{ gridColumn:"1/-1",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
@@ -285,7 +279,7 @@ export default function StaffPage() {
                   onMouseEnter={e=>{if(!isPast){e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="var(--shadow-lg)";}}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="var(--shadow)";}}
                 >
-                  {/* Card header */}
+
                   <div style={{ background:isPast?"linear-gradient(135deg,#374151,#6b7280)":"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"18px 20px",position:"relative",overflow:"hidden" }}>
                     <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"16px 16px",pointerEvents:"none" }}/>
                     <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,position:"relative",zIndex:1 }}>
@@ -302,7 +296,7 @@ export default function StaffPage() {
                         {event.time&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>🕐 {event.time}</p>}
                         {event.addon&&<p style={{ color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2 }}>✨ {event.addon}</p>}
                       </div>
-                      {/* staff count */}
+    
                       <div style={{ background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",borderRadius:12,padding:"8px 12px",textAlign:"center",flexShrink:0,border:"1px solid rgba(255,255,255,0.18)",minWidth:52 }}>
                         <div style={{ color:"#fff",fontSize:22,fontWeight:800,lineHeight:1 }}>{staffList.length}</div>
                         <div style={{ color:"rgba(255,255,255,0.55)",fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:0.8,marginTop:2 }}>Staff</div>
@@ -310,7 +304,6 @@ export default function StaffPage() {
                     </div>
                   </div>
 
-                  {/* Staff list */}
                   <div style={{ padding:"14px 18px" }}>
                     {staffList.length > 0 && (
                       <div style={{ marginBottom:12 }}>
@@ -352,7 +345,6 @@ export default function StaffPage() {
                       </p>
                     )}
 
-                    {/* Join button / form */}
                     {!isPast && (
                       !isOpen ? (
                         <button onClick={()=>{setSelectedEvent(event);setError("");setSuccess("");setName("");setRole("Staff");}}

@@ -275,7 +275,6 @@ export default function AdminPanel() {
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.1)";e.currentTarget.style.transform="scale(1)";}}
                 >‹</button>
 
-                {/* smooth label horizontal overlay */}
                 <div style={{ textAlign:"center",position:"relative",zIndex:1,minWidth:150,height:46,overflow:"hidden" }}>
                   {isAnimating && (
                     <div className={direction==="next"?"label-exit-next":"label-exit-prev"}
@@ -310,7 +309,7 @@ export default function AdminPanel() {
                 {DAYS.map(d=><div key={d} style={{ textAlign:"center",padding:"10px 0",fontSize:9,fontWeight:700,letterSpacing:1.5,color:"var(--muted)",textTransform:"uppercase" }}>{d}</div>)}
               </div>
 
-              {/* overlay grid transition */}
+
               <div className="cal-wrapper">
                 {isAnimating&&pendingDate&&(
                   <div className={direction==="next"?"cal-exit-left":"cal-exit-right"}>
@@ -335,7 +334,7 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Right column */}
+
             <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
               {showForm&&(
                 <div className="card slide-right" style={{ padding:24,borderTop:"3px solid var(--blue-2)",boxShadow:"var(--shadow)" }}>

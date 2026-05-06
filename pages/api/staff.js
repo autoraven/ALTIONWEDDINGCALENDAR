@@ -15,7 +15,6 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  // Format full member list
   const memberList = allStaff.length > 0
     ? allStaff.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
     : "_Belum ada staff_";
@@ -62,7 +61,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
 
 export default async function handler(req, res) {
 
-  // GET — ambil semua staff untuk event tertentu atau semua
+
   if (req.method === "GET") {
     const { event_id } = req.query;
     let query = supabase.from("event_staff").select("*").order("joined_at", { ascending: true });
@@ -72,12 +71,12 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  // POST — staff join event
+
   if (req.method === "POST") {
     const { event_id, name, role } = req.body;
     if (!event_id || !name?.trim()) return res.status(400).json({ error: "Event dan nama wajib diisi" });
 
-    // Cek duplikat
+
     const { data: existing } = await supabase
       .from("event_staff")
       .select("id")
@@ -86,7 +85,6 @@ export default async function handler(req, res) {
       .single();
     if (existing) return res.status(409).json({ error: "Nama ini sudah terdaftar di event ini" });
 
-    // Ambil data event untuk notif
     const { data: event } = await supabase
       .from("wedding_events")
       .select("*")
@@ -105,7 +103,6 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message });
 
     if (event) {
-      // Ambil full list staff terbaru untuk event ini
       const { data: allStaff } = await supabase
         .from("event_staff")
         .select("*")
@@ -116,7 +113,6 @@ export default async function handler(req, res) {
     return res.status(201).json(data);
   }
 
-  // DELETE — staff keluar event
   if (req.method === "DELETE") {
     const { id } = req.query;
 
@@ -128,7 +124,6 @@ export default async function handler(req, res) {
 
     if (staffData) {
       const event = staffData.wedding_events;
-      // Ambil sisa staff setelah delete
       const { data: allStaff } = await supabase
         .from("event_staff")
         .select("*")
