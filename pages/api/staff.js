@@ -15,6 +15,10 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
+  const slotInfo = event.max_staff
+    ? `${allStaff.length}/${event.max_staff} orang ${allStaff.length >= event.max_staff ? "🔴 **PENUH**" : allStaff.length >= event.max_staff * 0.75 ? "🟡 Hampir penuh" : "🟢 Tersedia"}`
+    : `${allStaff.length} orang (tidak dibatasi)`;
+
   const memberList = allStaff.length > 0
     ? allStaff.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
     : "_Belum ada staff_";
@@ -33,8 +37,9 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
       fields: [
         { name: "📅 Tanggal", value: dateFormatted, inline: true },
         { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
+        { name: `👥 Slot Staff`, value: slotInfo, inline: true },
         {
-          name: `👥 Daftar Staff (${allStaff.length} orang)`,
+          name: `📋 Daftar Staff (${allStaff.length} orang)`,
           value: memberList,
           inline: false,
         },          {

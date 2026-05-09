@@ -30,6 +30,7 @@ async function sendDiscordNotification(event, action = "add") {
         { name: "📅 Tanggal", value: dateFormatted, inline: true },
         { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
         { name: "🕐 Waktu",  value: event.time  || "-", inline: true },
+        ...(event.max_staff ? [{ name: "👥 Maks. Staff", value: `${event.max_staff} orang`, inline: true }] : []),
         ...(event.addon ? [{ name: "✨ Add On", value: event.addon }] : []),
         ...(event.notes ? [{ name: "📝 Catatan", value: event.notes }] : []),
       ],
