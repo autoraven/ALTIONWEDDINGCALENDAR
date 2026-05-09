@@ -60,7 +60,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { couple, venue, time, notes, addon, date, event_type } = req.body;
+    const { couple, venue, time, notes, addon, date, event_type, max_staff } = req.body;
     if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
 
     const now = new Date();
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("wedding_events")
-      .insert([{ couple, venue, time, notes, addon, date, event_type, created_at }])
+      .insert([{ couple, venue, time, notes, addon, date, event_type, created_at, max_staff: max_staff ? parseInt(max_staff) : null }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });

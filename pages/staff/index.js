@@ -357,13 +357,36 @@ export default function StaffPage() {
                       </div>
     
                       <div style={{ background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",borderRadius:12,padding:"8px 12px",textAlign:"center",flexShrink:0,border:"1px solid rgba(255,255,255,0.18)",minWidth:52 }}>
-                        <div style={{ color:"#fff",fontSize:22,fontWeight:800,lineHeight:1 }}>{staffList.length}</div>
+                        <div style={{ color:"#fff",fontSize:22,fontWeight:800,lineHeight:1 }}>{staffList.length}{event.max_staff?<span style={{ fontSize:13,fontWeight:500,opacity:0.7 }}>/{event.max_staff}</span>:""}</div>
                         <div style={{ color:"rgba(255,255,255,0.55)",fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:0.8,marginTop:2 }}>Staff</div>
                       </div>
                     </div>
                   </div>
 
                   <div style={{ padding:"14px 18px" }}>
+                    {/* Slot progress bar */}
+                    {event.max_staff && (() => {
+                      const filled = staffList.length;
+                      const max = event.max_staff;
+                      const pct = Math.min((filled/max)*100, 100);
+                      const isFull = filled >= max;
+                      const isNearFull = !isFull && pct >= 75;
+                      const barColor = isFull ? "#ef4444" : isNearFull ? "#f59e0b" : "var(--blue-2)";
+                      return (
+                        <div style={{ marginBottom:14 }}>
+                          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5 }}>
+                            <span style={{ fontSize:10,fontWeight:700,color:isFull?"#ef4444":isNearFull?"#f59e0b":"var(--muted)",textTransform:"uppercase",letterSpacing:0.8 }}>
+                              {isFull ? "🔴 Slot Penuh" : isNearFull ? "🟡 Hampir Penuh" : "🟢 Slot Tersedia"}
+                            </span>
+                            <span style={{ fontSize:11,fontWeight:800,color:isFull?"#ef4444":"var(--dark)" }}>{filled}<span style={{ color:"var(--muted)",fontWeight:500 }}>/{max}</span></span>
+                          </div>
+                          <div style={{ height:6,borderRadius:99,background:"rgba(0,0,0,0.07)",overflow:"hidden" }}>
+                            <div style={{ height:"100%",borderRadius:99,width:`${pct}%`,background:barColor,transition:"width 0.5s ease" }}/>
+                          </div>
+                          {isFull && <p style={{ fontSize:10,color:"#ef4444",fontWeight:600,marginTop:4 }}>Pendaftaran ditutup — slot sudah terisi penuh.</p>}
+                        </div>
+                      );
+                    })()}
                     {staffList.length > 0 && (
                       <div style={{ marginBottom:12 }}>
                         <p style={{ fontSize:10,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:8 }}>
@@ -404,8 +427,17 @@ export default function StaffPage() {
                       </p>
                     )}
 
-                    {!isPast && (
-                      !isOpen ? (
+                    {!isPast && (() => {
+                      const isFull = event.max_staff && staffList.length >= event.max_staff;
+                      if (isFull) return (
+                        <div style={{ textAlign:"center",padding:"10px 0 2px" }}>
+                          <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(239,68,68,0.08)",border:"1.5px solid rgba(239,68,68,0.2)",borderRadius:10,padding:"9px 18px" }}>
+                            <span style={{ fontSize:14 }}>🔒</span>
+                            <span style={{ fontSize:12,fontWeight:700,color:"#ef4444" }}>Slot Penuh — Pendaftaran Ditutup</span>
+                          </div>
+                        </div>
+                      );
+                      return !isOpen ? (
                         <button onClick={()=>{setSelectedEvent(event);setError("");setSuccess("");setName("");setRole("Staff");}}
                           className="btn btn-primary" style={{ width:"100%",fontSize:12,padding:"9px" }}>
                           + Daftarkan Diri
@@ -436,8 +468,8 @@ export default function StaffPage() {
                             </div>
                           </form>
                         </div>
-                      )
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               );

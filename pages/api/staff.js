@@ -91,6 +91,16 @@ export default async function handler(req, res) {
       .eq("id", event_id)
       .single();
 
+    // Cek slot limit
+    if (event?.max_staff) {
+      const { count } = await supabase
+        .from("event_staff")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", event_id);
+      if (count >= event.max_staff)
+        return res.status(409).json({ error: `Slot staff penuh! Maksimal ${event.max_staff} orang untuk event ini.` });
+    }
+
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const joined_at = wib.toISOString().replace("Z", "+07:00");
