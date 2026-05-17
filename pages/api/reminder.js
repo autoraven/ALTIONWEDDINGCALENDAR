@@ -8,8 +8,10 @@ const supabase = createClient(
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_REMINDER_WEBHOOK_URL;
 
 export default async function handler(req, res) {
-  // Keamanan — hanya bisa dipanggil oleh Vercel Cron (pakai secret)
-  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Keamanan — allow Vercel Cron internal calls atau manual dengan secret
+  const isVercelCron = req.headers["x-vercel-cron"] === "1";
+  const isAuthorized = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
+  if (!isVercelCron && !isAuthorized) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
