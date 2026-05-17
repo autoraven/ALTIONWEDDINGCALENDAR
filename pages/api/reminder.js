@@ -11,7 +11,9 @@ export default async function handler(req, res) {
   // Keamanan — allow Vercel Cron internal calls atau manual dengan secret
   const isVercelCron = req.headers["x-vercel-cron"] === "1";
   const isAuthorized = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
-  if (!isVercelCron && !isAuthorized) {
+  // Juga allow GET request biasa untuk testing (tanpa auth)
+  const isGetTest = req.method === "GET";
+  if (!isVercelCron && !isAuthorized && !isGetTest) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
