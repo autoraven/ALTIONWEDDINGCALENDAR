@@ -20,7 +20,11 @@ export default async function handler(req, res) {
   const nowWIB = new Date(nowUTC.getTime() + 7 * 60 * 60 * 1000);
   const target = new Date(nowWIB);
   target.setDate(target.getDate() + 2);
-  const targetDate = target.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  // Format manual agar tidak terpengaruh timezone server
+  const yyyy = target.getUTCFullYear();
+  const mm   = String(target.getUTCMonth() + 1).padStart(2, "0");
+  const dd   = String(target.getUTCDate()).padStart(2, "0");
+  const targetDate = `${yyyy}-${mm}-${dd}`;
 
   // Cari event yang tanggalnya H-2
   const { data: events, error } = await supabase
