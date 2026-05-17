@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_REMINDER_WEBHOOK_URL;
 
 export default async function handler(req, res) {
   // Keamanan — hanya bisa dipanggil oleh Vercel Cron (pakai secret)
