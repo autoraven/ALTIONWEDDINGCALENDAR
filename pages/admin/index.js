@@ -667,7 +667,7 @@ export default function AdminPanel() {
               </div>
             </div>
           </div>
-        </main>
+
         {/* Edit Modal */}
         {editingEvent && (
           <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
