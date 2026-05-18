@@ -98,13 +98,20 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
 
-  function getDayStatus(day) {
-    const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    const event = events.find(e => {
-      const start = e.date;
+  function toDateStr(day) {
+    return `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  }
+
+  function getEventForDay(dateStr) {
+    return events.find(e => {
       const end = e.date_end || e.date;
-      return dateStr >= start && dateStr <= end;
+      return dateStr >= e.date && dateStr <= end;
     });
+  }
+
+  function getDayStatus(day) {
+    const dateStr = toDateStr(day);
+    const event = getEventForDay(dateStr);
     if (event) return { status:"booked", event };
     if (new Date(dateStr) < today) return { status:"past" };
     if (isWeekend(dateStr)) return { status:"available" };
@@ -113,8 +120,6 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
 
   const totalCells = startOffset + daysInMonth;
   const numRows = Math.ceil(totalCells / 7);
-
-
   const cells = [
     ...Array.from({length:startOffset}, (_,i) => ({ type:"empty", key:`e-${i}` })),
     ...Array.from({length:daysInMonth}, (_,i) => ({ type:"day", day:i+1 })),
@@ -122,57 +127,105 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
   ];
 
   return (
-    <div style={{
-      display:"grid",
-      gridTemplateColumns:"repeat(7,1fr)",
-      gridTemplateRows:`repeat(${numRows}, 1fr)`,
-    }}>
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridTemplateRows:`repeat(${numRows}, 1fr)` }}>
       {cells.map((cell) => {
         if (cell.type === "empty") return (
           <div key={cell.key} style={{ background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",minHeight:76 }}/>
         );
 
         const { day } = cell;
+        const dateStr = toDateStr(day);
         const { status, event } = getDayStatus(day);
-        const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
         const isSelected = selectedDay === day;
         const isToday = new Date(dateStr).toDateString() === today.toDateString();
+        const isMultiDay = event && event.date_end && event.date_end !== event.date;
+
+        // Multi-day pill position
+        const isStart  = isMultiDay && dateStr === event.date;
+        const isEnd    = isMultiDay && dateStr === event.date_end;
+        const isMid    = isMultiDay && !isStart && !isEnd;
+        // wrap detection: first col = Mon (col index 0), last col = Sun (col index 6)
+        const colIndex = (startOffset + day - 1) % 7;
+        const isRowStart = colIndex === 0;
+        const isRowEnd   = colIndex === 6;
+
         const s = {
           booked:      { bg:"rgba(238,244,255,0.9)", dot:"#4080f0", tc:"var(--dark)" },
           conditional: { bg:"rgba(255,245,245,0.9)", dot:"#ef4444", tc:"#999" },
           past:        { bg:"rgba(250,250,250,0.5)", dot:"#ddd",    tc:"#ccc" },
           available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
         }[status];
+
+        // Pill bar for multi-day events
+        const pillColor    = "rgba(124,58,237,0.85)";   // purple — distinct from single-day blue
+        const pillBg       = "rgba(237,233,254,0.9)";   // lavender cell bg
+        const pillRadLeft  = (isStart || isRowStart) ? "6px" : "0";
+        const pillRadRight = (isEnd   || isRowEnd)   ? "6px" : "0";
+
         return (
           <div key={day} className="day-cell"
             onClick={() => status==="booked" ? onSelectDay(isSelected?null:day) : null}
             style={{
-              background:isSelected?"rgba(219,238,255,0.95)":s.bg,
+              background: isSelected ? "rgba(219,238,255,0.95)" : isMultiDay ? pillBg : s.bg,
               borderRight:"1px solid var(--border)",
               borderBottom:"1px solid var(--border)",
-              padding:"10px 10px 8px",
+              padding:"8px 6px 6px",
               cursor:status==="booked"?"pointer":"default",
               display:"flex", flexDirection:"column",
               minHeight:76,
               outline:isSelected?"2px solid var(--blue-2)":"none",
               outlineOffset:-2,
+              position:"relative",
             }}
           >
-            <div style={{ width:26,height:26,borderRadius:8,background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-              <span style={{ fontSize:13,fontWeight:isToday?800:500,color:isToday?"#fff":s.tc }}>{day}</span>
+            {/* Pill bar spanning multi-day cells */}
+            {isMultiDay && (
+              <div style={{
+                position:"absolute",
+                bottom:10,
+                left: (isStart || isRowStart) ? 4 : 0,
+                right:(isEnd   || isRowEnd)   ? 4 : 0,
+                height:18,
+                background:pillColor,
+                borderRadius:`${pillRadLeft} ${pillRadRight} ${pillRadRight} ${pillRadLeft}`,
+                display:"flex",
+                alignItems:"center",
+                overflow:"hidden",
+                paddingLeft: (isStart || isRowStart) ? 6 : 0,
+                zIndex:2,
+              }}>
+                {(isStart || isRowStart) && (
+                  <span style={{ fontSize:8,fontWeight:800,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1 }}>
+                    {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div style={{ width:26,height:26,borderRadius:8,
+              background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":"transparent",
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative",zIndex:3 }}>
+              <span style={{ fontSize:13,fontWeight:isToday?800:500,color:isToday?"#fff":isMultiDay?"#5b21b6":s.tc }}>{day}</span>
             </div>
-            <div style={{ marginTop:"auto",minWidth:0 }}>
-              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,flexShrink:0,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
-              {status==="booked"&&event&&(
-                <div style={{ fontSize:9,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,
+
+            {/* Single-day event label */}
+            {!isMultiDay && status==="booked" && event && (
+              <div style={{ marginTop:"auto",minWidth:0 }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:"#4080f0",boxShadow:"0 0 7px rgba(64,128,240,0.6)",marginBottom:2 }}/>
+                <div style={{ fontSize:9,color:"var(--blue-1)",fontWeight:700,lineHeight:1.3,
                   display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",
                   overflow:"hidden",wordBreak:"break-word" }}>
                   {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
-                  {event.date_end && event.date_end !== event.date && <span style={{ display:"block",fontSize:7,opacity:0.7,fontWeight:600 }}>multi-hari</span>}
                 </div>
-              )}
-              {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
-            </div>
+              </div>
+            )}
+
+            {!isMultiDay && status!=="booked" && (
+              <div style={{ marginTop:"auto" }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":"none" }}/>
+                {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
+              </div>
+            )}
           </div>
         );
       })}
@@ -286,6 +339,7 @@ export default function Home() {
                   {color:"#10b981",label:"Weekend — Tersedia",glow:"rgba(16,185,129,0.5)"},
                   {color:"#ef4444",label:"Hari Kerja — Bersyarat",glow:"rgba(239,68,68,0.5)"},
                   {color:"#4080f0",label:"Sudah Dipesan",glow:"rgba(64,128,240,0.5)"},
+                  {color:"#7c3aed",label:"Event Multi-hari",glow:"rgba(124,58,237,0.5)"},
                 ].map(({color,label,glow})=>(
                   <div key={label} style={{ display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:1 }}>
                     <div style={{ width:8,height:8,borderRadius:"50%",background:color,flexShrink:0,boxShadow:`0 0 10px ${glow}` }}/>

@@ -5,56 +5,65 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_STAFF_WEBHOOK_URL;
+const DISCORD_WEBHOOK_WEDDING = process.env.DISCORD_STAFF_WEBHOOK_WEDDING;
+const DISCORD_WEBHOOK_EVENT   = process.env.DISCORD_STAFF_WEBHOOK_EVENT;
 
 async function sendDiscordNotification(type, staff, event, allStaff) {
-  if (!DISCORD_WEBHOOK_URL) return;
+  const isWedding = event.event_type === "wedding";
+  const webhookUrl = isWedding ? DISCORD_WEBHOOK_WEDDING : DISCORD_WEBHOOK_EVENT;
+  if (!webhookUrl) return;
 
   const isJoin = type === "join";
-  const dateFormatted = new Date(event.date).toLocaleDateString("id-ID", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
+
+  const isMultiDay = event.date_end && event.date_end !== event.date;
+  const dateFormatted = isMultiDay
+    ? `${new Date(event.date).toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})} — ${new Date(event.date_end).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})}`
+    : new Date(event.date).toLocaleDateString("id-ID", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
 
   const slotInfo = event.max_staff
     ? `${allStaff.length}/${event.max_staff} orang ${allStaff.length >= event.max_staff ? "🔴 **PENUH**" : allStaff.length >= event.max_staff * 0.75 ? "🟡 Hampir penuh" : "🟢 Tersedia"}`
     : `${allStaff.length} orang (tidak dibatasi)`;
 
   const memberList = allStaff.length > 0
-    ? allStaff.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
+    ? allStaff.map((s, i) => `${i+1}. **${s.name}** — ${s.role}`).join("\n")
     : "_Belum ada staff_";
 
-  const eventLabel = `${event.event_type === "wedding" ? "💍" : "🎉"} ${event.couple}`;
+  const eventLabel = `${isWedding ? "💍" : "🎉"} ${event.couple}`;
+
+  // Warna & judul dibedakan wedding vs event
+  const embedColor = isJoin
+    ? (isWedding ? 0x7c3aed : 0x0fb87a)   // join: ungu utk wedding, hijau utk event
+    : (isWedding ? 0xe53e3e : 0xf59e0b);   // leave: merah utk wedding, oranye utk event
+
+  const embedTitle = isJoin
+    ? (isWedding
+        ? `💍 ${staff.name} bergabung ke Wedding`
+        : `🎉 ${staff.name} bergabung ke Event`)
+    : (isWedding
+        ? `💍 ${staff.name} keluar dari Wedding`
+        : `🎉 ${staff.name} keluar dari Event`);
 
   const payload = {
     embeds: [{
-      title: isJoin
-        ? `${staff.name} masuk event`
-        : `${staff.name} keluar dari event`,
+      title: embedTitle,
       description: isJoin
         ? `**${staff.name}** (${staff.role || "Staff"}) telah bergabung ke **${eventLabel}**`
         : `**${staff.name}** (${staff.role || "Staff"}) telah keluar dari **${eventLabel}**`,
-      color: isJoin ? 0x10b981 : 0xef4444,
+      color: embedColor,
       fields: [
-        { name: "📅 Tanggal", value: dateFormatted, inline: true },
-        { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
-        { name: `👥 Slot Staff`, value: slotInfo, inline: true },
-        {
-          name: `📋 Daftar Staff (${allStaff.length} orang)`,
-          value: memberList,
-          inline: false,
-        },          {
-            name: '🔗 Website',
-            value: '[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)',
-            inline: false
-          },
+        { name: "📅 Tanggal",    value: dateFormatted,   inline: true },
+        { name: "🏛️ Venue",     value: event.venue || "-", inline: true },
+        { name: "👥 Slot Staff", value: slotInfo,         inline: true },
+        { name: `📋 Daftar Staff (${allStaff.length} orang)`, value: memberList, inline: false },
+        { name: "🔗 Website", value: "[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)", inline: false },
       ],
-      footer: { text: "ALTION Staff System" },
+      footer: { text: isWedding ? "ALTION Wedding System" : "ALTION Event System" },
       timestamp: new Date().toISOString(),
     }],
   };
 
   try {
-    await fetch(DISCORD_WEBHOOK_URL, {
+    await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

@@ -15,22 +15,27 @@ function formatDateID(dateStr) {
 
 async function sendDiscordNotification(event, action = "add") {
   if (!DISCORD_WEBHOOK_URL) return;
-  const isAdd = action === "add";
+  const isAdd  = action === "add";
+  const isEdit = action === "edit";
   const isWedding = event.event_type === "wedding";
 
   const tanggal = event.date_end && event.date_end !== event.date
     ? `${formatDateID(event.date)} — ${formatDateID(event.date_end)}`
     : formatDateID(event.date);
 
+  const title = isAdd
+    ? (isWedding ? "💍 Wedding Baru Ditambahkan!" : "🎉 Event Baru Ditambahkan!")
+    : isEdit
+    ? (isWedding ? "✏️ Detail Wedding Diperbarui" : "✏️ Detail Event Diperbarui")
+    : "🗑️ Event Dihapus";
+
+  const color = isAdd ? (isWedding ? 0x1a8fff : 0x0fb87a) : isEdit ? 0xf59e0b : 0xe53e3e;
+
   const payload = {
-    content: isAdd
-      ? `@here Ada booking ${isWedding ? "wedding 💍" : "event 🎉"} baru!`
-      : "@here Satu event telah dihapus.",
+    content,
     embeds: [{
-      title: isAdd
-        ? (isWedding ? "💍 Wedding Baru Ditambahkan!" : "🎉 Event Baru Ditambahkan!")
-        : "🗑️ Event Dihapus",
-      color: isAdd ? (isWedding ? 0x1a8fff : 0x0fb87a) : 0xe53e3e,
+      title,
+      color,
       fields: [
         { name: isWedding ? "👫 Pasangan" : "📌 Nama Event", value: event.couple || "-", inline: true },
         { name: "📅 Tanggal", value: tanggal, inline: true },
@@ -86,6 +91,25 @@ export default async function handler(req, res) {
 
     await sendDiscordNotification(data, "add");
     return res.status(201).json(data);
+  }
+
+  if (req.method === "PUT") {
+    const { id } = req.query;
+    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff } = req.body;
+    if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
+
+    const endDate = date_end && date_end >= date ? date_end : date;
+
+    const { data, error } = await supabase
+      .from("wedding_events")
+      .update({ couple, venue, time, notes, addon, date, date_end: endDate, event_type, max_staff: max_staff ? parseInt(max_staff) : null })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+
+    await sendDiscordNotification(data, "edit");
+    return res.status(200).json(data);
   }
 
   if (req.method === "DELETE") {
