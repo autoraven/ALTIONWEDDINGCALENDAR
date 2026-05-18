@@ -741,6 +741,79 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Edit Modal */}
+        {editingEvent && (
+          <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
+            onClick={e=>{ if(e.target===e.currentTarget) setEditingEvent(null); }}>
+            <div className="card scale-in" style={{ width:"100%",maxWidth:520,padding:28,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(10,22,40,0.4)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
+                <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>
+                  ✏️ Edit Event
+                </h3>
+                <button onClick={()=>setEditingEvent(null)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+              </div>
+
+              {editError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editError}</div>}
+
+              <form onSubmit={handleSaveEdit}>
+                {/* Tipe event */}
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">Tipe Event</label>
+                  <div style={{ display:"flex",gap:8 }}>
+                    {[{type:"wedding",icon:"💍",label:"Wedding"},{type:"event",icon:"🎉",label:"Event Biasa"}].map(({type,icon,label})=>(
+                      <button key={type} type="button" onClick={()=>setEditForm({...editForm,event_type:type})}
+                        style={{ flex:1,padding:"10px",border:`2px solid ${editForm.event_type===type?"var(--blue-2)":"var(--border)"}`,borderRadius:12,background:editForm.event_type===type?"rgba(238,244,255,0.9)":"rgba(248,250,255,0.8)",cursor:"pointer",textAlign:"center",transition:"all 0.15s" }}>
+                        <span style={{ fontSize:18 }}>{icon}</span>
+                        <p style={{ fontSize:11,fontWeight:700,color:editForm.event_type===type?"var(--blue-1)":"var(--muted)",marginTop:4 }}>{label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tanggal */}
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
+                  <div>
+                    <label className="label">Tanggal Mulai</label>
+                    <input type="date" value={editForm.date} onChange={e=>setEditForm({...editForm,date:e.target.value,date_end:e.target.value>editForm.date_end?e.target.value:editForm.date_end})} className="input"/>
+                  </div>
+                  <div>
+                    <label className="label">Tanggal Akhir</label>
+                    <input type="date" value={editForm.date_end} min={editForm.date} onChange={e=>setEditForm({...editForm,date_end:e.target.value})} className="input"/>
+                  </div>
+                </div>
+
+                {[
+                  {label:editForm.event_type==="wedding"?"Nama Pasangan *":"Nama Event *",key:"couple",placeholder:editForm.event_type==="wedding"?"Budi & Siti":"Nama event..."},
+                  {label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom"},
+                  {label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},
+                  {label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."},
+                  {label:"Catatan",key:"notes",placeholder:"Info tambahan..."},
+                ].map(({label,key,placeholder})=>(
+                  <div key={key} style={{ marginBottom:14 }}>
+                    <label className="label">{label}</label>
+                    <input value={editForm[key]} onChange={e=>setEditForm({...editForm,[key]:e.target.value})} placeholder={placeholder} className="input"/>
+                  </div>
+                ))}
+
+                <div style={{ marginBottom:20 }}>
+                  <label className="label">👥 Maks. Slot Staff <span style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>opsional</span></label>
+                  <div style={{ position:"relative" }}>
+                    <input type="number" min="1" max="99" value={editForm.max_staff}
+                      onChange={e=>setEditForm({...editForm,max_staff:e.target.value})}
+                      placeholder="Kosongkan = tidak dibatasi" className="input" style={{ paddingRight:60 }}/>
+                    {editForm.max_staff && <span style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"var(--blue-1)",fontWeight:700,pointerEvents:"none" }}>orang</span>}
+                  </div>
+                </div>
+
+                <div style={{ display:"flex",gap:10 }}>
+                  <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan Perubahan</button>
+                  <button type="button" onClick={()=>setEditingEvent(null)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
 
         {/* ===== MANAJEMEN STAFF USERS ===== */}
         <div style={{ marginTop:32 }}>
