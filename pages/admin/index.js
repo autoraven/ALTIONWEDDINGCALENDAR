@@ -141,6 +141,17 @@ export default function AdminPanel() {
   const [password,setPassword]=useState("");
   const [loginError,setLoginError]=useState("");
   const [events,setEvents]=useState([]);
+
+  // Staff Users Management
+  const [staffUsers, setStaffUsers] = useState([]);
+  const [staffUsersTab, setStaffUsersTab] = useState("list"); // "list" | "add"
+  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"" });
+  const [staffUserError, setStaffUserError] = useState("");
+  const [staffUserSuccess, setStaffUserSuccess] = useState("");
+  const [editingStaffUser, setEditingStaffUser] = useState(null);
+  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", is_active:true });
+  const [editStaffUserError, setEditStaffUserError] = useState("");
+  const [staffUserSearch, setStaffUserSearch] = useState("");
   const [displayDate,setDisplayDate]=useState(new Date());
   const [pendingDate,setPendingDate]=useState(null);
   const [direction,setDirection]=useState(null);
@@ -175,7 +186,13 @@ export default function AdminPanel() {
     if(Array.isArray(data)) setEvents(data);
   },[]);
 
-  useEffect(()=>{ setMounted(true); if(sessionStorage.getItem("admin_auth")==="true"){setIsLoggedIn(true);fetchEvents();} },[fetchEvents]);
+  const fetchStaffUsers = useCallback(async () => {
+    const res = await fetch("/api/staff-users");
+    const data = await res.json();
+    if (Array.isArray(data)) setStaffUsers(data);
+  }, []);
+
+  useEffect(()=>{ setMounted(true); if(sessionStorage.getItem("admin_auth")==="true"){setIsLoggedIn(true);fetchEvents();fetchStaffUsers();} },[fetchEvents, fetchStaffUsers]);
 
   function changeMonth(dir) {
     if(isAnimating) return;
@@ -188,7 +205,7 @@ export default function AdminPanel() {
     e.preventDefault(); setLoginError("");
     const res=await fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
     const data=await res.json();
-    if(data.success){sessionStorage.setItem("admin_auth","true");setIsLoggedIn(true);fetchEvents();}
+    if(data.success){sessionStorage.setItem("admin_auth","true");setIsLoggedIn(true);fetchEvents();fetchStaffUsers();}
     else setLoginError(data.message);
   }
 
@@ -288,6 +305,37 @@ export default function AdminPanel() {
 
   function cancelForm() {
     setShowForm(false); setEventType(""); setSelectedRange({start:"",end:""}); setPickingStep(0);
+  }
+
+  async function handleAddStaffUser(e) {
+    e.preventDefault(); setStaffUserError("");
+    const { name, username, password, jabatan, posisi } = staffUserForm;
+    if (!name.trim() || !username.trim() || !password.trim()) return setStaffUserError("Nama, username, dan password wajib diisi");
+    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi }) });
+    const data = await res.json();
+    if (data.error) return setStaffUserError(data.error);
+    setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
+    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"" });
+    setStaffUsersTab("list");
+    setStaffUserSuccess(`✅ Akun "${data.name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
+  }
+
+  async function handleSaveEditStaffUser(e) {
+    e.preventDefault(); setEditStaffUserError("");
+    const { name, username, password, jabatan, posisi, is_active } = editStaffUserForm;
+    if (!name.trim() || !username.trim()) return setEditStaffUserError("Nama dan username wajib diisi");
+    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, is_active }) });
+    const data = await res.json();
+    if (data.error) return setEditStaffUserError(data.error);
+    setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? data : u));
+    setEditingStaffUser(null);
+    setStaffUserSuccess(`✅ Akun "${data.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
+  }
+
+  async function handleDeleteStaffUser(id, name) {
+    if (!confirm(`Hapus akun "${name}"? Aksi ini tidak bisa dibatalkan.`)) return;
+    const res = await fetch(`/api/staff-users?id=${id}`, { method:"DELETE" });
+    if (res.ok) { setStaffUsers(prev => prev.filter(u => u.id !== id)); setStaffUserSuccess(`✅ Akun "${name}" dihapus.`); setTimeout(()=>setStaffUserSuccess(""),3000); }
   }
 
   function logout(){sessionStorage.removeItem("admin_auth");setIsLoggedIn(false);}
@@ -693,6 +741,163 @@ export default function AdminPanel() {
           </div>
         )}
 
+
+        {/* ===== MANAJEMEN STAFF USERS ===== */}
+        <div style={{ marginTop:32 }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
+            <div>
+              <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
+              <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim.</p>
+            </div>
+            <button onClick={()=>{ setStaffUsersTab(staffUsersTab==="add"?"list":"add"); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:""}); }}
+              className={staffUsersTab==="add"?"btn btn-outline":"btn btn-primary"} style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
+              {staffUsersTab==="add" ? "← Kembali ke Daftar" : "+ Tambah Akun Staff"}
+            </button>
+          </div>
+
+          {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
+
+          {staffUsersTab === "add" && (
+            <div className="card" style={{ padding:28,borderTop:"3px solid var(--blue-2)",maxWidth:600 }}>
+              <h3 style={{ fontSize:16,fontWeight:800,marginBottom:18,color:"var(--navy)" }}>Buat Akun Staff Baru</h3>
+              {staffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {staffUserError}</div>}
+              <form onSubmit={handleAddStaffUser}>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
+                  <div>
+                    <label className="label">Nama Lengkap *</label>
+                    <input value={staffUserForm.name} onChange={e=>setStaffUserForm({...staffUserForm,name:e.target.value})} placeholder="Contoh: Budi Santoso" className="input" required/>
+                  </div>
+                  <div>
+                    <label className="label">Username *</label>
+                    <input value={staffUserForm.username} onChange={e=>setStaffUserForm({...staffUserForm,username:e.target.value})} placeholder="Contoh: budi" className="input" required autoCapitalize="none"/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">Password *</label>
+                  <input type="text" value={staffUserForm.password} onChange={e=>setStaffUserForm({...staffUserForm,password:e.target.value})} placeholder="Buat password untuk staff ini" className="input" required/>
+                  <p style={{ fontSize:11,color:"var(--muted)",marginTop:4 }}>Password ini diberikan ke staff untuk login ke portal.</p>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
+                  <div>
+                    <label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
+                    <input value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} placeholder="Contoh: Fotografer" className="input"/>
+                  </div>
+                  <div>
+                    <label className="label">Posisi <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
+                    <input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Senior" className="input"/>
+                  </div>
+                </div>
+                <div style={{ background:"rgba(238,244,255,0.6)",border:"1px solid rgba(209,221,247,0.7)",borderRadius:12,padding:"10px 14px",marginBottom:20 }}>
+                  <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:700,marginBottom:2 }}>Preview saat daftar ke event:</p>
+                  <p style={{ fontSize:12,color:"var(--dark)" }}>
+                    <strong>{staffUserForm.name || "Nama Staff"}</strong> — <span style={{ color:"var(--muted)" }}>{[staffUserForm.jabatan, staffUserForm.posisi].filter(Boolean).join(" · ") || "Staff"}</span>
+                  </p>
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"12px" }}>Buat Akun Staff</button>
+              </form>
+            </div>
+          )}
+
+          {staffUsersTab === "list" && (
+            <div className="card" style={{ overflow:"hidden" }}>
+              <div style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ position:"relative",flex:1,maxWidth:320 }}>
+                  <span style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
+                  <input value={staffUserSearch} onChange={e=>setStaffUserSearch(e.target.value)} placeholder="Cari nama atau username…"
+                    style={{ width:"100%",paddingLeft:32,paddingRight:staffUserSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"rgba(255,255,255,0.9)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
+                    onFocus={e=>e.target.style.borderColor="var(--blue-2)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+                  {staffUserSearch && <button onClick={()=>setStaffUserSearch("")} style={{ position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:"var(--muted)" }}>✕</button>}
+                </div>
+                <span style={{ fontSize:12,fontWeight:700,color:"var(--muted)",marginLeft:"auto" }}>{staffUsers.length} akun</span>
+              </div>
+              {staffUsers.length === 0 && (
+                <div style={{ padding:"40px",textAlign:"center" }}>
+                  <p style={{ fontSize:28,marginBottom:8 }}>👤</p>
+                  <p style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>Belum ada akun staff. Klik "+ Tambah Akun Staff" untuk mulai.</p>
+                </div>
+              )}
+              {(() => {
+                const sq = staffUserSearch.trim().toLowerCase();
+                const filtered = sq ? staffUsers.filter(u => u.name.toLowerCase().includes(sq) || u.username.toLowerCase().includes(sq) || (u.jabatan||"").toLowerCase().includes(sq)) : staffUsers;
+                return filtered.map(user => (
+                  <div key={user.id} style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,transition:"background 0.15s" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(238,244,255,0.5)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{ display:"flex",alignItems:"center",gap:12,minWidth:0 }}>
+                      <div style={{ width:38,height:38,borderRadius:11,background:user.is_active?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"linear-gradient(135deg,#9ca3af,#6b7280)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                        <span style={{ color:"#fff",fontSize:15,fontWeight:800 }}>{user.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"var(--dark)" }}>{user.name}</p>
+                          {!user.is_active && <span style={{ fontSize:9,background:"rgba(239,68,68,0.1)",color:"#ef4444",borderRadius:6,padding:"1px 7px",fontWeight:700,textTransform:"uppercase" }}>Nonaktif</span>}
+                        </div>
+                        <p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>@{user.username}</p>
+                        {(user.jabatan || user.posisi) && <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:600,marginTop:1 }}>{[user.jabatan, user.posisi].filter(Boolean).join(" · ")}</p>}
+                      </div>
+                    </div>
+                    <div style={{ display:"flex",gap:6,flexShrink:0 }}>
+                      <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
+                      <button onClick={()=>handleDeleteStaffUser(user.id, user.name)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+
+        {/* Edit Staff User Modal */}
+        {editingStaffUser && (
+          <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
+            onClick={e=>{ if(e.target===e.currentTarget) setEditingStaffUser(null); }}>
+            <div className="card scale-in" style={{ width:"100%",maxWidth:520,padding:28,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(10,22,40,0.4)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
+                <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>✏️ Edit Akun Staff</h3>
+                <button onClick={()=>setEditingStaffUser(null)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+              </div>
+              {editStaffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editStaffUserError}</div>}
+              <form onSubmit={handleSaveEditStaffUser}>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
+                  <div>
+                    <label className="label">Nama Lengkap *</label>
+                    <input value={editStaffUserForm.name} onChange={e=>setEditStaffUserForm({...editStaffUserForm,name:e.target.value})} className="input" required/>
+                  </div>
+                  <div>
+                    <label className="label">Username *</label>
+                    <input value={editStaffUserForm.username} onChange={e=>setEditStaffUserForm({...editStaffUserForm,username:e.target.value})} className="input" required autoCapitalize="none"/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">Password Baru <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>kosongkan jika tidak diganti</span></label>
+                  <input type="text" value={editStaffUserForm.password} onChange={e=>setEditStaffUserForm({...editStaffUserForm,password:e.target.value})} placeholder="Isi untuk mengganti password…" className="input"/>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
+                  <div>
+                    <label className="label">Jabatan</label>
+                    <input value={editStaffUserForm.jabatan} onChange={e=>setEditStaffUserForm({...editStaffUserForm,jabatan:e.target.value})} placeholder="Contoh: Fotografer" className="input"/>
+                  </div>
+                  <div>
+                    <label className="label">Posisi</label>
+                    <input value={editStaffUserForm.posisi} onChange={e=>setEditStaffUserForm({...editStaffUserForm,posisi:e.target.value})} placeholder="Contoh: Senior" className="input"/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:20 }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
+                    <input type="checkbox" checked={editStaffUserForm.is_active} onChange={e=>setEditStaffUserForm({...editStaffUserForm,is_active:e.target.checked})} style={{ width:16,height:16,cursor:"pointer" }}/>
+                    <span style={{ fontSize:13,fontWeight:600,color:"var(--dark)" }}>Akun aktif <span style={{ fontSize:11,color:"var(--muted)",fontWeight:400 }}>(nonaktif = tidak bisa login)</span></span>
+                  </label>
+                </div>
+                <div style={{ display:"flex",gap:10 }}>
+                  <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan Perubahan</button>
+                  <button type="button" onClick={()=>setEditingStaffUser(null)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        </main>
         <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG</footer>
       </div>
     </>
