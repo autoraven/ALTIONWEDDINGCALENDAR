@@ -89,15 +89,6 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
         const isSelected   = isRangeStart || isRangeEnd;
         const inPreview    = pickingEnd && rangeStart && dateStr >= rangeStart && dateStr <= pickingEnd;
 
-        // Pill geometry
-        const colIndex    = (startOffset + day - 1) % 7;
-        const isRowStart  = colIndex === 0;
-        const isRowEnd    = colIndex === 6;
-        const isPillStart = isMultiDay && (dateStr === event.date   || isRowStart);
-        const isPillEnd   = isMultiDay && (dateStr === event.date_end || isRowEnd);
-        const pillRadL    = isPillStart ? "5px" : "0";
-        const pillRadR    = isPillEnd   ? "5px" : "0";
-
         const s={
           booked:{bg:"rgba(238,244,255,0.9)",dot:"#4080f0"},
           conditional:{bg:"rgba(255,245,245,0.9)",dot:"#ef4444"},
@@ -105,7 +96,7 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
           available:{bg:"rgba(240,253,248,0.9)",dot:"#10b981"}
         }[status];
 
-        let bg = isMultiDay ? "rgba(237,233,254,0.85)" : s.bg;
+        let bg = s.bg;
         if (inPreview)       bg = "rgba(200,225,255,0.7)";
         if (inSelectedRange) bg = "rgba(208,228,255,0.85)";
         if (isSelected)      bg = "rgba(200,222,255,0.98)";
@@ -119,52 +110,24 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
               position:"relative",
             }}
           >
-            {/* Multi-day pill bar */}
-            {isMultiDay && (
-              <div style={{
-                position:"absolute",bottom:7,
-                left: isPillStart ? 4 : 0,
-                right:isPillEnd   ? 4 : 0,
-                height:16,
-                background:"rgba(109,40,217,0.85)",
-                borderRadius:`${pillRadL} ${pillRadR} ${pillRadR} ${pillRadL}`,
-                display:"flex",alignItems:"center",overflow:"hidden",
-                paddingLeft: isPillStart ? 5 : 0,
-                zIndex:2,
-              }}>
-                {isPillStart && (
-                  <span style={{ fontSize:7,fontWeight:800,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1 }}>
-                    {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
-                  </span>
-                )}
-              </div>
-            )}
-
             <div style={{ width:24,height:24,borderRadius:7,
               background:isToday?"linear-gradient(135deg,var(--blue-2),var(--blue-1))":isSelected?"var(--blue-2)":"transparent",
               display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative",zIndex:3 }}>
               <span style={{ fontSize:12,fontWeight:isToday||isSelected?800:500,
-                color:isToday||isSelected?"#fff":isMultiDay?"#5b21b6":status==="past"?"#ccc":"var(--dark)" }}>{day}</span>
+                color:isToday||isSelected?"#fff":status==="past"?"#ccc":"var(--dark)" }}>{day}</span>
             </div>
 
-            {/* Single-day event label */}
-            {!isMultiDay && status==="booked" && event && (
-              <div style={{ marginTop:"auto",minWidth:0 }}>
-                <div style={{ width:6,height:6,borderRadius:"50%",background:"#4080f0",boxShadow:"0 0 6px rgba(64,128,240,0.6)",marginBottom:2 }}/>
-                <div style={{ fontSize:8,color:"var(--blue-1)",fontWeight:700,lineHeight:1.3,
+            <div style={{ marginTop:"auto",minWidth:0 }}>
+              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,
+                boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
+              {status==="booked"&&event&&(
+                <div style={{ fontSize:8,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,
                   display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",wordBreak:"break-word" }}>
                   {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
                 </div>
-              </div>
-            )}
-
-            {!isMultiDay && status!=="booked" && (
-              <div style={{ marginTop:"auto" }}>
-                <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,
-                  boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":"none" }}/>
-                {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
-              </div>
-            )}
+              )}
+              {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
+            </div>
           </div>
         );
       })}
