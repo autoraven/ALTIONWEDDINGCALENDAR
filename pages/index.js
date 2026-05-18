@@ -100,7 +100,11 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
 
   function getDayStatus(day) {
     const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    const event = events.find(e => e.date === dateStr);
+    const event = events.find(e => {
+      const start = e.date;
+      const end = e.date_end || e.date;
+      return dateStr >= start && dateStr <= end;
+    });
     if (event) return { status:"booked", event };
     if (new Date(dateStr) < today) return { status:"past" };
     if (isWeekend(dateStr)) return { status:"available" };
@@ -164,6 +168,7 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
                   display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",
                   overflow:"hidden",wordBreak:"break-word" }}>
                   {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+                  {event.date_end && event.date_end !== event.date && <span style={{ display:"block",fontSize:7,opacity:0.7,fontWeight:600 }}>multi-hari</span>}
                 </div>
               )}
               {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
@@ -214,7 +219,13 @@ export default function Home() {
   const selectedDateStr = selectedDay
     ? `${year}-${String(month+1).padStart(2,"0")}-${String(selectedDay).padStart(2,"0")}`
     : null;
-  const selectedEvents = selectedDateStr ? events.filter(e => e.date === selectedDateStr) : [];
+  const selectedEvents = selectedDateStr
+    ? events.filter(e => {
+        const start = e.date;
+        const end = e.date_end || e.date;
+        return selectedDateStr >= start && selectedDateStr <= end;
+      })
+    : [];
 
   return (
     <>
@@ -347,11 +358,23 @@ export default function Home() {
           </div>
           {selectedDay && selectedEvents.length > 0 && (
             <div className="card scale-in" style={{ padding:"24px 28px",borderLeft:"4px solid var(--blue-2)",marginBottom:24,boxShadow:"var(--shadow)" }}>
-              <h3 style={{ fontSize:20,fontWeight:800,marginBottom:14,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
+              <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap" }}>
+                <h3 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
+                {selectedEvents[0]?.date_end && selectedEvents[0].date_end !== selectedEvents[0].date && (
+                  <span style={{ fontSize:11,background:"rgba(124,58,237,0.1)",color:"#7c3aed",padding:"3px 10px",borderRadius:20,fontWeight:700 }}>
+                    📆 Multi-hari
+                  </span>
+                )}
+              </div>
               {selectedEvents.map((e,i)=>(
                 <div key={i}>
                   <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:16 }}>
+                    {e.date_end && e.date_end !== e.date && (
+                      <span style={{ fontSize:13,color:"var(--blue-1)",fontWeight:700 }}>
+                        📅 {new Date(e.date).toLocaleDateString("id-ID",{day:"numeric",month:"short"})} — {new Date(e.date_end).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
+                      </span>
+                    )}
                     {e.venue&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>📍 {e.venue}</span>}
                     {e.time&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>🕐 {e.time}</span>}
                   </div>

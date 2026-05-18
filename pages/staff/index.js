@@ -330,7 +330,7 @@ export default function StaffPage() {
 
             {[...displayEvents].sort((a,b)=>a.date.localeCompare(b.date)).map(event => {
               const staffList = staffMap[event.id] || [];
-              const isPast = new Date(event.date) < today;
+              const isPast = new Date(event.date_end || event.date) < today;
               const isOpen = selectedEvent?.id === event.id;
 
               return (
@@ -350,7 +350,14 @@ export default function StaffPage() {
                           {isPast && <span style={{ fontSize:10,background:"rgba(0,0,0,0.25)",color:"rgba(255,255,255,0.6)",padding:"2px 8px",borderRadius:10,fontWeight:600 }}>Selesai</span>}
                         </div>
                         <h3 style={{ color:"#fff",fontSize:15,fontWeight:800,letterSpacing:-0.3,marginBottom:4,lineHeight:1.2 }}>{highlight(event.couple,q)}</h3>
-                        <p style={{ color:"rgba(255,255,255,0.55)",fontSize:11,fontWeight:500 }}>📅 {formatDate(event.date)}</p>
+                        <p style={{ color:"rgba(255,255,255,0.55)",fontSize:11,fontWeight:500 }}>
+                          📅 {formatDate(event.date)}{event.date_end && event.date_end !== event.date ? ` — ${formatDate(event.date_end)}` : ""}
+                          {event.date_end && event.date_end !== event.date && (
+                            <span style={{ marginLeft:6,background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:700 }}>
+                              {Math.round((new Date(event.date_end)-new Date(event.date))/(1000*60*60*24)+1)} hari
+                            </span>
+                          )}
+                        </p>
                         {event.venue&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>📍 {highlight(event.venue,q)}</p>}
                         {event.time&&<p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,marginTop:2 }}>🕐 {event.time}</p>}
                         {event.addon&&<p style={{ color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2 }}>✨ {event.addon}</p>}

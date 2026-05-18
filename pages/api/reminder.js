@@ -28,19 +28,27 @@ export default async function handler(req, res) {
   const dd   = String(target.getUTCDate()).padStart(2, "0");
   const targetDate = `${yyyy}-${mm}-${dd}`;
 
-  // Cari event yang tanggalnya H-2
+  // Cari event yang range-nya mencakup targetDate (start <= target <= end)
   const { data: events, error } = await supabase
     .from("wedding_events")
     .select("*")
-    .eq("date", targetDate);
+    .lte("date", targetDate)        // date_start <= target
+    .or(`date_end.gte.${targetDate},date_end.is.null`); // date_end >= target OR null (single day, cek manual)
 
   if (error) return res.status(500).json({ error: error.message });
-  if (!events || events.length === 0) {
+
+  // Filter manual: untuk event tanpa date_end, pastikan date === targetDate
+  const matchedEvents = (events || []).filter(e => {
+    const end = e.date_end || e.date;
+    return targetDate >= e.date && targetDate <= end;
+  });
+
+  if (matchedEvents.length === 0) {
     return res.status(200).json({ message: "Tidak ada event H-2", date: targetDate });
   }
 
   // Kirim notif per event
-  for (const event of events) {
+  for (const event of matchedEvents) {
     // Ambil daftar staff event ini
     const { data: staffList } = await supabase
       .from("event_staff")
@@ -48,10 +56,13 @@ export default async function handler(req, res) {
       .eq("event_id", event.id)
       .order("joined_at", { ascending: true });
 
-    const dateFormatted = new Date(event.date).toLocaleDateString("id-ID", {
-      weekday: "long", year: "numeric", month: "long", day: "numeric",
-      timeZone: "Asia/Jakarta",
-    });
+    const isMultiDay = event.date_end && event.date_end !== event.date;
+    const dateFormatted = isMultiDay
+      ? `${new Date(event.date).toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Jakarta"})} — ${new Date(event.date_end).toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Jakarta"})}`
+      : new Date(event.date).toLocaleDateString("id-ID", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
+          timeZone: "Asia/Jakarta",
+        });
 
     const eventLabel = `${event.event_type === "wedding" ? "💍" : "🎉"} ${event.couple}`;
 
@@ -90,7 +101,7 @@ export default async function handler(req, res) {
   }
 
   return res.status(200).json({
-    message: `Reminder terkirim untuk ${events.length} event`,
+    message: `Reminder terkirim untuk ${matchedEvents.length} event`,
     date: targetDate,
   });
 }

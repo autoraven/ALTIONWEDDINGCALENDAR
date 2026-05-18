@@ -7,14 +7,20 @@ const supabase = createClient(
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
-async function sendDiscordNotification(event, action = "add") {
-  if (!DISCORD_WEBHOOK_URL) return;
-
-  const isAdd = action === "add";
-  const isWedding = event.event_type === "wedding";
-  const dateFormatted = new Date(event.date).toLocaleDateString("id-ID", {
+function formatDateID(dateStr) {
+  return new Date(dateStr).toLocaleDateString("id-ID", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+}
+
+async function sendDiscordNotification(event, action = "add") {
+  if (!DISCORD_WEBHOOK_URL) return;
+  const isAdd = action === "add";
+  const isWedding = event.event_type === "wedding";
+
+  const tanggal = event.date_end && event.date_end !== event.date
+    ? `${formatDateID(event.date)} — ${formatDateID(event.date_end)}`
+    : formatDateID(event.date);
 
   const payload = {
     content: isAdd
@@ -27,7 +33,7 @@ async function sendDiscordNotification(event, action = "add") {
       color: isAdd ? (isWedding ? 0x1a8fff : 0x0fb87a) : 0xe53e3e,
       fields: [
         { name: isWedding ? "👫 Pasangan" : "📌 Nama Event", value: event.couple || "-", inline: true },
-        { name: "📅 Tanggal", value: dateFormatted, inline: true },
+        { name: "📅 Tanggal", value: tanggal, inline: true },
         { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
         { name: "🕐 Waktu",  value: event.time  || "-", inline: true },
         ...(event.max_staff ? [{ name: "👥 Maks. Staff", value: `${event.max_staff} orang`, inline: true }] : []),
@@ -61,8 +67,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { couple, venue, time, notes, addon, date, event_type, max_staff } = req.body;
+    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff } = req.body;
     if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
+
+    // date_end harus >= date
+    const endDate = date_end && date_end >= date ? date_end : date;
 
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
@@ -70,7 +79,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("wedding_events")
-      .insert([{ couple, venue, time, notes, addon, date, event_type, created_at, max_staff: max_staff ? parseInt(max_staff) : null }])
+      .insert([{ couple, venue, time, notes, addon, date, date_end: endDate, event_type, created_at, max_staff: max_staff ? parseInt(max_staff) : null }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
@@ -81,14 +90,9 @@ export default async function handler(req, res) {
 
   if (req.method === "DELETE") {
     const { id } = req.query;
-
-    const { data: eventData } = await supabase
-      .from("wedding_events").select("*").eq("id", id).single();
-
-    const { error } = await supabase
-      .from("wedding_events").delete().eq("id", id);
+    const { data: eventData } = await supabase.from("wedding_events").select("*").eq("id", id).single();
+    const { error } = await supabase.from("wedding_events").delete().eq("id", id);
     if (error) return res.status(500).json({ error: error.message });
-
     if (eventData) await sendDiscordNotification(eventData, "delete");
     return res.status(200).json({ success: true });
   }
