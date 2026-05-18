@@ -146,13 +146,6 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
           available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
         }[status];
 
-        const s = {
-          booked:      { bg:"rgba(238,244,255,0.9)", dot:"#4080f0", tc:"var(--dark)" },
-          conditional: { bg:"rgba(255,245,245,0.9)", dot:"#ef4444", tc:"#999" },
-          past:        { bg:"rgba(250,250,250,0.5)", dot:"#ddd",    tc:"#ccc" },
-          available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
-        }[status];
-
         return (
           <div key={day} className="day-cell"
             onClick={() => status==="booked" ? onSelectDay(isSelected?null:day) : null}
