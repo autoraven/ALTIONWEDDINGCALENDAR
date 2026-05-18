@@ -138,7 +138,7 @@ export default function AdminPanel() {
   const [showForm,setShowForm]=useState(false);
   const [selectedDate,setSelectedDate]=useState("");
   const [eventType,setEventType]=useState("");
-  const [form,setForm]=useState({couple:"",venue:"",time:"",notes:"",addon:"",date_end:""});
+  const [form,setForm]=useState({couple:"",venue:"",time:"",notes:"",addon:"",date_end:"",max_staff:""});
   const [formError,setFormError]=useState("");
   const [success,setSuccess]=useState("");
   const [mounted,setMounted]=useState(false);
@@ -173,7 +173,7 @@ export default function AdminPanel() {
     const res=await fetch("/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,date:selectedDate,date_end:dateEnd,event_type:eventType})});
     const data=await res.json();
     if(data.error) return setFormError(data.error);
-    setEvents(prev=>[...prev,data]); setForm({couple:"",venue:"",time:"",notes:"",addon:"",date_end:""}); setEventType(""); setShowForm(false);
+    setEvents(prev=>[...prev,data]); setForm({couple:"",venue:"",time:"",notes:"",addon:"",date_end:"",max_staff:""}); setEventType(""); setShowForm(false);
     setSuccess("Event berhasil ditambahkan!"); setTimeout(()=>setSuccess(""),3500);
   }
 
@@ -402,6 +402,13 @@ export default function AdminPanel() {
                             </p>
                           )}
                         </div>
+                        {/* Max staff */}
+                        <div style={{ marginBottom:14 }}>
+                          <label className="label">Maks. Staff <span style={{ color:"var(--muted)",fontWeight:400,textTransform:"none" }}>(opsional, kosongkan = tidak terbatas)</span></label>
+                          <input type="number" min="1" value={form.max_staff}
+                            onChange={e=>setForm({...form,max_staff:e.target.value})}
+                            placeholder="cth: 5" className="input"/>
+                        </div>
                         <div style={{ display:"flex",gap:10,marginTop:10 }}>
                           <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan</button>
                           <button type="button" onClick={()=>{setShowForm(false);setEventType("");}} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
@@ -476,6 +483,7 @@ export default function AdminPanel() {
                           {event.venue&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>📍 {event.venue}</p>}
                           {event.time&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>🕐 {event.time}</p>}
                           {event.addon&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>✨ {event.addon}</p>}
+                          {event.max_staff&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>👥 Maks. {event.max_staff} staff</p>}
                         </div>
                         <button onClick={()=>handleDelete(event.id)} className="btn btn-danger" style={{ flexShrink:0 }}>Hapus</button>
                       </div>

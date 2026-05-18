@@ -15,10 +15,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const slotInfo = event.max_staff
-    ? `${allStaff.length}/${event.max_staff} orang ${allStaff.length >= event.max_staff ? "🔴 **PENUH**" : allStaff.length >= event.max_staff * 0.75 ? "🟡 Hampir penuh" : "🟢 Tersedia"}`
-    : `${allStaff.length} orang (tidak dibatasi)`;
-
+  // Format full member list
   const memberList = allStaff.length > 0
     ? allStaff.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
     : "_Belum ada staff_";
@@ -37,16 +34,11 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
       fields: [
         { name: "📅 Tanggal", value: dateFormatted, inline: true },
         { name: "🏛️ Venue",  value: event.venue || "-", inline: true },
-        { name: `👥 Slot Staff`, value: slotInfo, inline: true },
         {
-          name: `📋 Daftar Staff (${allStaff.length} orang)`,
+          name: `👥 Daftar Staff (${allStaff.length} orang)`,
           value: memberList,
           inline: false,
-        },          {
-            name: '🔗 Website',
-            value: '[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)',
-            inline: false
-          },
+        },
       ],
       footer: { text: "ALTION Staff System" },
       timestamp: new Date().toISOString(),
@@ -66,7 +58,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
 
 export default async function handler(req, res) {
 
-
+  // GET — ambil semua staff untuk event tertentu atau semua
   if (req.method === "GET") {
     const { event_id } = req.query;
     let query = supabase.from("event_staff").select("*").order("joined_at", { ascending: true });
@@ -76,12 +68,12 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-
+  // POST — staff join event
   if (req.method === "POST") {
     const { event_id, name, role } = req.body;
     if (!event_id || !name?.trim()) return res.status(400).json({ error: "Event dan nama wajib diisi" });
 
-
+    // Cek duplikat
     const { data: existing } = await supabase
       .from("event_staff")
       .select("id")
@@ -90,21 +82,28 @@ export default async function handler(req, res) {
       .single();
     if (existing) return res.status(409).json({ error: "Nama ini sudah terdaftar di event ini" });
 
+    // Cek max_staff limit
+    const { data: eventData } = await supabase
+      .from("wedding_events")
+      .select("max_staff, couple")
+      .eq("id", event_id)
+      .single();
+    if (eventData?.max_staff) {
+      const { count } = await supabase
+        .from("event_staff")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", event_id);
+      if (count >= eventData.max_staff) {
+        return res.status(400).json({ error: `Staff untuk event ini sudah penuh (maks. ${eventData.max_staff} orang)` });
+      }
+    }
+
+    // Ambil data event untuk notif
     const { data: event } = await supabase
       .from("wedding_events")
       .select("*")
       .eq("id", event_id)
       .single();
-
-    // Cek slot limit
-    if (event?.max_staff) {
-      const { count } = await supabase
-        .from("event_staff")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", event_id);
-      if (count >= event.max_staff)
-        return res.status(409).json({ error: `Slot staff penuh! Maksimal ${event.max_staff} orang untuk event ini.` });
-    }
 
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
@@ -118,6 +117,7 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message });
 
     if (event) {
+      // Ambil full list staff terbaru untuk event ini
       const { data: allStaff } = await supabase
         .from("event_staff")
         .select("*")
@@ -128,6 +128,7 @@ export default async function handler(req, res) {
     return res.status(201).json(data);
   }
 
+  // DELETE — staff keluar event
   if (req.method === "DELETE") {
     const { id } = req.query;
 
@@ -139,6 +140,7 @@ export default async function handler(req, res) {
 
     if (staffData) {
       const event = staffData.wedding_events;
+      // Ambil sisa staff setelah delete
       const { data: allStaff } = await supabase
         .from("event_staff")
         .select("*")
