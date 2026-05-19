@@ -56,6 +56,110 @@ function Medal({ rank }) {
   return <span style={{ width:24,height:24,borderRadius:"50%",background:"rgba(0,0,0,0.06)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"var(--muted)" }}>{rank}</span>;
 }
 
+// ─── Delete Confirmation Modal ────────────────────────────────────────────────
+function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, itemName, itemSub }) {
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:9999,
+      background:"rgba(10,22,40,0.65)", backdropFilter:"blur(6px)",
+      display:"flex", alignItems:"center", justifyContent:"center", padding:20,
+    }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{
+        background:"#fff", borderRadius:24, width:"100%", maxWidth:420,
+        boxShadow:"0 32px 80px rgba(10,22,40,0.4)",
+        animation:"modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+        overflow:"hidden",
+      }}>
+        {/* Header merah */}
+        <div style={{
+          background:"linear-gradient(135deg,#dc2626,#ef4444)",
+          padding:"24px 28px 20px", textAlign:"center",
+        }}>
+          <div style={{
+            width:52, height:52, borderRadius:16,
+            background:"rgba(255,255,255,0.15)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:26, margin:"0 auto 12px",
+          }}>🗑️</div>
+          <h3 style={{ color:"#fff", fontSize:18, fontWeight:800, margin:0 }}>{title}</h3>
+          <p style={{ color:"rgba(255,255,255,0.7)", fontSize:12, marginTop:6 }}>{description}</p>
+        </div>
+
+        {/* Info item yang akan dihapus */}
+        <div style={{ padding:"20px 28px 0" }}>
+          <div style={{
+            background:"rgba(239,68,68,0.06)", border:"1.5px solid rgba(239,68,68,0.15)",
+            borderRadius:14, padding:"14px 18px", display:"flex", alignItems:"center", gap:12,
+          }}>
+            <div style={{
+              width:38, height:38, borderRadius:10,
+              background:"linear-gradient(135deg,#dc2626,#ef4444)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              flexShrink:0,
+            }}>
+              <span style={{ color:"#fff", fontSize:14, fontWeight:800 }}>
+                {itemName?.charAt(0)?.toUpperCase() || "?"}
+              </span>
+            </div>
+            <div>
+              <p style={{ fontSize:14, fontWeight:800, color:"#1a1a1a", margin:0 }}>{itemName}</p>
+              {itemSub && <p style={{ fontSize:11, color:"#666", marginTop:2 }}>{itemSub}</p>}
+            </div>
+          </div>
+
+          <p style={{
+            fontSize:12, color:"#999", textAlign:"center",
+            margin:"16px 0 0", lineHeight:1.6,
+          }}>
+            Data yang dihapus <strong style={{ color:"#dc2626" }}>tidak dapat dikembalikan</strong>.
+            Pastikan Anda yakin sebelum melanjutkan.
+          </p>
+        </div>
+
+        {/* Tombol */}
+        <div style={{ padding:"20px 28px 28px", display:"flex", gap:10 }}>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{
+              flex:1, padding:"12px", borderRadius:12,
+              border:"1.5px solid var(--border,#e5e7eb)",
+              background:"rgba(255,255,255,0.9)",
+              fontSize:13, fontWeight:700, color:"#666",
+              cursor:"pointer",
+            }}
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            style={{
+              flex:1, padding:"12px", borderRadius:12, border:"none",
+              background:loading
+                ? "rgba(239,68,68,0.5)"
+                : "linear-gradient(135deg,#dc2626,#ef4444)",
+              fontSize:13, fontWeight:700, color:"#fff",
+              cursor:loading?"not-allowed":"pointer",
+              boxShadow:"0 4px 14px rgba(220,38,38,0.35)",
+            }}
+          >
+            {loading ? "Menghapus..." : "Ya, Hapus"}
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes modalIn {
+          from { opacity:0; transform:scale(0.88) translateY(16px); }
+          to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PerformancePage() {
   const [authed, setAuthed] = useState(false);
   const [adminUser, setAdminUser] = useState("");
@@ -68,16 +172,24 @@ export default function PerformancePage() {
   const [events, setEvents] = useState([]);
   const [staffMap, setStaffMap] = useState({});   // event_id -> [staff]
   const [checkins, setCheckins] = useState([]);    // all checkin records
-
   const [loading, setLoading] = useState(false);
 
   // Filters
   const now = new Date();
   const [filterMonth, setFilterMonth] = useState(now.getMonth());
   const [filterYear, setFilterYear] = useState(now.getFullYear());
-  const [activeTab, setActiveTab] = useState("leaderboard"); // leaderboard | detail | checkin_log
+  const [activeTab, setActiveTab] = useState("leaderboard");
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [deletingCheckin, setDeletingCheckin] = useState(null);
+
+  // ── Modal state ─────────────────────────────────────────────────────────────
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    type: null,       // "checkin" | "registration"
+    id: null,
+    itemName: "",
+    itemSub: "",
+    loading: false,
+  });
 
   const { businessName } = CALENDAR_CONFIG;
 
@@ -123,29 +235,86 @@ export default function PerformancePage() {
     setLoading(false);
   }
 
-  async function handleDeleteCheckin(checkinId) {
-    if (!confirm("Hapus data check-in ini?")) return;
-    setDeletingCheckin(checkinId);
-    await fetch(`/api/checkin?id=${checkinId}`, { method: "DELETE" });
-    setCheckins(prev => prev.filter(c => c.id !== checkinId));
-    setDeletingCheckin(null);
+  // ── Open delete modal ────────────────────────────────────────────────────────
+  function openDeleteCheckin(ci) {
+    const ev = events.find(e => e.id === ci.event_id);
+    setDeleteModal({
+      isOpen: true,
+      type: "checkin",
+      id: ci.id,
+      itemName: ci.staff_name,
+      itemSub: `Check-in ${formatTime(ci.checked_in_at)} · ${ev?.couple || "-"}`,
+      loading: false,
+    });
   }
 
-  // ── Filter events by selected month/year ────────────────────────────────────
+  function openDeleteRegistration(staffEntry) {
+    // staffEntry = row from event_staff table (has id, name, role, event_id)
+    const ev = events.find(e => e.id === staffEntry.event_id);
+    setDeleteModal({
+      isOpen: true,
+      type: "registration",
+      id: staffEntry.id,
+      itemName: staffEntry.name,
+      itemSub: `Pendaftaran di: ${ev?.couple || "-"} · ${formatDate(ev?.date)}`,
+      loading: false,
+    });
+  }
+
+  function closeDeleteModal() {
+    if (deleteModal.loading) return;
+    setDeleteModal(prev => ({ ...prev, isOpen: false }));
+  }
+
+  async function confirmDelete() {
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    const { type, id } = deleteModal;
+
+    if (type === "checkin") {
+      const res = await fetch(`/api/checkin?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCheckins(prev => prev.filter(c => c.id !== id));
+        // Jika sedang lihat detail staff, update userCheckins-nya
+        if (selectedStaff) {
+          setSelectedStaff(prev => prev
+            ? { ...prev, userCheckins: prev.userCheckins.filter(c => c.id !== id) }
+            : prev
+          );
+        }
+      }
+    }
+
+    if (type === "registration") {
+      const res = await fetch(`/api/staff?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        // Hapus dari staffMap
+        setStaffMap(prev => {
+          const next = { ...prev };
+          for (const eventId in next) {
+            next[eventId] = next[eventId].filter(s => s.id !== id);
+          }
+          return next;
+        });
+        // Jika sedang lihat detail staff, refresh selectedStaff nanti lewat perfData re-compute
+      }
+    }
+
+    setDeleteModal(prev => ({ ...prev, loading: false, isOpen: false }));
+  }
+
+  // ── Filter events by selected month/year ─────────────────────────────────
   const filteredEvents = events.filter(e => {
     const d = new Date(e.date);
     return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
   });
 
-  // ── Build performance data per staff ────────────────────────────────────────
+  // ── Build performance data per staff ─────────────────────────────────────
   const perfData = staffUsers.filter(u => u.is_active).map(user => {
-    // Event yang diikuti user (match by name)
     const joinedEvents = filteredEvents.filter(ev => {
       const list = staffMap[ev.id] || [];
       return list.some(s => s.name.toLowerCase() === user.name.toLowerCase());
     });
 
-    // Check-in yang dilakukan user di bulan ini
     const userCheckins = checkins.filter(c => {
       if (c.staff_user_id !== user.id) return false;
       const d = new Date(c.checked_in_at);
@@ -156,34 +325,27 @@ export default function PerformancePage() {
       ? Math.round((userCheckins.length / joinedEvents.length) * 100)
       : 0;
 
-    return {
-      user,
-      joinedCount: joinedEvents.length,
-      checkinCount: userCheckins.length,
-      checkinRate,
-      joinedEvents,
-      userCheckins,
-    };
+    return { user, joinedCount: joinedEvents.length, checkinCount: userCheckins.length, checkinRate, joinedEvents, userCheckins };
   }).sort((a, b) => {
     if (b.checkinCount !== a.checkinCount) return b.checkinCount - a.checkinCount;
     if (b.joinedCount !== a.joinedCount) return b.joinedCount - a.joinedCount;
     return a.user.name.localeCompare(b.user.name);
   });
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  // ── Stats ─────────────────────────────────────────────────────────────────
   const totalJoins = perfData.reduce((s, p) => s + p.joinedCount, 0);
   const totalCheckins = perfData.reduce((s, p) => s + p.checkinCount, 0);
   const avgRate = perfData.length > 0
     ? Math.round(perfData.reduce((s, p) => s + p.checkinRate, 0) / perfData.length)
     : 0;
 
-  // ── All checkins in this month for log ─────────────────────────────────────
+  // ── All checkins in this month for log ───────────────────────────────────
   const monthCheckins = checkins.filter(c => {
     const d = new Date(c.checked_in_at);
     return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
   }).sort((a, b) => new Date(b.checked_in_at) - new Date(a.checked_in_at));
 
-  // ── Available years ────────────────────────────────────────────────────────
+  // ── Available years ───────────────────────────────────────────────────────
   const years = [...new Set(events.map(e => new Date(e.date).getFullYear()))].sort((a,b)=>b-a);
   if (!years.includes(filterYear)) years.push(filterYear);
 
@@ -228,6 +390,23 @@ export default function PerformancePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <link rel="icon" href="/favicon.ico"/>
       </Head>
+
+      {/* ── Delete Confirmation Modal ─────────────────────────── */}
+      <DeleteModal
+        isOpen={deleteModal.isOpen}
+        loading={deleteModal.loading}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title={deleteModal.type === "checkin" ? "Hapus Data Check-in?" : "Hapus Pendaftaran Staff?"}
+        description={
+          deleteModal.type === "checkin"
+            ? "Data check-in staff ini akan dihapus dari sistem."
+            : "Pendaftaran staff ke event ini akan dihapus dari sistem."
+        }
+        itemName={deleteModal.itemName}
+        itemSub={deleteModal.itemSub}
+      />
+
       <div style={{ minHeight:"100vh",position:"relative",overflow:"hidden" }}>
         <BgDecor/>
 
@@ -289,7 +468,7 @@ export default function PerformancePage() {
             ))}
           </div>
 
-          {/* ── LEADERBOARD ─────────────────────────────────────────────────────── */}
+          {/* ── LEADERBOARD ──────────────────────────────────────────────────────── */}
           {activeTab === "leaderboard" && (
             <div>
               <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",marginBottom:16,letterSpacing:-0.5 }}>
@@ -348,7 +527,7 @@ export default function PerformancePage() {
             </div>
           )}
 
-          {/* ── DETAIL STAFF ─────────────────────────────────────────────────────── */}
+          {/* ── DETAIL STAFF ──────────────────────────────────────────────────────── */}
           {activeTab === "detail" && (
             <div>
               <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap" }}>
@@ -433,7 +612,7 @@ export default function PerformancePage() {
                     </div>
                   </div>
 
-                  {/* Event list for this staff */}
+                  {/* Event list for this staff — DENGAN tombol Hapus Pendaftaran */}
                   <div style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                     <div style={{ padding:"16px 20px",borderBottom:"1px solid var(--border)" }}>
                       <p style={{ fontWeight:800,fontSize:14,color:"var(--dark)" }}>Daftar Event — {MONTHS[filterMonth]} {filterYear}</p>
@@ -441,17 +620,21 @@ export default function PerformancePage() {
                     <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
                       <thead>
                         <tr style={{ background:"rgba(238,244,255,0.6)" }}>
-                          {["Event","Tanggal","Tipe","Status Daftar","Status Check-in","Jam Check-in"].map(h=>(
+                          {["Event","Tanggal","Tipe","Status Daftar","Status Check-in","Jam Check-in","Aksi Admin"].map(h=>(
                             <th key={h} style={{ padding:"10px 16px",textAlign:"left",fontWeight:700,color:"var(--muted)",fontSize:10,textTransform:"uppercase",letterSpacing:0.8,borderBottom:"1px solid var(--border)" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {selectedStaff.joinedEvents.length === 0 && (
-                          <tr><td colSpan={6} style={{ textAlign:"center",padding:"24px",color:"var(--muted)",fontStyle:"italic" }}>Tidak ada event di bulan ini</td></tr>
+                          <tr><td colSpan={7} style={{ textAlign:"center",padding:"24px",color:"var(--muted)",fontStyle:"italic" }}>Tidak ada event di bulan ini</td></tr>
                         )}
                         {selectedStaff.joinedEvents.map(ev => {
                           const ci = selectedStaff.userCheckins.find(c => c.event_id === ev.id);
+                          // Cari entry di staffMap untuk mendapat id row event_staff
+                          const staffEntry = (staffMap[ev.id] || []).find(
+                            s => s.name.toLowerCase() === selectedStaff.user.name.toLowerCase()
+                          );
                           return (
                             <tr key={ev.id} style={{ borderBottom:"1px solid var(--border)" }}>
                               <td style={{ padding:"12px 16px",fontWeight:700,color:"var(--dark)" }}>{ev.couple}</td>
@@ -464,6 +647,28 @@ export default function PerformancePage() {
                                   : <span style={{ background:"rgba(239,68,68,0.08)",color:"#ef4444",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:700 }}>⛔ Tidak</span>}
                               </td>
                               <td style={{ padding:"12px 16px",color:"var(--muted)",fontSize:12 }}>{ci ? formatTime(ci.checked_in_at) : "-"}</td>
+                              <td style={{ padding:"12px 16px" }}>
+                                <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                                  {/* Hapus check-in jika ada */}
+                                  {ci && (
+                                    <button
+                                      onClick={() => openDeleteCheckin(ci)}
+                                      title="Hapus Check-in"
+                                      style={{ background:"rgba(16,185,129,0.08)",border:"1px solid rgba(16,185,129,0.25)",borderRadius:8,padding:"5px 10px",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                      ✅ Hapus CI
+                                    </button>
+                                  )}
+                                  {/* Hapus pendaftaran */}
+                                  {staffEntry && (
+                                    <button
+                                      onClick={() => openDeleteRegistration(staffEntry)}
+                                      title="Hapus Pendaftaran"
+                                      style={{ background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"5px 10px",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                      🗑️ Hapus Daftar
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
                             </tr>
                           );
                         })}
@@ -475,7 +680,7 @@ export default function PerformancePage() {
             </div>
           )}
 
-          {/* ── LOG CHECK-IN ─────────────────────────────────────────────────────── */}
+          {/* ── LOG CHECK-IN ──────────────────────────────────────────────────────── */}
           {activeTab === "checkin_log" && (
             <div>
               <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",marginBottom:16,letterSpacing:-0.5 }}>
@@ -514,9 +719,10 @@ export default function PerformancePage() {
                             <span style={{ background:"rgba(16,185,129,0.1)",color:"#059669",padding:"4px 10px",borderRadius:8,fontWeight:700,fontSize:12 }}>✅ {formatTime(ci.checked_in_at)}</span>
                           </td>
                           <td style={{ padding:"12px 16px" }}>
-                            <button onClick={()=>handleDeleteCheckin(ci.id)} disabled={deletingCheckin===ci.id}
-                              style={{ background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,color:"#ef4444",cursor:"pointer" }}>
-                              {deletingCheckin===ci.id?"...":"Hapus"}
+                            <button
+                              onClick={() => openDeleteCheckin(ci)}
+                              style={{ background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:8,padding:"6px 14px",fontSize:11,fontWeight:700,color:"#ef4444",cursor:"pointer",display:"flex",alignItems:"center",gap:5 }}>
+                              🗑️ Hapus
                             </button>
                           </td>
                         </tr>
