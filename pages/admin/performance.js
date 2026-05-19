@@ -212,7 +212,7 @@ export default function PerformancePage() {
             </div>
             <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"13px" }}>Masuk</button>
             <div style={{ marginTop:16,textAlign:"center" }}>
-              <Link href="/admin/iindex" style={{ fontSize:12,color:"var(--muted)",textDecoration:"none" }}>← Kembali ke Admin Panel</Link>
+              <Link href="/admin/index" style={{ fontSize:12,color:"var(--muted)",textDecoration:"none" }}>← Kembali ke Admin Panel</Link>
             </div>
           </form>
         </div>
@@ -243,7 +243,7 @@ export default function PerformancePage() {
             </div>
           </div>
           <div style={{ display:"flex",gap:10 }}>
-            <Link href="/admin/iindex" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>← Admin Panel</Link>
+            <Link href="/admin/index" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>← Admin Panel</Link>
             <Link href="/" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Kalender</Link>
           </div>
         </header>
