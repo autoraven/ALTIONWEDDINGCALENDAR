@@ -248,9 +248,11 @@ export default function AdminPanel() {
     });
     const data = await res.json();
     if (data.error) return setEditError(data.error);
+    // Update state langsung (optimistic) DAN re-fetch dari server agar pasti sync
     setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? data : ev));
     setEditingEvent(null);
     setSuccess("Event berhasil diperbarui!"); setTimeout(()=>setSuccess(""),3500);
+    fetchEvents(); // re-fetch untuk pastikan kalender & list sinkron tanpa refresh
   }
 
   function handleDayClick(dateStr, status) {
@@ -744,26 +746,26 @@ export default function AdminPanel() {
 
 
         {/* ===== MANAJEMEN STAFF USERS ===== */}
-        <div style={{ marginTop:32, maxWidth:720, margin:"32px auto 0" }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10 }}>
+        <div style={{ marginTop:32 }}>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
             <div>
-              <h2 style={{ fontSize:17,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
-              <p style={{ fontSize:11,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim.</p>
+              <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
+              <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim. Jabatan & posisi otomatis muncul saat mereka daftar ke event.</p>
             </div>
             <button onClick={()=>{ setStaffUsersTab(staffUsersTab==="add"?"list":"add"); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:""}); }}
-              className={staffUsersTab==="add"?"btn btn-outline":"btn btn-primary"} style={{ fontSize:12,padding:"7px 16px",flexShrink:0 }}>
+              className={staffUsersTab==="add"?"btn btn-outline":"btn btn-primary"} style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
               {staffUsersTab==="add" ? "← Kembali ke Daftar" : "+ Tambah Akun Staff"}
             </button>
           </div>
 
-          {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"10px 16px",borderRadius:12,marginBottom:14,fontSize:12,fontWeight:600 }}>{staffUserSuccess}</div>}
+          {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
 
           {staffUsersTab === "add" && (
-            <div className="card" style={{ padding:22,borderTop:"3px solid var(--blue-2)" }}>
-              <h3 style={{ fontSize:14,fontWeight:800,marginBottom:14,color:"var(--navy)" }}>Buat Akun Staff Baru</h3>
-              {staffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"7px 11px",fontSize:11,borderRadius:9,marginBottom:12,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {staffUserError}</div>}
+            <div className="card" style={{ padding:28,borderTop:"3px solid var(--blue-2)",maxWidth:600 }}>
+              <h3 style={{ fontSize:16,fontWeight:800,marginBottom:18,color:"var(--navy)" }}>Buat Akun Staff Baru</h3>
+              {staffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {staffUserError}</div>}
               <form onSubmit={handleAddStaffUser}>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10 }}>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div>
                     <label className="label">Nama Lengkap *</label>
                     <input value={staffUserForm.name} onChange={e=>setStaffUserForm({...staffUserForm,name:e.target.value})} placeholder="Contoh: Budi Santoso" className="input" required/>
@@ -773,12 +775,12 @@ export default function AdminPanel() {
                     <input value={staffUserForm.username} onChange={e=>setStaffUserForm({...staffUserForm,username:e.target.value})} placeholder="Contoh: budi" className="input" required autoCapitalize="none"/>
                   </div>
                 </div>
-                <div style={{ marginBottom:10 }}>
+                <div style={{ marginBottom:14 }}>
                   <label className="label">Password *</label>
                   <input type="text" value={staffUserForm.password} onChange={e=>setStaffUserForm({...staffUserForm,password:e.target.value})} placeholder="Buat password untuk staff ini" className="input" required/>
-                  <p style={{ fontSize:10,color:"var(--muted)",marginTop:3 }}>Password ini diberikan ke staff untuk login ke portal.</p>
+                  <p style={{ fontSize:11,color:"var(--muted)",marginTop:4 }}>Password ini diberikan ke staff untuk login ke portal.</p>
                 </div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10 }}>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div>
                     <label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
                     <input value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} placeholder="Contoh: Fotografer" className="input"/>
@@ -788,92 +790,87 @@ export default function AdminPanel() {
                     <input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Senior" className="input"/>
                   </div>
                 </div>
-                <div style={{ marginBottom:10 }}>
+                <div style={{ marginBottom:14 }}>
                   <label className="label">
                     Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — untuk mention di reminder</span>
                   </label>
                   <div style={{ position:"relative" }}>
-                    <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none",lineHeight:1 }}>
+                    <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",lineHeight:1 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                     </span>
-                    <input
-                      value={staffUserForm.discord_id}
-                      onChange={e=>setStaffUserForm({...staffUserForm,discord_id:e.target.value.replace(/\D/g,"")})}
-                      placeholder="Contoh: 123456789012345678"
-                      className="input"
-                      style={{ paddingLeft:34 }}
-                      inputMode="numeric"
-                    />
+                    <input value={staffUserForm.discord_id} onChange={e=>setStaffUserForm({...staffUserForm,discord_id:e.target.value.replace(/\D/g,"")})} placeholder="Contoh: 123456789012345678" className="input" style={{ paddingLeft:34 }} inputMode="numeric"/>
                   </div>
-                  <p style={{ fontSize:10,color:"var(--muted)",marginTop:3 }}>
+                  <p style={{ fontSize:11,color:"var(--muted)",marginTop:4 }}>
                     Settings → Advanced → aktifkan <strong>Developer Mode</strong> → klik kanan user → <strong>Copy User ID</strong>
                   </p>
                 </div>
-                <div style={{ background:"rgba(238,244,255,0.6)",border:"1px solid rgba(209,221,247,0.7)",borderRadius:10,padding:"8px 12px",marginBottom:14 }}>
-                  <p style={{ fontSize:10,color:"var(--blue-1)",fontWeight:700,marginBottom:3 }}>Preview reminder Discord:</p>
-                  <p style={{ fontSize:11,color:"var(--dark)",lineHeight:1.7 }}>
+                <div style={{ background:"rgba(238,244,255,0.6)",border:"1px solid rgba(209,221,247,0.7)",borderRadius:12,padding:"10px 14px",marginBottom:20 }}>
+                  <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:700,marginBottom:4 }}>Preview reminder Discord:</p>
+                  <p style={{ fontSize:12,color:"var(--dark)",lineHeight:1.8 }}>
                     <strong>{staffUserForm.name || "Nama Staff"}</strong>{" "}
                     {staffUserForm.discord_id
-                      ? <span style={{ background:"rgba(88,101,242,0.12)",color:"#5865F2",borderRadius:5,padding:"1px 5px",fontWeight:700,fontSize:10 }}>@{staffUserForm.name||"user"}</span>
-                      : <span style={{ color:"var(--muted)",fontSize:10 }}>(tidak ada mention)</span>
+                      ? <span style={{ background:"rgba(88,101,242,0.12)",color:"#5865F2",borderRadius:6,padding:"1px 6px",fontWeight:700,fontSize:11 }}>@{staffUserForm.name||"user"}</span>
+                      : <span style={{ color:"var(--muted)",fontSize:11 }}>(tidak ada mention)</span>
                     }{" "}— <span style={{ color:"var(--muted)" }}>{[staffUserForm.jabatan, staffUserForm.posisi].filter(Boolean).join(" · ") || "Staff"}</span>
                   </p>
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"10px" }}>Buat Akun Staff</button>
+                <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"12px" }}>Buat Akun Staff</button>
               </form>
             </div>
           )}
 
           {staffUsersTab === "list" && (
             <div className="card" style={{ overflow:"hidden" }}>
-              <div style={{ padding:"10px 16px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",display:"flex",alignItems:"center",gap:10 }}>
-                <div style={{ position:"relative",flex:1,maxWidth:260 }}>
-                  <span style={{ position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:12,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
+              <div style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ position:"relative",flex:1,maxWidth:320 }}>
+                  <span style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
                   <input value={staffUserSearch} onChange={e=>setStaffUserSearch(e.target.value)} placeholder="Cari nama atau username…"
-                    style={{ width:"100%",paddingLeft:29,paddingRight:staffUserSearch?28:10,paddingTop:6,paddingBottom:6,border:"1.5px solid var(--border)",borderRadius:9,fontSize:11,fontWeight:500,background:"rgba(255,255,255,0.9)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
+                    style={{ width:"100%",paddingLeft:32,paddingRight:staffUserSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"rgba(255,255,255,0.9)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
                     onFocus={e=>e.target.style.borderColor="var(--blue-2)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-                  {staffUserSearch && <button onClick={()=>setStaffUserSearch("")} style={{ position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:9,color:"var(--muted)" }}>✕</button>}
+                  {staffUserSearch && <button onClick={()=>setStaffUserSearch("")} style={{ position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:"var(--muted)" }}>✕</button>}
                 </div>
-                <span style={{ fontSize:11,fontWeight:700,color:"var(--muted)",marginLeft:"auto" }}>{staffUsers.length} akun</span>
+                <span style={{ fontSize:12,fontWeight:700,color:"var(--muted)",marginLeft:"auto" }}>{staffUsers.length} akun terdaftar</span>
               </div>
-              {staffUsers.length === 0 && (
-                <div style={{ padding:"28px",textAlign:"center" }}>
-                  <p style={{ fontSize:24,marginBottom:6 }}>👤</p>
-                  <p style={{ fontSize:12,color:"var(--muted)",fontWeight:500 }}>Belum ada akun staff. Klik "+ Tambah Akun Staff" untuk mulai.</p>
-                </div>
-              )}
-              {(() => {
-                const sq = staffUserSearch.trim().toLowerCase();
-                const filtered = sq ? staffUsers.filter(u => u.name.toLowerCase().includes(sq) || u.username.toLowerCase().includes(sq) || (u.jabatan||"").toLowerCase().includes(sq)) : staffUsers;
-                return filtered.map(user => (
-                  <div key={user.id} style={{ padding:"10px 16px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,transition:"background 0.15s" }}
-                    onMouseEnter={e=>e.currentTarget.style.background="rgba(238,244,255,0.5)"}
-                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <div style={{ display:"flex",alignItems:"center",gap:10,minWidth:0 }}>
-                      <div style={{ width:32,height:32,borderRadius:9,background:user.is_active?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"linear-gradient(135deg,#9ca3af,#6b7280)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                        <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{user.name.charAt(0).toUpperCase()}</span>
-                      </div>
-                      <div style={{ minWidth:0 }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                          <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>{user.name}</p>
-                          {!user.is_active && <span style={{ fontSize:9,background:"rgba(239,68,68,0.1)",color:"#ef4444",borderRadius:5,padding:"1px 6px",fontWeight:700,textTransform:"uppercase" }}>Nonaktif</span>}
-                        </div>
-                        <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>@{user.username}{(user.jabatan||user.posisi) ? ` · ${[user.jabatan,user.posisi].filter(Boolean).join(" · ")}` : ""}</p>
-                        {user.discord_id && (
-                          <p style={{ fontSize:10,color:"#5865F2",fontWeight:600,marginTop:1,display:"flex",alignItems:"center",gap:3 }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-                            {user.discord_id}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display:"flex",gap:5,flexShrink:0 }}>
-                      <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:10,padding:"5px 10px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
-                      <button onClick={()=>handleDeleteStaffUser(user.id, user.name)} className="btn btn-danger" style={{ fontSize:10,padding:"5px 10px" }}>Hapus</button>
-                    </div>
+              <div style={{ maxHeight:500,overflowY:"auto" }}>
+                {staffUsers.length === 0 && (
+                  <div style={{ padding:"40px",textAlign:"center" }}>
+                    <p style={{ fontSize:28,marginBottom:8 }}>👤</p>
+                    <p style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>Belum ada akun staff. Klik "+ Tambah Akun Staff" untuk mulai.</p>
                   </div>
-                ));
-              })()}
+                )}
+                {(() => {
+                  const sq = staffUserSearch.trim().toLowerCase();
+                  const filtered = sq ? staffUsers.filter(u => u.name.toLowerCase().includes(sq) || u.username.toLowerCase().includes(sq) || (u.jabatan||"").toLowerCase().includes(sq)) : staffUsers;
+                  return filtered.map(user => (
+                    <div key={user.id} style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,transition:"background 0.15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(238,244,255,0.5)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <div style={{ display:"flex",alignItems:"center",gap:12,minWidth:0 }}>
+                        <div style={{ width:38,height:38,borderRadius:11,background:user.is_active?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"linear-gradient(135deg,#9ca3af,#6b7280)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                          <span style={{ color:"#fff",fontSize:15,fontWeight:800 }}>{user.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                            <p style={{ fontSize:14,fontWeight:700,color:"var(--dark)" }}>{user.name}</p>
+                            {!user.is_active && <span style={{ fontSize:9,background:"rgba(239,68,68,0.1)",color:"#ef4444",borderRadius:6,padding:"1px 7px",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5 }}>Nonaktif</span>}
+                          </div>
+                          <p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>@{user.username}{(user.jabatan||user.posisi) ? ` · ${[user.jabatan,user.posisi].filter(Boolean).join(" · ")}` : ""}</p>
+                          {user.discord_id && (
+                            <p style={{ fontSize:10,color:"#5865F2",fontWeight:600,marginTop:2,display:"flex",alignItems:"center",gap:4 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                              {user.discord_id}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display:"flex",gap:6,flexShrink:0 }}>
+                        <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
+                        <button onClick={()=>handleDeleteStaffUser(user.id, user.name)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
           )}
         </div>
