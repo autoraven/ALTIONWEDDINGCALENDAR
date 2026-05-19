@@ -406,7 +406,7 @@ export default function AdminPanel() {
             </div>
           </div>
           <div style={{ display:"flex",gap:10,position:"relative" }}>
-            <Link href="/admin/performance" style={{ fontSize:12,padding:"8px 18px",borderRadius:10,fontWeight:700,background:"rgba(16,185,129,0.15)",color:"#059669",border:"1px solid rgba(16,185,129,0.3)",textDecoration:"none",display:"flex",alignItems:"center",gap:5 }}>📊 Performa Staff</Link>
+            <Link href="/admin/performance" style={{ fontSize:12,padding:"8px 18px",borderRadius:10,fontWeight:700,background:"rgba(16,185,129,0.15)",color:"#ffffff",border:"1px solid rgba(16,185,129,0.3)",textDecoration:"none",display:"flex",alignItems:"center",gap:5 }}>📊 Performa Staff</Link>
             <Link href="/" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Lihat Kalender</Link>
             <button onClick={logout} className="btn btn-danger" style={{ fontSize:12,padding:"8px 18px" }}>Logout</button>
           </div>
@@ -746,6 +746,7 @@ export default function AdminPanel() {
 
 
         {/* ===== MANAJEMEN STAFF USERS ===== */}
+        <div style={{ maxWidth:1080,margin:"0 auto",padding:"0 20px 40px" }}>
         <div style={{ marginTop:32 }}>
           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
             <div>
@@ -873,6 +874,7 @@ export default function AdminPanel() {
               </div>
             </div>
           )}
+        </div>
         </div>
 
         {/* Edit Staff User Modal */}
