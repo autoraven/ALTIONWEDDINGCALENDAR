@@ -145,11 +145,11 @@ export default function AdminPanel() {
   // Staff Users Management
   const [staffUsers, setStaffUsers] = useState([]);
   const [staffUsersTab, setStaffUsersTab] = useState("list"); // "list" | "add"
-  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"" });
+  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
   const [staffUserError, setStaffUserError] = useState("");
   const [staffUserSuccess, setStaffUserSuccess] = useState("");
   const [editingStaffUser, setEditingStaffUser] = useState(null);
-  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", is_active:true });
+  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_active:true });
   const [editStaffUserError, setEditStaffUserError] = useState("");
   const [staffUserSearch, setStaffUserSearch] = useState("");
   const [displayDate,setDisplayDate]=useState(new Date());
@@ -309,22 +309,22 @@ export default function AdminPanel() {
 
   async function handleAddStaffUser(e) {
     e.preventDefault(); setStaffUserError("");
-    const { name, username, password, jabatan, posisi } = staffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id } = staffUserForm;
     if (!name.trim() || !username.trim() || !password.trim()) return setStaffUserError("Nama, username, dan password wajib diisi");
-    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi }) });
+    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id }) });
     const data = await res.json();
     if (data.error) return setStaffUserError(data.error);
     setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
-    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"" });
+    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
     setStaffUsersTab("list");
     setStaffUserSuccess(`✅ Akun "${data.name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
   async function handleSaveEditStaffUser(e) {
     e.preventDefault(); setEditStaffUserError("");
-    const { name, username, password, jabatan, posisi, is_active } = editStaffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id, is_active } = editStaffUserForm;
     if (!name.trim() || !username.trim()) return setEditStaffUserError("Nama dan username wajib diisi");
-    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, is_active }) });
+    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_active }) });
     const data = await res.json();
     if (data.error) return setEditStaffUserError(data.error);
     setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? data : u));
@@ -667,80 +667,7 @@ export default function AdminPanel() {
               </div>
             </div>
           </div>
-
-        {/* Edit Modal */}
-        {editingEvent && (
-          <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
-            onClick={e=>{ if(e.target===e.currentTarget) setEditingEvent(null); }}>
-            <div className="card scale-in" style={{ width:"100%",maxWidth:520,padding:28,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(10,22,40,0.4)" }}>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
-                <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>
-                  ✏️ Edit Event
-                </h3>
-                <button onClick={()=>setEditingEvent(null)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
-              </div>
-
-              {editError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editError}</div>}
-
-              <form onSubmit={handleSaveEdit}>
-                {/* Tipe event */}
-                <div style={{ marginBottom:14 }}>
-                  <label className="label">Tipe Event</label>
-                  <div style={{ display:"flex",gap:8 }}>
-                    {[{type:"wedding",icon:"💍",label:"Wedding"},{type:"event",icon:"🎉",label:"Event Biasa"}].map(({type,icon,label})=>(
-                      <button key={type} type="button" onClick={()=>setEditForm({...editForm,event_type:type})}
-                        style={{ flex:1,padding:"10px",border:`2px solid ${editForm.event_type===type?"var(--blue-2)":"var(--border)"}`,borderRadius:12,background:editForm.event_type===type?"rgba(238,244,255,0.9)":"rgba(248,250,255,0.8)",cursor:"pointer",textAlign:"center",transition:"all 0.15s" }}>
-                        <span style={{ fontSize:18 }}>{icon}</span>
-                        <p style={{ fontSize:11,fontWeight:700,color:editForm.event_type===type?"var(--blue-1)":"var(--muted)",marginTop:4 }}>{label}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tanggal */}
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
-                  <div>
-                    <label className="label">Tanggal Mulai</label>
-                    <input type="date" value={editForm.date} onChange={e=>setEditForm({...editForm,date:e.target.value,date_end:e.target.value>editForm.date_end?e.target.value:editForm.date_end})} className="input"/>
-                  </div>
-                  <div>
-                    <label className="label">Tanggal Akhir</label>
-                    <input type="date" value={editForm.date_end} min={editForm.date} onChange={e=>setEditForm({...editForm,date_end:e.target.value})} className="input"/>
-                  </div>
-                </div>
-
-                {[
-                  {label:editForm.event_type==="wedding"?"Nama Pasangan *":"Nama Event *",key:"couple",placeholder:editForm.event_type==="wedding"?"Budi & Siti":"Nama event..."},
-                  {label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom"},
-                  {label:"Jam Acara",key:"time",placeholder:"10:00 WIB"},
-                  {label:"Add On",key:"addon",placeholder:"Dekorasi, Catering, dll..."},
-                  {label:"Catatan",key:"notes",placeholder:"Info tambahan..."},
-                ].map(({label,key,placeholder})=>(
-                  <div key={key} style={{ marginBottom:14 }}>
-                    <label className="label">{label}</label>
-                    <input value={editForm[key]} onChange={e=>setEditForm({...editForm,[key]:e.target.value})} placeholder={placeholder} className="input"/>
-                  </div>
-                ))}
-
-                <div style={{ marginBottom:20 }}>
-                  <label className="label">👥 Maks. Slot Staff <span style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>opsional</span></label>
-                  <div style={{ position:"relative" }}>
-                    <input type="number" min="1" max="99" value={editForm.max_staff}
-                      onChange={e=>setEditForm({...editForm,max_staff:e.target.value})}
-                      placeholder="Kosongkan = tidak dibatasi" className="input" style={{ paddingRight:60 }}/>
-                    {editForm.max_staff && <span style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"var(--blue-1)",fontWeight:700,pointerEvents:"none" }}>orang</span>}
-                  </div>
-                </div>
-
-                <div style={{ display:"flex",gap:10 }}>
-                  <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan Perubahan</button>
-                  <button type="button" onClick={()=>setEditingEvent(null)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
+        </main>
         {/* Edit Modal */}
         {editingEvent && (
           <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
@@ -822,7 +749,7 @@ export default function AdminPanel() {
               <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
               <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim.</p>
             </div>
-            <button onClick={()=>{ setStaffUsersTab(staffUsersTab==="add"?"list":"add"); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:""}); }}
+            <button onClick={()=>{ setStaffUsersTab(staffUsersTab==="add"?"list":"add"); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:""}); }}
               className={staffUsersTab==="add"?"btn btn-outline":"btn btn-primary"} style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
               {staffUsersTab==="add" ? "← Kembali ke Daftar" : "+ Tambah Akun Staff"}
             </button>
@@ -860,10 +787,35 @@ export default function AdminPanel() {
                     <input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Senior" className="input"/>
                   </div>
                 </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">
+                    Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — untuk mention di reminder</span>
+                  </label>
+                  <div style={{ position:"relative" }}>
+                    <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none",lineHeight:1 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                    </span>
+                    <input
+                      value={staffUserForm.discord_id}
+                      onChange={e=>setStaffUserForm({...staffUserForm,discord_id:e.target.value.replace(/\D/g,"")})}
+                      placeholder="Contoh: 123456789012345678"
+                      className="input"
+                      style={{ paddingLeft:36 }}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <p style={{ fontSize:11,color:"var(--muted)",marginTop:4 }}>
+                    Cara cari Discord ID: Discord → Settings → Advanced → aktifkan <strong>Developer Mode</strong> → klik kanan nama user → <strong>Copy User ID</strong>.
+                  </p>
+                </div>
                 <div style={{ background:"rgba(238,244,255,0.6)",border:"1px solid rgba(209,221,247,0.7)",borderRadius:12,padding:"10px 14px",marginBottom:20 }}>
-                  <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:700,marginBottom:2 }}>Preview saat daftar ke event:</p>
-                  <p style={{ fontSize:12,color:"var(--dark)" }}>
-                    <strong>{staffUserForm.name || "Nama Staff"}</strong> — <span style={{ color:"var(--muted)" }}>{[staffUserForm.jabatan, staffUserForm.posisi].filter(Boolean).join(" · ") || "Staff"}</span>
+                  <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:700,marginBottom:4 }}>Preview reminder Discord:</p>
+                  <p style={{ fontSize:12,color:"var(--dark)",lineHeight:1.8 }}>
+                    <strong>{staffUserForm.name || "Nama Staff"}</strong>{" "}
+                    {staffUserForm.discord_id
+                      ? <span style={{ background:"rgba(88,101,242,0.12)",color:"#5865F2",borderRadius:6,padding:"1px 6px",fontWeight:700,fontSize:11 }}>@{staffUserForm.name||"user"}</span>
+                      : <span style={{ color:"var(--muted)",fontSize:11 }}>(tidak ada mention)</span>
+                    }{" "}— <span style={{ color:"var(--muted)" }}>{[staffUserForm.jabatan, staffUserForm.posisi].filter(Boolean).join(" · ") || "Staff"}</span>
                   </p>
                 </div>
                 <button type="submit" className="btn btn-primary" style={{ width:"100%",padding:"12px" }}>Buat Akun Staff</button>
@@ -907,10 +859,16 @@ export default function AdminPanel() {
                         </div>
                         <p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>@{user.username}</p>
                         {(user.jabatan || user.posisi) && <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:600,marginTop:1 }}>{[user.jabatan, user.posisi].filter(Boolean).join(" · ")}</p>}
+                        {user.discord_id && (
+                          <p style={{ fontSize:10,color:"#5865F2",fontWeight:600,marginTop:2,display:"flex",alignItems:"center",gap:4 }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                            {user.discord_id}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div style={{ display:"flex",gap:6,flexShrink:0 }}>
-                      <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
+                      <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
                       <button onClick={()=>handleDeleteStaffUser(user.id, user.name)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
                     </div>
                   </div>
@@ -954,6 +912,29 @@ export default function AdminPanel() {
                     <label className="label">Posisi</label>
                     <input value={editStaffUserForm.posisi} onChange={e=>setEditStaffUserForm({...editStaffUserForm,posisi:e.target.value})} placeholder="Contoh: Senior" className="input"/>
                   </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">
+                    Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — untuk mention di reminder</span>
+                  </label>
+                  <div style={{ position:"relative" }}>
+                    <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none",lineHeight:1 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                    </span>
+                    <input
+                      value={editStaffUserForm.discord_id}
+                      onChange={e=>setEditStaffUserForm({...editStaffUserForm,discord_id:e.target.value.replace(/\D/g,"")})}
+                      placeholder="Contoh: 123456789012345678"
+                      className="input"
+                      style={{ paddingLeft:36 }}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  {editStaffUserForm.discord_id && (
+                    <p style={{ fontSize:11,color:"#5865F2",marginTop:4,fontWeight:600 }}>
+                      ✅ Akan di-mention sebagai <code style={{ background:"rgba(88,101,242,0.1)",padding:"1px 5px",borderRadius:4 }}>&lt;@{editStaffUserForm.discord_id}&gt;</code> di reminder
+                    </p>
+                  )}
                 </div>
                 <div style={{ marginBottom:20 }}>
                   <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>

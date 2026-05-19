@@ -8,10 +8,8 @@ const supabase = createClient(
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_REMINDER_WEBHOOK_URL;
 
 export default async function handler(req, res) {
-  // Keamanan — allow Vercel Cron internal calls atau manual dengan secret
   const isVercelCron = req.headers["x-vercel-cron"] === "1";
   const isAuthorized = req.headers.authorization === `Bearer ${process.env.CRON_SECRET}`;
-  // Juga allow GET request biasa untuk testing (tanpa auth)
   const isGetTest = req.method === "GET";
   if (!isVercelCron && !isAuthorized && !isGetTest) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -22,22 +20,20 @@ export default async function handler(req, res) {
   const nowWIB = new Date(nowUTC.getTime() + 7 * 60 * 60 * 1000);
   const target = new Date(nowWIB);
   target.setDate(target.getDate() + 2);
-  // Format manual agar tidak terpengaruh timezone server
   const yyyy = target.getUTCFullYear();
   const mm   = String(target.getUTCMonth() + 1).padStart(2, "0");
   const dd   = String(target.getUTCDate()).padStart(2, "0");
   const targetDate = `${yyyy}-${mm}-${dd}`;
 
-  // Cari event yang range-nya mencakup targetDate (start <= target <= end)
+  // Cari event H-2
   const { data: events, error } = await supabase
     .from("wedding_events")
     .select("*")
-    .lte("date", targetDate)        // date_start <= target
-    .or(`date_end.gte.${targetDate},date_end.is.null`); // date_end >= target OR null (single day, cek manual)
+    .lte("date", targetDate)
+    .or(`date_end.gte.${targetDate},date_end.is.null`);
 
   if (error) return res.status(500).json({ error: error.message });
 
-  // Filter manual: untuk event tanpa date_end, pastikan date === targetDate
   const matchedEvents = (events || []).filter(e => {
     const end = e.date_end || e.date;
     return targetDate >= e.date && targetDate <= end;
@@ -47,9 +43,21 @@ export default async function handler(req, res) {
     return res.status(200).json({ message: "Tidak ada event H-2", date: targetDate });
   }
 
-  // Kirim notif per event
+  // Ambil semua staff_users untuk mapping nama → discord_id
+  const { data: staffUsers } = await supabase
+    .from("staff_users")
+    .select("name, discord_id")
+    .not("discord_id", "is", null);
+
+  // Buat map: nama (lowercase) → discord_id
+  const discordMap = {};
+  (staffUsers || []).forEach(u => {
+    if (u.discord_id?.trim()) {
+      discordMap[u.name.toLowerCase().trim()] = u.discord_id.trim();
+    }
+  });
+
   for (const event of matchedEvents) {
-    // Ambil daftar staff event ini
     const { data: staffList } = await supabase
       .from("event_staff")
       .select("*")
@@ -66,12 +74,26 @@ export default async function handler(req, res) {
 
     const eventLabel = `${event.event_type === "wedding" ? "💍" : "🎉"} ${event.couple}`;
 
+    // Buat daftar staff dengan mention Discord jika ada
+    let mentionParts = []; // untuk @mention di atas embed
     const memberList = staffList && staffList.length > 0
-      ? staffList.map((s, i) => `${i + 1}. **${s.name}** — ${s.role}`).join("\n")
+      ? staffList.map((s, i) => {
+          const discordId = discordMap[s.name.toLowerCase().trim()];
+          const mention = discordId ? ` <@${discordId}>` : "";
+          if (discordId) mentionParts.push(`<@${discordId}>`);
+          return `${i + 1}. **${s.name}**${mention} — ${s.role}`;
+        }).join("\n")
       : "_Belum ada staff terdaftar_";
 
+    // Baris mention di atas embed (semua yang punya discord)
+    const mentionLine = mentionParts.length > 0
+      ? `${mentionParts.join(" ")} — cek jadwal kalian! 👇`
+      : "";
+
     const payload = {
-      content: `@everyone 🔔 **REMINDER — Besok lusa ada event!**`,
+      content: mentionLine
+        ? `🔔 **REMINDER — Besok lusa ada event!**\n${mentionLine}`
+        : `@everyone 🔔 **REMINDER — Besok lusa ada event!**`,
       embeds: [{
         title: `⏰ H-2 Event: ${eventLabel}`,
         color: 0xf59e0b,

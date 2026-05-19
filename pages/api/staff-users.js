@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("staff_users")
-      .select("id, name, username, jabatan, posisi, is_active, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, is_active, created_at")
       .order("name", { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
@@ -18,11 +18,10 @@ export default async function handler(req, res) {
 
   // POST - create new staff user
   if (req.method === "POST") {
-    const { name, username, password, jabatan, posisi } = req.body;
+    const { name, username, password, jabatan, posisi, discord_id } = req.body;
     if (!name?.trim() || !username?.trim() || !password?.trim())
       return res.status(400).json({ error: "Nama, username, dan password wajib diisi" });
 
-    // Check username uniqueness
     const { data: existing } = await supabase
       .from("staff_users")
       .select("id")
@@ -38,9 +37,10 @@ export default async function handler(req, res) {
         password: password.trim(),
         jabatan: jabatan?.trim() || "",
         posisi: posisi?.trim() || "",
+        discord_id: discord_id?.trim() || null,
         is_active: true,
       }])
-      .select("id, name, username, jabatan, posisi, is_active, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, is_active, created_at")
       .single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
@@ -49,10 +49,9 @@ export default async function handler(req, res) {
   // PUT - update staff user
   if (req.method === "PUT") {
     const { id } = req.query;
-    const { name, username, password, jabatan, posisi, is_active } = req.body;
+    const { name, username, password, jabatan, posisi, discord_id, is_active } = req.body;
     if (!id) return res.status(400).json({ error: "ID wajib diisi" });
 
-    // Check username uniqueness (excluding self)
     if (username) {
       const { data: existing } = await supabase
         .from("staff_users")
@@ -69,13 +68,14 @@ export default async function handler(req, res) {
     if (password !== undefined && password.trim()) updateData.password = password.trim();
     if (jabatan !== undefined) updateData.jabatan = jabatan.trim();
     if (posisi !== undefined) updateData.posisi = posisi.trim();
+    if (discord_id !== undefined) updateData.discord_id = discord_id?.trim() || null;
     if (is_active !== undefined) updateData.is_active = is_active;
 
     const { data, error } = await supabase
       .from("staff_users")
       .update(updateData)
       .eq("id", id)
-      .select("id, name, username, jabatan, posisi, is_active, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, is_active, created_at")
       .single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
