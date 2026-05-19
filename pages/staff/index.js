@@ -1,3 +1,4 @@
+// pages/staff/index.js
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -39,6 +40,14 @@ function BgDecor() {
   );
 }
 
+// Check apakah hari ini adalah hari event (termasuk multi-day)
+function isEventToday(event, today) {
+  const todayStr = today.toISOString().split("T")[0];
+  const start = event.date;
+  const end = event.date_end || event.date;
+  return todayStr >= start && todayStr <= end;
+}
+
 export default function StaffPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -48,7 +57,9 @@ export default function StaffPage() {
 
   const [events, setEvents] = useState([]);
   const [staffMap, setStaffMap] = useState({});
+  const [checkinMap, setCheckinMap] = useState({}); // { event_id: checkin_record | null }
   const [loading, setLoading] = useState(false);
+  const [checkinLoading, setCheckinLoading] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -64,7 +75,7 @@ export default function StaffPage() {
       try {
         const user = JSON.parse(saved);
         setCurrentUser(user);
-        fetchAll();
+        fetchAll(user);
       } catch {}
     }
   }, []);
@@ -82,7 +93,7 @@ export default function StaffPage() {
     if (data.success) {
       sessionStorage.setItem("staff_user", JSON.stringify(data.user));
       setCurrentUser(data.user);
-      fetchAll();
+      fetchAll(data.user);
     } else {
       setLoginError(data.message || "Login gagal");
     }
@@ -93,17 +104,21 @@ export default function StaffPage() {
     setCurrentUser(null);
     setEvents([]);
     setStaffMap({});
+    setCheckinMap({});
     setLoginUsername("");
     setLoginPassword("");
   }
 
-  async function fetchAll() {
-    const [evRes, stRes] = await Promise.all([
+  async function fetchAll(user) {
+    const u = user || currentUser;
+    const [evRes, stRes, ciRes] = await Promise.all([
       fetch("/api/events"),
       fetch("/api/staff"),
+      u ? fetch(`/api/checkin?staff_user_id=${u.id}`) : Promise.resolve(null),
     ]);
     const evData = await evRes.json();
     const stData = await stRes.json();
+
     if (Array.isArray(evData)) setEvents(evData);
     if (Array.isArray(stData)) {
       const map = {};
@@ -112,6 +127,15 @@ export default function StaffPage() {
         map[s.event_id].push(s);
       });
       setStaffMap(map);
+    }
+
+    if (ciRes) {
+      const ciData = await ciRes.json();
+      if (Array.isArray(ciData)) {
+        const ciMap = {};
+        ciData.forEach(c => { ciMap[c.event_id] = c; });
+        setCheckinMap(ciMap);
+      }
     }
   }
 
@@ -140,6 +164,32 @@ export default function StaffPage() {
     if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
   }
 
+  async function handleCheckin(event) {
+    if (!currentUser) return;
+    setCheckinLoading(prev => ({ ...prev, [event.id]: true }));
+    setError("");
+    const res = await fetch("/api/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_id: event.id,
+        staff_user_id: currentUser.id,
+        staff_name: currentUser.name,
+      }),
+    });
+    const data = await res.json();
+    setCheckinLoading(prev => ({ ...prev, [event.id]: false }));
+
+    if (data.error && !data.alreadyCheckedIn) return setError(data.error);
+    if (data.id || data.alreadyCheckedIn) {
+      setCheckinMap(prev => ({ ...prev, [event.id]: data.alreadyCheckedIn ? prev[event.id] : data }));
+      if (!data.alreadyCheckedIn) {
+        setSuccess(`✅ Check-in berhasil! Selamat bekerja, ${currentUser.name}!`);
+        setTimeout(() => setSuccess(""), 4000);
+      }
+    }
+  }
+
   const upcomingEvents = events.filter(e => new Date(e.date) >= today);
   const baseEvents = activeTab === "upcoming" ? upcomingEvents : events;
   const q = search.trim().toLowerCase();
@@ -152,6 +202,7 @@ export default function StaffPage() {
     : baseEvents;
   const totalStaff = Object.values(staffMap).flat().length;
 
+  // ─── Login Screen ───────────────────────────────────────────────────────────
   if (!currentUser) return (
     <>
       <Head>
@@ -196,6 +247,7 @@ export default function StaffPage() {
     </>
   );
 
+  // ─── Staff Dashboard ────────────────────────────────────────────────────────
   return (
     <>
       <Head>
@@ -205,6 +257,7 @@ export default function StaffPage() {
       </Head>
       <div style={{ minHeight:"100vh",position:"relative",overflow:"hidden" }}>
         <BgDecor/>
+        {/* Header */}
         <header style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",padding:"0 24px",height:68,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 32px rgba(10,22,40,0.4)",position:"sticky",top:0,zIndex:100 }}>
           <div style={{ display:"flex",alignItems:"center",gap:14 }}>
             <div style={{ width:40,height:40,borderRadius:12,background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",padding:5,border:"1.5px solid rgba(255,255,255,0.2)" }}>
@@ -244,11 +297,16 @@ export default function StaffPage() {
                 <p style={{ color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:700,letterSpacing:3.5,textTransform:"uppercase",marginBottom:10 }}>Staff Portal</p>
                 <h2 style={{ color:"#fff",fontSize:28,fontWeight:800,letterSpacing:-1,marginBottom:6,lineHeight:1.1 }}>Halo, {currentUser.name}! 👋</h2>
                 <p style={{ color:"rgba(255,255,255,0.5)",fontSize:13,lineHeight:1.7,maxWidth:400 }}>
-                  {[currentUser.jabatan, currentUser.posisi].filter(Boolean).join(" · ") || "Staff"} — Pilih event dan klik tombol daftar untuk bergabung.
+                  {[currentUser.jabatan, currentUser.posisi].filter(Boolean).join(" · ") || "Staff"} — Pilih event dan klik daftar. Di hari H, tombol Check-in akan muncul.
                 </p>
               </div>
               <div style={{ display:"flex",gap:14,flexWrap:"wrap" }}>
-                {[{label:"Total Event",value:events.length,icon:"📅"},{label:"Mendatang",value:upcomingEvents.length,icon:"🗓️"},{label:"Total Staff",value:totalStaff,icon:"👥"}].map(({label,value,icon})=>(
+                {[
+                  {label:"Total Event",value:events.length,icon:"📅"},
+                  {label:"Mendatang",value:upcomingEvents.length,icon:"🗓️"},
+                  {label:"Total Staff",value:totalStaff,icon:"👥"},
+                  {label:"Check-in Saya",value:Object.keys(checkinMap).length,icon:"✅"},
+                ].map(({label,value,icon})=>(
                   <div key={label} style={{ background:"rgba(255,255,255,0.1)",backdropFilter:"blur(8px)",borderRadius:16,padding:"14px 18px",textAlign:"center",border:"1px solid rgba(255,255,255,0.15)",minWidth:86 }}>
                     <div style={{ fontSize:18,marginBottom:4 }}>{icon}</div>
                     <div style={{ color:"#fff",fontSize:24,fontWeight:800,lineHeight:1,letterSpacing:-1 }}>{value}</div>
@@ -275,12 +333,13 @@ export default function StaffPage() {
               <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari event, venue, atau nama staff…"
                 style={{ width:"100%",paddingLeft:36,paddingRight:search?36:14,paddingTop:9,paddingBottom:9,border:"1.5px solid var(--border)",borderRadius:12,fontSize:13,fontWeight:500,background:"rgba(255,255,255,0.9)",backdropFilter:"blur(8px)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
-                onFocus={e=>{e.target.style.borderColor="var(--blue-2)";}} onBlur={e=>{e.target.style.borderColor="var(--border)";}}/>
+                onFocus={e=>{e.target.style.borderColor="var(--blue-2)";}} onBlur={e=>{e.target.style.borderColor="var(--border)";}}/> 
               {search && <button onClick={()=>setSearch("")} style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:"var(--muted)" }}>✕</button>}
             </div>
             {q && <span style={{ fontSize:12,color:"var(--muted)",fontWeight:600,whiteSpace:"nowrap" }}>{displayEvents.length === 0 ? "Tidak ditemukan" : `${displayEvents.length} hasil`}</span>}
           </div>
 
+          {/* Event Cards */}
           <div style={{ columns:"340px",columnGap:20,columnFill:"balance" }}>
             {displayEvents.length === 0 && (
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
@@ -294,18 +353,26 @@ export default function StaffPage() {
               const isPast = new Date(event.date_end || event.date) < today;
               const myEntry = staffList.find(s => s.name === currentUser.name);
               const isFull = event.max_staff && staffList.length >= event.max_staff;
+              const isToday = isEventToday(event, today);
+              const myCheckin = checkinMap[event.id];
+              const isCheckinLoading = !!checkinLoading[event.id];
+
               return (
-                <div key={event.id} className={mounted?"card fade-up":"card"} style={{ overflow:"hidden",boxShadow:"var(--shadow)",opacity:isPast?0.8:1,transition:"transform 0.2s,box-shadow 0.2s",breakInside:"avoid",marginBottom:20,display:"inline-block",width:"100%" }}
+                <div key={event.id} className={mounted?"card fade-up":"card"} style={{ overflow:"hidden",boxShadow:"var(--shadow)",opacity:isPast?0.8:1,transition:"transform 0.2s,box-shadow 0.2s",breakInside:"avoid",marginBottom:20,display:"inline-block",width:"100%",border:isToday?"2px solid rgba(16,185,129,0.5)":"2px solid transparent" }}
                   onMouseEnter={e=>{if(!isPast){e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="var(--shadow-lg)";}}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="var(--shadow)";}}>
-                  <div style={{ background:isPast?"linear-gradient(135deg,#374151,#6b7280)":"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"18px 20px",position:"relative",overflow:"hidden" }}>
+
+                  {/* Card Header */}
+                  <div style={{ background:isPast?"linear-gradient(135deg,#374151,#6b7280)":isToday?"linear-gradient(135deg,#065f46,#059669)":"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"18px 20px",position:"relative",overflow:"hidden" }}>
                     <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"16px 16px",pointerEvents:"none" }}/>
                     <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,position:"relative",zIndex:1 }}>
                       <div style={{ minWidth:0,flex:1 }}>
                         <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap" }}>
                           <span style={{ fontSize:10,background:"rgba(255,255,255,0.15)",color:"#fff",padding:"2px 8px",borderRadius:10,fontWeight:700 }}>{event.event_type==="wedding"?"💍 Wedding":"🎉 Event"}</span>
                           {isPast && <span style={{ fontSize:10,background:"rgba(0,0,0,0.25)",color:"rgba(255,255,255,0.6)",padding:"2px 8px",borderRadius:10,fontWeight:600 }}>Selesai</span>}
+                          {isToday && <span style={{ fontSize:10,background:"rgba(255,255,255,0.25)",color:"#fff",padding:"2px 8px",borderRadius:10,fontWeight:700,animation:"pulse 2s infinite" }}>🟢 HARI INI</span>}
                           {myEntry && <span style={{ fontSize:10,background:"rgba(16,185,129,0.3)",color:"#6ee7b7",padding:"2px 8px",borderRadius:10,fontWeight:700 }}>✓ Terdaftar</span>}
+                          {myCheckin && <span style={{ fontSize:10,background:"rgba(253,224,71,0.3)",color:"#fef08a",padding:"2px 8px",borderRadius:10,fontWeight:700 }}>✅ Check-in</span>}
                         </div>
                         <h3 style={{ color:"#fff",fontSize:15,fontWeight:800,letterSpacing:-0.3,marginBottom:4,lineHeight:1.2 }}>{highlight(event.couple,q)}</h3>
                         <p style={{ color:"rgba(255,255,255,0.55)",fontSize:11,fontWeight:500 }}>📅 {formatDate(event.date)}{event.date_end && event.date_end !== event.date ? ` — ${formatDate(event.date_end)}` : ""}</p>
@@ -319,6 +386,8 @@ export default function StaffPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Card Body */}
                   <div style={{ padding:"14px 18px" }}>
                     {event.max_staff && (() => {
                       const filled=staffList.length,max=event.max_staff,pct=Math.min((filled/max)*100,100);
@@ -333,6 +402,7 @@ export default function StaffPage() {
                         </div>
                       );
                     })()}
+
                     {staffList.length > 0 && (
                       <div style={{ marginBottom:12 }}>
                         <p style={{ fontSize:10,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:8 }}>Tim ({staffList.length})</p>
@@ -352,7 +422,7 @@ export default function StaffPage() {
                                     <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>{highlight(s.role,q)}</p>
                                   </div>
                                 </div>
-                                {!isPast && isMe && (
+                                {!isPast && isMe && !isToday && (
                                   <button onClick={()=>handleLeave(s.id,event.id)} style={{ background:"transparent",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:"2px 6px",borderRadius:6,transition:"all 0.15s",flexShrink:0 }} title="Keluar dari event">✕</button>
                                 )}
                               </div>
@@ -361,8 +431,42 @@ export default function StaffPage() {
                         </div>
                       </div>
                     )}
+
                     {staffList.length === 0 && <p style={{ fontSize:12,color:"var(--muted)",fontStyle:"italic",textAlign:"center",padding:"10px 0 12px" }}>Belum ada staff terdaftar</p>}
+
+                    {/* Action Buttons */}
                     {!isPast && (() => {
+                      // ── HARI H: tampilkan tombol check-in ──
+                      if (isToday && myEntry) {
+                        if (myCheckin) {
+                          const t = new Date(myCheckin.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" });
+                          return (
+                            <div style={{ background:"rgba(240,253,244,0.9)",border:"1.5px solid rgba(16,185,129,0.4)",borderRadius:12,padding:"12px 16px",textAlign:"center" }}>
+                              <p style={{ fontSize:13,fontWeight:800,color:"#059669",marginBottom:2 }}>✅ Sudah Check-in</p>
+                              <p style={{ fontSize:11,color:"#6ee7b7",fontWeight:500 }}>Pukul {t} WIB</p>
+                            </div>
+                          );
+                        }
+                        return (
+                          <button
+                            onClick={()=>handleCheckin(event)}
+                            disabled={isCheckinLoading}
+                            style={{ width:"100%",padding:"12px",borderRadius:12,border:"none",cursor:"pointer",background:"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:13,fontWeight:800,letterSpacing:0.3,boxShadow:"0 4px 16px rgba(16,185,129,0.4)",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                            {isCheckinLoading ? "Check-in..." : "✅ Check-in Sekarang"}
+                          </button>
+                        );
+                      }
+
+                      // ── HARI H tapi belum daftar ──
+                      if (isToday && !myEntry) {
+                        return (
+                          <div style={{ background:"rgba(255,247,237,0.9)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:12,padding:"10px 14px",textAlign:"center" }}>
+                            <p style={{ fontSize:12,color:"#b45309",fontWeight:600 }}>⚠️ Kamu belum terdaftar di event ini</p>
+                          </div>
+                        );
+                      }
+
+                      // ── Event mendatang: daftar/sudah daftar ──
                       if (myEntry) return (
                         <div style={{ textAlign:"center",padding:"6px 0 2px" }}>
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(16,185,129,0.08)",border:"1.5px solid rgba(16,185,129,0.25)",borderRadius:10,padding:"9px 18px" }}>
