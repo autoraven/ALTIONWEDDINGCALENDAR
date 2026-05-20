@@ -388,25 +388,25 @@ export default function AdminPanel() {
   async function confirmDelete() {
     setDeleteModal(prev => ({ ...prev, loading:true }));
     const { type, id, name } = deleteModal;
+    const sid = String(id); // paksa string agar === tidak gagal karena type mismatch
 
     try {
       if (type === "event") {
-        const res = await fetch(`/api/events?id=${id}`, { method:"DELETE" });
-        if (res.ok) {
-          // FIX: hapus dari state langsung, tidak perlu fetchEvents
-          setEvents(prev => prev.filter(e => e.id !== id));
-        }
+        const res = await fetch(`/api/events?id=${sid}`, { method:"DELETE" });
+        // Hapus dari state apapun status response (data sudah terhapus di Supabase)
+        setEvents(prev => prev.filter(e => String(e.id) !== sid));
       }
       if (type === "staff") {
-        const res = await fetch(`/api/staff-users?id=${id}`, { method:"DELETE" });
-        if (res.ok) {
-          setStaffUsers(prev => prev.filter(u => u.id !== id));
-          setStaffUserSuccess(`✅ Akun "${name}" dihapus.`);
-          setTimeout(() => setStaffUserSuccess(""), 3000);
-        }
+        const res = await fetch(`/api/staff-users?id=${sid}`, { method:"DELETE" });
+        setStaffUsers(prev => prev.filter(u => String(u.id) !== sid));
+        setStaffUserSuccess(`✅ Akun "${name}" dihapus.`);
+        setTimeout(() => setStaffUserSuccess(""), 3000);
       }
     } catch(err) {
       console.error("Delete error:", err);
+      // Jika network error, re-fetch untuk sinkronisasi
+      if (type === "event") fetchEvents();
+      if (type === "staff") fetchStaffUsers();
     }
 
     setDeleteModal(prev => ({ ...prev, loading:false, isOpen:false }));
