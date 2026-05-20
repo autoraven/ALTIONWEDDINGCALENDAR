@@ -41,8 +41,7 @@ function BgDecor() {
 }
 
 // Check apakah hari ini adalah hari event (termasuk multi-day)
-function isEventToday(event, today) {
-  const todayStr = today.toISOString().split("T")[0];
+function isEventToday(event, todayStr) {
   const start = event.date;
   const end = event.date_end || event.date;
   return todayStr >= start && todayStr <= end;
@@ -66,7 +65,10 @@ export default function StaffPage() {
   const [activeTab, setActiveTab] = useState("upcoming");
   const [search, setSearch] = useState("");
   const { businessName } = CALENDAR_CONFIG;
-  const today = new Date(); today.setHours(0,0,0,0);
+  // Tanggal hari ini dalam WIB (UTC+7) — bukan UTC
+  const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
+  const todayStr = nowWIB.toISOString().split("T")[0]; // "YYYY-MM-DD" dalam WIB
+  const today = new Date(todayStr + "T00:00:00"); // untuk perbandingan isPast
 
   useEffect(() => {
     setMounted(true);
@@ -158,7 +160,7 @@ export default function StaffPage() {
 
   async function handleLeave(staffId, eventId) {
     const staffEntry = (staffMap[eventId]||[]).find(s => s.id === staffId);
-    if (!staffEntry || staffEntry.name !== currentUser.name) return setError("Kamu hanya bisa menghapus dirimu sendiri.");
+    if (!staffEntry || staffEntry.name?.toLowerCase().trim() !== currentUser.name?.toLowerCase().trim()) return setError("Kamu hanya bisa menghapus dirimu sendiri.");
     if (!confirm("Keluar dari event ini?")) return;
     const res = await fetch(`/api/staff?id=${staffId}`, { method:"DELETE" });
     if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
@@ -190,7 +192,11 @@ export default function StaffPage() {
     }
   }
 
-  const upcomingEvents = events.filter(e => new Date(e.date) >= today);
+  // Debug: tampilkan tanggal WIB yang terbaca (bisa dihapus setelah konfirmasi)
+  if (typeof window !== "undefined") {
+    console.log("[ALTION] todayStr (WIB):", todayStr);
+  }
+  const upcomingEvents = events.filter(e => (e.date_end || e.date) >= todayStr);
   const baseEvents = activeTab === "upcoming" ? upcomingEvents : events;
   const q = search.trim().toLowerCase();
   const displayEvents = q
@@ -350,12 +356,13 @@ export default function StaffPage() {
             )}
             {[...displayEvents].sort((a,b)=>a.date.localeCompare(b.date)).map(event => {
               const staffList = staffMap[event.id] || [];
-              const isPast = new Date(event.date_end || event.date) < today;
-              const myEntry = staffList.find(s => s.name === currentUser.name);
+              const isPast = (event.date_end || event.date) < todayStr;
+              const myEntry = staffList.find(s => s.name?.toLowerCase().trim() === currentUser.name?.toLowerCase().trim());
               const isFull = event.max_staff && staffList.length >= event.max_staff;
-              const isToday = isEventToday(event, today);
+              const isToday = isEventToday(event, todayStr);
               const myCheckin = checkinMap[event.id];
               const isCheckinLoading = !!checkinLoading[event.id];
+              if (typeof window !== "undefined") console.log(`[ALTION] Event: ${event.couple} | date: ${event.date} | date_end: ${event.date_end} | isToday: ${isToday} | myEntry: ${!!myEntry} | isPast: ${isPast}`);
 
               return (
                 <div key={event.id} className={mounted?"card fade-up":"card"} style={{ overflow:"hidden",boxShadow:"var(--shadow)",opacity:isPast?0.8:1,transition:"transform 0.2s,box-shadow 0.2s",breakInside:"avoid",marginBottom:20,display:"inline-block",width:"100%",border:isToday?"2px solid rgba(16,185,129,0.5)":"2px solid transparent" }}
