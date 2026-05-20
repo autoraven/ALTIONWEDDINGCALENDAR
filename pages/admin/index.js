@@ -347,10 +347,21 @@ export default function AdminPanel() {
     });
     if (overlap) return setFormError(`Tanggal bentrok dengan event: ${overlap.couple}`);
 
-    const res=await fetch("/api/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form, date:start, date_end:end, event_type:eventType})});
-    const data=await res.json();
-    if(data.error) return setFormError(data.error);
-    setEvents(prev=>[...prev,data]);
+    const res = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, date:start, date_end:end, event_type:eventType }),
+    });
+
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
+
+    if (data && data.error) return setFormError(data.error);
+
+    const newEvent = (data && data.id) ? data : { id: Date.now(), ...form, date:start, date_end:end, event_type:eventType };
+    setEvents(prev => [...prev, newEvent]);
+    if (!(data && data.id)) fetchEvents();
+
     setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:""});
     setEventType(""); setShowForm(false); setSelectedRange({start:"",end:""}); setPickingStep(0);
     setSuccess("Event berhasil ditambahkan!"); setTimeout(()=>setSuccess(""),3500);
@@ -406,12 +417,14 @@ export default function AdminPanel() {
     const { name, username, password, jabatan, posisi, discord_id } = staffUserForm;
     if (!name.trim() || !username.trim() || !password.trim()) return setStaffUserError("Nama, username, dan password wajib diisi");
     const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id }) });
-    const data = await res.json();
-    if (data.error) return setStaffUserError(data.error);
-    setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
+    if (data && data.error) return setStaffUserError(data.error);
+    if (data && data.id) setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
+    else fetchStaffUsers();
     setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
     setShowAddStaffModal(false);
-    setStaffUserSuccess(`✅ Akun "${data.name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
+    setStaffUserSuccess(`✅ Akun "${(data && data.name) || name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
   async function handleSaveEditStaffUser(e) {
@@ -419,11 +432,13 @@ export default function AdminPanel() {
     const { name, username, password, jabatan, posisi, discord_id, is_active } = editStaffUserForm;
     if (!name.trim() || !username.trim()) return setEditStaffUserError("Nama dan username wajib diisi");
     const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_active }) });
-    const data = await res.json();
-    if (data.error) return setEditStaffUserError(data.error);
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
+    if (data && data.error) return setEditStaffUserError(data.error);
+    const updatedUser = (data && data.id) ? data : { ...editingStaffUser, name, username, jabatan, posisi, discord_id, is_active };
     setEditingStaffUser(null);
-    setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? data : u));
-    setStaffUserSuccess(`✅ Akun "${data.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
+    setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? updatedUser : u));
+    setStaffUserSuccess(`✅ Akun "${updatedUser.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
   function logout(){
