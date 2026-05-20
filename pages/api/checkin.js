@@ -6,32 +6,62 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const DISCORD_WEBHOOK = process.env.DISCORD_STAFF_WEBHOOK_WEDDING || process.env.DISCORD_STAFF_WEBHOOK_EVENT;
-
-async function sendCheckinNotification(staffName, event, checkinTime) {
-  const webhookUrl = event.event_type === "wedding"
+async function sendCheckinNotification(staffName, staffRole, discordId, event, checkinTime, allCheckins, totalStaff) {
+  const isWedding = event.event_type === "wedding";
+  const webhookUrl = isWedding
     ? process.env.DISCORD_STAFF_WEBHOOK_WEDDING
     : process.env.DISCORD_STAFF_WEBHOOK_EVENT;
   if (!webhookUrl) return;
 
   const timeFormatted = new Date(checkinTime).toLocaleTimeString("id-ID", {
-    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta",
   });
   const dateFormatted = new Date(event.date).toLocaleDateString("id-ID", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric"
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta",
   });
 
+  // Mention Discord jika ada
+  const mention = discordId ? `<@${discordId}>` : `**${staffName}**`;
+
+  // Progress hadir
+  const checkinCount = allCheckins.length;
+  const progressBar = totalStaff > 0
+    ? `${"🟩".repeat(checkinCount)}${"⬛".repeat(Math.max(0, totalStaff - checkinCount))} ${checkinCount}/${totalStaff}`
+    : `${checkinCount} orang hadir`;
+
+  // Daftar yang sudah check-in
+  const checkinList = allCheckins.length > 0
+    ? allCheckins.map((c, i) => `${i + 1}. ✅ **${c.staff_name}** — ${new Date(c.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" })} WIB`).join("\n")
+    : "_Belum ada_";
+
   const payload = {
+    content: discordId
+      ? `${mention} telah check-in untuk event **${event.couple}**! ✅`
+      : null,
     embeds: [{
-      title: `✅ Check-in: ${staffName}`,
-      description: `**${staffName}** telah check-in untuk event **${event.couple}**`,
-      color: 0x10b981,
+      title: isWedding
+        ? `💍 Check-in Wedding: ${event.couple}`
+        : `🎉 Check-in Event: ${event.couple}`,
+      color: isWedding ? 0x7c3aed : 0x0ea5e9,
+      description: `${mention} — **${staffRole || "Staff"}** telah hadir dan check-in.`,
       fields: [
-        { name: "📅 Tanggal Event", value: dateFormatted, inline: true },
+        { name: "📅 Tanggal Event", value: dateFormatted,          inline: true },
         { name: "🕐 Waktu Check-in", value: `${timeFormatted} WIB`, inline: true },
-        { name: "📍 Venue", value: event.venue || "-", inline: true },
+        { name: "📍 Venue",          value: event.venue || "-",     inline: true },
+        ...(event.time  ? [{ name: "🎬 Mulai",   value: event.time,  inline: true }] : []),
+        ...(event.addon ? [{ name: "✨ Add On", value: event.addon, inline: false }] : []),
+        {
+          name: `👥 Progress Kehadiran`,
+          value: progressBar,
+          inline: false,
+        },
+        {
+          name: `✅ Sudah Hadir (${checkinCount})`,
+          value: checkinList.slice(0, 1000), // Discord max 1024 char per field
+          inline: false,
+        },
       ],
-      footer: { text: "ALTION Check-in System" },
+      footer: { text: `ALTION Check-in System • ${isWedding ? "Wedding" : "Event"}` },
       timestamp: new Date().toISOString(),
     }],
   };
@@ -75,7 +105,7 @@ export default async function handler(req, res) {
     // Pastikan staff sudah terdaftar di event ini
     const { data: registered } = await supabase
       .from("event_staff")
-      .select("id")
+      .select("id, role")
       .eq("event_id", event_id)
       .ilike("name", staff_name.trim())
       .single();
@@ -93,7 +123,7 @@ export default async function handler(req, res) {
 
     if (already) {
       const timeStr = new Date(already.checked_in_at).toLocaleTimeString("id-ID", {
-        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta"
+        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta",
       });
       return res.status(409).json({ error: `Kamu sudah check-in pukul ${timeStr} WIB`, alreadyCheckedIn: true });
     }
@@ -117,14 +147,25 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message });
 
-    // Kirim notif Discord
-    const { data: event } = await supabase
-      .from("wedding_events")
-      .select("*")
-      .eq("id", event_id)
-      .single();
+    // Ambil data event, staff user (untuk discord_id & role), dan semua checkin terbaru
+    const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes] = await Promise.all([
+      supabase.from("wedding_events").select("*").eq("id", event_id).single(),
+      supabase.from("staff_users").select("discord_id, jabatan, posisi").eq("id", staff_user_id).single(),
+      supabase.from("staff_checkins").select("staff_name, checked_in_at").eq("event_id", event_id).order("checked_in_at", { ascending: true }),
+      supabase.from("event_staff").select("id", { count: "exact" }).eq("event_id", event_id),
+    ]);
 
-    if (event) await sendCheckinNotification(staff_name.trim(), event, checked_in_at);
+    const event      = eventRes.data;
+    const staffUser  = staffUserRes.data;
+    const allCheckins = allCheckinsRes.data || [];
+    const totalStaff  = totalStaffRes.count || 0;
+
+    const discordId  = staffUser?.discord_id || null;
+    const staffRole  = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
+
+    if (event) {
+      await sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff);
+    }
 
     return res.status(201).json(data);
   }
