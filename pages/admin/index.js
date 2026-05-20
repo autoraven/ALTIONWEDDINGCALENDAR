@@ -754,7 +754,7 @@ export default function AdminPanel() {
             onClick={e=>{ if(e.target===e.currentTarget && !editSaving) setEditingEvent(null); }}
           >
             <div className="card scale-in" style={{ width:"100%",maxWidth:520,padding:28,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(10,22,40,0.4)" }}
-              onClick={e=>e.stopPropagation()} {/* FIX: stop propagation agar klik di dalam modal tidak tutup modal */}
+              onClick={e=>e.stopPropagation()}
             >
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
                 <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>✏️ Edit Event</h3>
