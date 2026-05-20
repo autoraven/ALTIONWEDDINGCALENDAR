@@ -37,12 +37,57 @@ function BgDecor() {
   );
 }
 
-// Cek apakah sebuah tanggal masuk dalam range event (date s/d date_end)
 function dateInRange(dateStr, event) {
   const d = dateStr;
   const start = event.date;
   const end = event.date_end || event.date;
   return d >= start && d <= end;
+}
+
+// ─── Delete Confirmation Modal ────────────────────────────────────────────────
+function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, itemName, itemSub }) {
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:9999,
+      background:"rgba(10,22,40,0.65)", backdropFilter:"blur(6px)",
+      display:"flex", alignItems:"center", justifyContent:"center", padding:20,
+    }} onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}>
+      <div style={{
+        background:"#fff", borderRadius:24, width:"100%", maxWidth:420,
+        boxShadow:"0 32px 80px rgba(10,22,40,0.4)",
+        animation:"modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+        overflow:"hidden",
+      }}>
+        <div style={{ background:"linear-gradient(135deg,#dc2626,#ef4444)", padding:"24px 28px 20px", textAlign:"center" }}>
+          <div style={{ width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 12px" }}>🗑️</div>
+          <h3 style={{ color:"#fff",fontSize:18,fontWeight:800,margin:0 }}>{title}</h3>
+          <p style={{ color:"rgba(255,255,255,0.7)",fontSize:12,marginTop:6 }}>{description}</p>
+        </div>
+        <div style={{ padding:"20px 28px 0" }}>
+          <div style={{ background:"rgba(239,68,68,0.06)",border:"1.5px solid rgba(239,68,68,0.15)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:12 }}>
+            <div style={{ width:38,height:38,borderRadius:10,background:"linear-gradient(135deg,#dc2626,#ef4444)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+              <span style={{ color:"#fff",fontSize:14,fontWeight:800 }}>{itemName?.charAt(0)?.toUpperCase()||"?"}</span>
+            </div>
+            <div>
+              <p style={{ fontSize:14,fontWeight:800,color:"#1a1a1a",margin:0 }}>{itemName}</p>
+              {itemSub && <p style={{ fontSize:11,color:"#666",marginTop:2 }}>{itemSub}</p>}
+            </div>
+          </div>
+          <p style={{ fontSize:12,color:"#999",textAlign:"center",margin:"16px 0 0",lineHeight:1.6 }}>
+            Data yang dihapus <strong style={{ color:"#dc2626" }}>tidak dapat dikembalikan</strong>. Pastikan Anda yakin sebelum melanjutkan.
+          </p>
+        </div>
+        <div style={{ padding:"20px 28px 28px",display:"flex",gap:10 }}>
+          <button onClick={onClose} disabled={loading} style={{ flex:1,padding:"12px",borderRadius:12,border:"1.5px solid var(--border,#e5e7eb)",background:"rgba(255,255,255,0.9)",fontSize:13,fontWeight:700,color:"#666",cursor:"pointer" }}>Batal</button>
+          <button onClick={onConfirm} disabled={loading} style={{ flex:1,padding:"12px",borderRadius:12,border:"none",background:loading?"rgba(239,68,68,0.5)":"linear-gradient(135deg,#dc2626,#ef4444)",fontSize:13,fontWeight:700,color:"#fff",cursor:loading?"not-allowed":"pointer",boxShadow:"0 4px 14px rgba(220,38,38,0.35)" }}>
+            {loading?"Menghapus...":"Ya, Hapus"}
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes modalIn{from{opacity:0;transform:scale(0.88) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
+    </div>
+  );
 }
 
 function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, pickingEnd, rangeStart }) {
@@ -80,7 +125,6 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
         const {day}=cell;
         const {status,event,dateStr}=getDayInfo(day);
         const isToday=new Date(dateStr).toDateString()===today.toDateString();
-        const isMultiDay = event && event.date_end && event.date_end !== event.date;
 
         const inSelectedRange = selectedRange.start && selectedRange.end &&
           dateStr >= selectedRange.start && dateStr <= selectedRange.end;
@@ -116,7 +160,6 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
               <span style={{ fontSize:12,fontWeight:isToday||isSelected?800:500,
                 color:isToday||isSelected?"#fff":status==="past"?"#ccc":"var(--dark)" }}>{day}</span>
             </div>
-
             <div style={{ marginTop:"auto",minWidth:0 }}>
               <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,
                 boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
@@ -142,7 +185,6 @@ export default function AdminPanel() {
   const [loginError,setLoginError]=useState("");
   const [events,setEvents]=useState([]);
 
-  // Staff Users Management
   const [staffUsers, setStaffUsers] = useState([]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
@@ -163,19 +205,26 @@ export default function AdminPanel() {
   const [success,setSuccess]=useState("");
   const [mounted,setMounted]=useState(false);
 
-  // Multi-day range selection
   const [selectedRange,setSelectedRange]=useState({start:"",end:""});
-  const [pickingStep,setPickingStep]=useState(0); // 0=idle, 1=picked start, waiting end
+  const [pickingStep,setPickingStep]=useState(0);
   const [hoverDate,setHoverDate]=useState(null);
 
-  // Edit event
   const [editingEvent, setEditingEvent] = useState(null);
   const [editForm, setEditForm] = useState({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",date:"",date_end:"",event_type:""});
   const [editError, setEditError] = useState("");
 
-  // Event list: search + tab
   const [eventSearch,setEventSearch]=useState("");
-  const [eventTab,setEventTab]=useState("upcoming"); // "upcoming" | "past"
+  const [eventTab,setEventTab]=useState("upcoming");
+
+  // ── Delete modal state ──────────────────────────────────────────────────────
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    type: null,     // "event" | "staff"
+    id: null,
+    name: "",
+    sub: "",
+    loading: false,
+  });
 
   const today=useRef(new Date()); today.current.setHours(0,0,0,0);
   const todayStr = today.current.toISOString().split("T")[0];
@@ -192,7 +241,13 @@ export default function AdminPanel() {
     if (Array.isArray(data)) setStaffUsers(data);
   }, []);
 
-  useEffect(()=>{ setMounted(true); if(sessionStorage.getItem("admin_auth")==="true"){setIsLoggedIn(true);fetchEvents();fetchStaffUsers();} },[fetchEvents, fetchStaffUsers]);
+  useEffect(()=>{
+    setMounted(true);
+    // FIX: gunakan kunci "admin_authed" yang konsisten dengan performance.js
+    if(sessionStorage.getItem("admin_authed")==="1"){
+      setIsLoggedIn(true); fetchEvents(); fetchStaffUsers();
+    }
+  },[fetchEvents, fetchStaffUsers]);
 
   function changeMonth(dir) {
     if(isAnimating) return;
@@ -205,8 +260,11 @@ export default function AdminPanel() {
     e.preventDefault(); setLoginError("");
     const res=await fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
     const data=await res.json();
-    if(data.success){sessionStorage.setItem("admin_auth","true");setIsLoggedIn(true);fetchEvents();fetchStaffUsers();}
-    else setLoginError(data.message);
+    if(data.success){
+      // FIX: simpan "admin_authed"="1" agar konsisten dengan performance.js → tidak perlu login ulang
+      sessionStorage.setItem("admin_authed","1");
+      setIsLoggedIn(true); fetchEvents(); fetchStaffUsers();
+    } else setLoginError(data.message);
   }
 
   function handleEdit(event) {
@@ -230,7 +288,6 @@ export default function AdminPanel() {
     if (!editForm.couple.trim()) return setEditError("Nama wajib diisi");
     if (editForm.date_end < editForm.date) return setEditError("Tanggal akhir tidak boleh sebelum tanggal mulai");
 
-    // Cek overlap dengan event lain (kecuali diri sendiri)
     const overlap = events.find(ev => {
       if (ev.id === editingEvent.id) return false;
       const evStart = ev.date; const evEnd = ev.date_end || ev.date;
@@ -248,17 +305,15 @@ export default function AdminPanel() {
     });
     const data = await res.json();
     if (data.error) return setEditError(data.error);
-    // Update state langsung (optimistic) DAN re-fetch dari server agar pasti sync
     setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? data : ev));
     setEditingEvent(null);
     setSuccess("Event berhasil diperbarui!"); setTimeout(()=>setSuccess(""),3500);
-    fetchEvents(); // re-fetch untuk pastikan kalender & list sinkron tanpa refresh
+    fetchEvents();
   }
 
   function handleDayClick(dateStr, status) {
     if (status==="past") return;
     if (pickingStep===0) {
-      // Check if clicked on booked day → don't open if already booked
       const booked = events.find(e => dateInRange(dateStr, e));
       if (booked) return;
       setSelectedRange({start:dateStr, end:dateStr});
@@ -279,7 +334,6 @@ export default function AdminPanel() {
     if(!form.couple.trim()) return setFormError(eventType==="wedding"?"Nama pasangan wajib diisi":"Nama event wajib diisi");
     if(!selectedRange.start) return setFormError("Pilih tanggal event di kalender");
 
-    // Check overlap dengan event lain
     const start = selectedRange.start;
     const end = selectedRange.end || selectedRange.start;
     const overlap = events.find(ev => {
@@ -299,14 +353,53 @@ export default function AdminPanel() {
     setSuccess("Event berhasil ditambahkan!"); setTimeout(()=>setSuccess(""),3500);
   }
 
-  async function handleDelete(id) {
-    if(!confirm("Hapus event ini?")) return;
-    const res=await fetch(`/api/events?id=${id}`,{method:"DELETE"});
-    if(res.ok) setEvents(prev=>prev.filter(e=>e.id!==id));
-  }
-
   function cancelForm() {
     setShowForm(false); setEventType(""); setSelectedRange({start:"",end:""}); setPickingStep(0);
+  }
+
+  // ── Delete modal helpers ────────────────────────────────────────────────────
+  function openDeleteEvent(event) {
+    setDeleteModal({
+      isOpen: true, type: "event", id: event.id,
+      name: event.couple,
+      sub: `${formatDateShort(event.date)}${event.venue ? " · " + event.venue : ""}`,
+      loading: false,
+    });
+  }
+
+  function openDeleteStaff(user) {
+    setDeleteModal({
+      isOpen: true, type: "staff", id: user.id,
+      name: user.name,
+      sub: `@${user.username}${user.jabatan ? " · " + user.jabatan : ""}`,
+      loading: false,
+    });
+  }
+
+  function closeDeleteModal() {
+    if (deleteModal.loading) return;
+    setDeleteModal(prev => ({ ...prev, isOpen: false }));
+  }
+
+  async function confirmDelete() {
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    const { type, id, name } = deleteModal;
+
+    if (type === "event") {
+      const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+      if (res.ok) setEvents(prev => prev.filter(e => e.id !== id));
+    }
+
+    if (type === "staff") {
+      const res = await fetch(`/api/staff-users?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setStaffUsers(prev => prev.filter(u => u.id !== id));
+        setStaffUserSuccess(`✅ Akun "${name}" dihapus.`);
+        setTimeout(() => setStaffUserSuccess(""), 3000);
+      }
+    }
+
+    setDeleteModal(prev => ({ ...prev, loading: false, isOpen: false }));
   }
 
   async function handleAddStaffUser(e) {
@@ -334,18 +427,14 @@ export default function AdminPanel() {
     setStaffUserSuccess(`✅ Akun "${data.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
-  async function handleDeleteStaffUser(id, name) {
-    if (!confirm(`Hapus akun "${name}"? Aksi ini tidak bisa dibatalkan.`)) return;
-    const res = await fetch(`/api/staff-users?id=${id}`, { method:"DELETE" });
-    if (res.ok) { setStaffUsers(prev => prev.filter(u => u.id !== id)); setStaffUserSuccess(`✅ Akun "${name}" dihapus.`); setTimeout(()=>setStaffUserSuccess(""),3000); }
+  function logout(){
+    sessionStorage.removeItem("admin_authed");
+    setIsLoggedIn(false);
   }
-
-  function logout(){sessionStorage.removeItem("admin_auth");setIsLoggedIn(false);}
 
   const year=displayDate.getFullYear(); const month=displayDate.getMonth();
   const thisMonthEvents=events.filter(e=>{const d=new Date(e.date);return d.getMonth()===month&&d.getFullYear()===year;});
 
-  // Event list filters
   const upcomingEvents = events.filter(e => (e.date_end || e.date) >= todayStr);
   const pastEvents     = events.filter(e => (e.date_end || e.date) <  todayStr);
   const baseList = eventTab==="upcoming" ? upcomingEvents : pastEvents;
@@ -393,6 +482,23 @@ export default function AdminPanel() {
   return(
     <>
       <Head><title>Admin Dashboard — {businessName}</title><link rel="icon" href="/favicon.ico"/></Head>
+
+      {/* ── Delete Modal ─────────────────────────────────────────────────────── */}
+      <DeleteModal
+        isOpen={deleteModal.isOpen}
+        loading={deleteModal.loading}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title={deleteModal.type === "event" ? "Hapus Event?" : "Hapus Akun Staff?"}
+        description={
+          deleteModal.type === "event"
+            ? "Event ini beserta semua data terkait akan dihapus permanen."
+            : "Akun staff ini akan dihapus dari sistem secara permanen."
+        }
+        itemName={deleteModal.name}
+        itemSub={deleteModal.sub}
+      />
+
       <div style={{ minHeight:"100vh",position:"relative",overflow:"hidden" }}>
         <BgDecor/>
         <header style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",padding:"0 40px",height:68,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 4px 32px rgba(10,22,40,0.4)",position:"sticky",top:0,zIndex:100 }}>
@@ -415,7 +521,6 @@ export default function AdminPanel() {
         <main style={{ maxWidth:1080,margin:"0 auto",padding:"32px 20px",position:"relative",zIndex:1 }}>
           {success&&<div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:24,fontSize:13,fontWeight:600,backdropFilter:"blur(8px)" }}>✅ {success}</div>}
 
-          {/* Stats */}
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28 }}>
             {[{label:"Total Event",value:events.length,icon:"📅",color:"var(--blue-2)"},{label:"Bulan Ini",value:thisMonthEvents.length,icon:"🗓️",color:"var(--blue-1)"},{label:"Wedding",value:events.filter(e=>e.event_type==="wedding").length,icon:"💍",color:"#7c3aed"},{label:"Event Biasa",value:events.filter(e=>e.event_type==="event").length,icon:"🎉",color:"#059669"}].map(({label,value,icon,color},idx)=>(
               <div key={label} className={mounted?`card fade-up anim-delay-${idx+1}`:"card"} style={{ padding:"22px 24px",textAlign:"center",position:"relative",overflow:"hidden" }}>
@@ -457,7 +562,6 @@ export default function AdminPanel() {
                   style={{ background:"rgba(255,255,255,0.1)",border:"1.5px solid rgba(255,255,255,0.2)",color:"#fff",width:36,height:36,borderRadius:10,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",position:"relative",zIndex:1 }}>›</button>
               </div>
 
-              {/* Instruksi range picking */}
               {pickingStep===1 && (
                 <div style={{ padding:"8px 16px",background:"rgba(30,96,213,0.08)",borderBottom:"1px solid rgba(30,96,213,0.15)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                   <span style={{ fontSize:12,color:"var(--blue-1)",fontWeight:700 }}>
@@ -500,7 +604,6 @@ export default function AdminPanel() {
 
             {/* Right column */}
             <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
-              {/* Form tambah event */}
               {showForm&&(
                 <div className="card slide-right" style={{ padding:24,borderTop:"3px solid var(--blue-2)",boxShadow:"var(--shadow)" }}>
                   <h3 style={{ fontSize:18,fontWeight:800,marginBottom:4,color:"var(--navy)",letterSpacing:-0.5 }}>Tambah Event</h3>
@@ -588,15 +691,13 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* Event list dengan search + tab */}
+              {/* Event list */}
               <div className="card" style={{ overflow:"hidden",boxShadow:"var(--shadow-sm)" }}>
                 <div style={{ padding:"16px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",backdropFilter:"blur(4px)" }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
                     <h3 style={{ fontSize:16,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>Kelola Event</h3>
                     <span style={{ background:"linear-gradient(135deg,var(--blue-2),var(--blue-1))",color:"#fff",fontSize:12,fontWeight:700,padding:"3px 12px",borderRadius:20 }}>{events.length} total</span>
                   </div>
-
-                  {/* Tab */}
                   <div style={{ display:"flex",gap:6,background:"rgba(255,255,255,0.7)",border:"1.5px solid var(--border)",borderRadius:12,padding:4,marginBottom:10 }}>
                     {[{key:"upcoming",label:"Mendatang",count:upcomingEvents.length},{key:"past",label:"Sudah Lewat",count:pastEvents.length}].map(({key,label,count})=>(
                       <button key={key} onClick={()=>setEventTab(key)}
@@ -608,8 +709,6 @@ export default function AdminPanel() {
                       </button>
                     ))}
                   </div>
-
-                  {/* Search */}
                   <div style={{ position:"relative" }}>
                     <span style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
                     <input value={eventSearch} onChange={e=>setEventSearch(e.target.value)}
@@ -661,7 +760,8 @@ export default function AdminPanel() {
                         </div>
                         <div style={{ display:"flex",gap:6,flexShrink:0 }}>
                           <button onClick={()=>handleEdit(event)} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
-                          <button onClick={()=>handleDelete(event.id)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
+                          {/* FIX: ganti confirm() dengan modal */}
+                          <button onClick={()=>openDeleteEvent(event)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
                         </div>
                       </div>
                     );
@@ -671,22 +771,18 @@ export default function AdminPanel() {
             </div>
           </div>
         </main>
-        {/* Edit Modal */}
+
+        {/* Edit Event Modal */}
         {editingEvent && (
           <div style={{ position:"fixed",inset:0,background:"rgba(10,20,40,0.55)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(4px)" }}
             onClick={e=>{ if(e.target===e.currentTarget) setEditingEvent(null); }}>
             <div className="card scale-in" style={{ width:"100%",maxWidth:520,padding:28,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(10,22,40,0.4)" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20 }}>
-                <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>
-                  ✏️ Edit Event
-                </h3>
+                <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>✏️ Edit Event</h3>
                 <button onClick={()=>setEditingEvent(null)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
               </div>
-
               {editError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editError}</div>}
-
               <form onSubmit={handleSaveEdit}>
-                {/* Tipe event */}
                 <div style={{ marginBottom:14 }}>
                   <label className="label">Tipe Event</label>
                   <div style={{ display:"flex",gap:8 }}>
@@ -699,8 +795,6 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 </div>
-
-                {/* Tanggal */}
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
                   <div>
                     <label className="label">Tanggal Mulai</label>
@@ -711,7 +805,6 @@ export default function AdminPanel() {
                     <input type="date" value={editForm.date_end} min={editForm.date} onChange={e=>setEditForm({...editForm,date_end:e.target.value})} className="input"/>
                   </div>
                 </div>
-
                 {[
                   {label:editForm.event_type==="wedding"?"Nama Pasangan *":"Nama Event *",key:"couple",placeholder:editForm.event_type==="wedding"?"Budi & Siti":"Nama event..."},
                   {label:"Venue / Lokasi",key:"venue",placeholder:"Grand Ballroom"},
@@ -724,7 +817,6 @@ export default function AdminPanel() {
                     <input value={editForm[key]} onChange={e=>setEditForm({...editForm,[key]:e.target.value})} placeholder={placeholder} className="input"/>
                   </div>
                 ))}
-
                 <div style={{ marginBottom:20 }}>
                   <label className="label">👥 Maks. Slot Staff <span style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>opsional</span></label>
                   <div style={{ position:"relative" }}>
@@ -734,7 +826,6 @@ export default function AdminPanel() {
                     {editForm.max_staff && <span style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"var(--blue-1)",fontWeight:700,pointerEvents:"none" }}>orang</span>}
                   </div>
                 </div>
-
                 <div style={{ display:"flex",gap:10 }}>
                   <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan Perubahan</button>
                   <button type="button" onClick={()=>setEditingEvent(null)} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
@@ -744,22 +835,21 @@ export default function AdminPanel() {
           </div>
         )}
 
-
         {/* ===== MANAJEMEN STAFF USERS ===== */}
         <div style={{ maxWidth:1080,margin:"0 auto",padding:"0 20px 40px" }}>
-        <div style={{ marginTop:32 }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
-            <div>
-              <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
-              <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim. Jabatan & posisi otomatis muncul saat mereka daftar ke event.</p>
+          <div style={{ marginTop:32 }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
+              <div>
+                <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
+                <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim.</p>
+              </div>
+              <button onClick={()=>{ setShowAddStaffModal(true); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:""}); }}
+                className="btn btn-primary" style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
+                + Tambah Akun Staff
+              </button>
             </div>
-            <button onClick={()=>{ setShowAddStaffModal(true); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:""}); }}
-              className="btn btn-primary" style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
-              + Tambah Akun Staff
-            </button>
-          </div>
 
-          {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
+            {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
             <div className="card" style={{ overflow:"hidden" }}>
               <div style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:12 }}>
                 <div style={{ position:"relative",flex:1,maxWidth:320 }}>
@@ -775,10 +865,10 @@ export default function AdminPanel() {
                 {staffUsers.length === 0 && (
                   <div style={{ padding:"40px",textAlign:"center" }}>
                     <p style={{ fontSize:28,marginBottom:8 }}>👤</p>
-                    <p style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>Belum ada akun staff. Klik "+ Tambah Akun Staff" untuk mulai.</p>
+                    <p style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>Belum ada akun staff.</p>
                   </div>
                 )}
-                {(() => {
+                {(()=>{
                   const sq = staffUserSearch.trim().toLowerCase();
                   const filtered = sq ? staffUsers.filter(u => u.name.toLowerCase().includes(sq) || u.username.toLowerCase().includes(sq) || (u.jabatan||"").toLowerCase().includes(sq)) : staffUsers;
                   return filtered.map(user => (
@@ -805,14 +895,15 @@ export default function AdminPanel() {
                       </div>
                       <div style={{ display:"flex",gap:6,flexShrink:0 }}>
                         <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
-                        <button onClick={()=>handleDeleteStaffUser(user.id, user.name)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
+                        {/* FIX: ganti confirm() dengan modal */}
+                        <button onClick={()=>openDeleteStaff(user)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
                       </div>
                     </div>
                   ));
                 })()}
               </div>
             </div>
-        </div>
+          </div>
         </div>
 
         {/* Add Staff User Modal */}
@@ -852,28 +943,13 @@ export default function AdminPanel() {
                   </div>
                 </div>
                 <div style={{ marginBottom:14 }}>
-                  <label className="label">
-                    Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — untuk mention di reminder</span>
-                  </label>
+                  <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
                   <div style={{ position:"relative" }}>
                     <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",lineHeight:1 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                     </span>
                     <input value={staffUserForm.discord_id} onChange={e=>setStaffUserForm({...staffUserForm,discord_id:e.target.value.replace(/\D/g,"")})} placeholder="Contoh: 123456789012345678" className="input" style={{ paddingLeft:34 }} inputMode="numeric"/>
                   </div>
-                  <p style={{ fontSize:11,color:"var(--muted)",marginTop:4 }}>
-                    Settings → Advanced → aktifkan <strong>Developer Mode</strong> → klik kanan user → <strong>Copy User ID</strong>
-                  </p>
-                </div>
-                <div style={{ background:"rgba(238,244,255,0.6)",border:"1px solid rgba(209,221,247,0.7)",borderRadius:12,padding:"10px 14px",marginBottom:20 }}>
-                  <p style={{ fontSize:11,color:"var(--blue-1)",fontWeight:700,marginBottom:4 }}>Preview reminder Discord:</p>
-                  <p style={{ fontSize:12,color:"var(--dark)",lineHeight:1.8 }}>
-                    <strong>{staffUserForm.name || "Nama Staff"}</strong>{" "}
-                    {staffUserForm.discord_id
-                      ? <span style={{ background:"rgba(88,101,242,0.12)",color:"#5865F2",borderRadius:6,padding:"1px 6px",fontWeight:700,fontSize:11 }}>@{staffUserForm.name||"user"}</span>
-                      : <span style={{ color:"var(--muted)",fontSize:11 }}>(tidak ada mention)</span>
-                    }{" "}— <span style={{ color:"var(--muted)" }}>{[staffUserForm.jabatan, staffUserForm.posisi].filter(Boolean).join(" · ") || "Staff"}</span>
-                  </p>
                 </div>
                 <div style={{ display:"flex",gap:10 }}>
                   <button type="submit" className="btn btn-primary" style={{ flex:1,padding:"12px" }}>Buat Akun Staff</button>
@@ -920,25 +996,16 @@ export default function AdminPanel() {
                   </div>
                 </div>
                 <div style={{ marginBottom:14 }}>
-                  <label className="label">
-                    Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — untuk mention di reminder</span>
-                  </label>
+                  <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
                   <div style={{ position:"relative" }}>
                     <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:16,pointerEvents:"none",lineHeight:1 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.082.114 18.105.133 18.12a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                     </span>
-                    <input
-                      value={editStaffUserForm.discord_id}
-                      onChange={e=>setEditStaffUserForm({...editStaffUserForm,discord_id:e.target.value.replace(/\D/g,"")})}
-                      placeholder="Contoh: 123456789012345678"
-                      className="input"
-                      style={{ paddingLeft:36 }}
-                      inputMode="numeric"
-                    />
+                    <input value={editStaffUserForm.discord_id} onChange={e=>setEditStaffUserForm({...editStaffUserForm,discord_id:e.target.value.replace(/\D/g,"")})} placeholder="Contoh: 123456789012345678" className="input" style={{ paddingLeft:36 }} inputMode="numeric"/>
                   </div>
                   {editStaffUserForm.discord_id && (
                     <p style={{ fontSize:11,color:"#5865F2",marginTop:4,fontWeight:600 }}>
-                      ✅ Akan di-mention sebagai <code style={{ background:"rgba(88,101,242,0.1)",padding:"1px 5px",borderRadius:4 }}>&lt;@{editStaffUserForm.discord_id}&gt;</code> di reminder
+                      ✅ Akan di-mention sebagai <code style={{ background:"rgba(88,101,242,0.1)",padding:"1px 5px",borderRadius:4 }}>&lt;@{editStaffUserForm.discord_id}&gt;</code>
                     </p>
                   )}
                 </div>
