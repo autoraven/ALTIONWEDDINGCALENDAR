@@ -261,7 +261,6 @@ export default function AdminPanel() {
     const res=await fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
     const data=await res.json();
     if(data.success){
-      // FIX: simpan "admin_authed"="1" agar konsisten dengan performance.js → tidak perlu login ulang
       sessionStorage.setItem("admin_authed","1");
       setIsLoggedIn(true); fetchEvents(); fetchStaffUsers();
     } else setLoginError(data.message);
@@ -305,10 +304,10 @@ export default function AdminPanel() {
     });
     const data = await res.json();
     if (data.error) return setEditError(data.error);
-    setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? data : ev));
+
     setEditingEvent(null);
+    setEvents(prev => prev.map(ev => ev.id === data.id ? data : ev));
     setSuccess("Event berhasil diperbarui!"); setTimeout(()=>setSuccess(""),3500);
-    fetchEvents();
   }
 
   function handleDayClick(dateStr, status) {
