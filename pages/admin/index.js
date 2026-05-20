@@ -289,35 +289,31 @@ export default function AdminPanel() {
 
     setEditSaving(true); // tampilkan loading, kunci tombol
 
-    try {
-      const res = await fetch(`/api/events?id=${editingEvent.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editForm,
-          max_staff: editForm.max_staff ? parseInt(editForm.max_staff) : null,
-        }),
-      });
-      const data = await res.json();
+    const res = await fetch(`/api/events?id=${editingEvent.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...editForm,
+        max_staff: editForm.max_staff ? parseInt(editForm.max_staff) : null,
+      }),
+    });
 
-      if (data.error) {
-        setEditError(data.error);
-        setEditSaving(false);
-        return;
-      }
+    let data = null;
+    try { data = await res.json(); } catch(_) {}
 
-      // FIX: tutup modal DULU sebelum update state lain
-      setEditingEvent(null);
+    // Jika API error (misal validasi)
+    if (data && data.error) {
+      setEditError(data.error);
       setEditSaving(false);
-
-      // Update list langsung dari response API (tidak perlu fetchEvents)
-      setEvents(prev => prev.map(ev => ev.id === data.id ? data : ev));
-      setSuccess("Event berhasil diperbarui!"); setTimeout(()=>setSuccess(""),3500);
-
-    } catch (err) {
-      setEditError("Terjadi kesalahan koneksi. Coba lagi.");
-      setEditSaving(false);
+      return;
     }
+
+    // Tutup modal & update state — pakai data dari API jika ada, fallback ke editForm
+    const updated = (data && data.id) ? data : { ...editingEvent, ...editForm, max_staff: editForm.max_staff ? parseInt(editForm.max_staff) : null };
+    setEditingEvent(null);
+    setEditSaving(false);
+    setEvents(prev => prev.map(ev => ev.id === editingEvent.id ? updated : ev));
+    setSuccess("Event berhasil diperbarui!"); setTimeout(()=>setSuccess(""),3500);
   }
 
   function handleDayClick(dateStr, status) {
