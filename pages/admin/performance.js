@@ -962,7 +962,7 @@ export default function PerformancePage() {
             </div>
           )}
 
-
+        </main>
         <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG & Caramolly</footer>
       </div>
     </>
