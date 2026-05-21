@@ -1,13 +1,59 @@
-// pages/api/checkin.js
 import { createClient } from "@supabase/supabase-js";
+import { google } from "googleapis";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// ── Google Sheets helper ─────────────────────────────────────────────────────
+async function appendToSheet(row) {
+  try {
+    const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    const spreadsheetId   = process.env.GOOGLE_SHEET_ID;
+    if (!credentialsJson || !spreadsheetId) return;
+
+    const credentials = JSON.parse(credentialsJson);
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const sheets = google.sheets({ version: "v4", auth });
+
+    // Pastikan header row ada (cek apakah sheet kosong)
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: "Sheet1!A1:G1",
+    });
+
+    const hasHeader = existing.data.values && existing.data.values.length > 0;
+    if (!hasHeader) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: "Sheet1!A:G",
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [["No", "Nama Staff", "Jabatan / Posisi", "Tipe Event", "Nama Event", "Tanggal Event", "Waktu Check-in (WIB)"]],
+        },
+      });
+    }
+
+    // Append data row
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: "Sheet1!A:G",
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [row] },
+    });
+  } catch (err) {
+    console.error("Google Sheets append error:", err.message);
+  }
+}
+
+// ── Discord notification ─────────────────────────────────────────────────────
 async function sendCheckinNotification(staffName, staffRole, discordId, event, checkinTime, allCheckins, totalStaff) {
-  const isWedding = event.event_type === "wedding";
+  const isWedding  = event.event_type === "wedding";
   const webhookUrl = isWedding
     ? process.env.DISCORD_STAFF_WEBHOOK_WEDDING
     : process.env.DISCORD_STAFF_WEBHOOK_EVENT;
@@ -20,46 +66,32 @@ async function sendCheckinNotification(staffName, staffRole, discordId, event, c
     weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta",
   });
 
-  // Mention Discord jika ada
-  const mention = discordId ? `<@${discordId}>` : `**${staffName}**`;
-
-  // Progress hadir
+  const mention     = discordId ? `<@${discordId}>` : `**${staffName}**`;
   const checkinCount = allCheckins.length;
   const progressBar = totalStaff > 0
     ? `${"🟩".repeat(checkinCount)}${"⬛".repeat(Math.max(0, totalStaff - checkinCount))} ${checkinCount}/${totalStaff}`
     : `${checkinCount} orang hadir`;
 
-  // Daftar yang sudah check-in
   const checkinList = allCheckins.length > 0
-    ? allCheckins.map((c, i) => `${i + 1}. ✅ **${c.staff_name}** — ${new Date(c.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" })} WIB`).join("\n")
+    ? allCheckins.map((c, i) =>
+        `${i + 1}. ✅ **${c.staff_name}** — ${new Date(c.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" })} WIB`
+      ).join("\n")
     : "_Belum ada_";
 
   const payload = {
-    content: discordId
-      ? `${mention} telah check-in untuk event **${event.couple}**! ✅`
-      : null,
+    content: discordId ? `${mention} telah check-in untuk event **${event.couple}**! ✅` : null,
     embeds: [{
-      title: isWedding
-        ? `💍 Check-in Wedding: ${event.couple}`
-        : `🎉 Check-in Event: ${event.couple}`,
+      title: isWedding ? `💍 Check-in Wedding: ${event.couple}` : `🎉 Check-in Event: ${event.couple}`,
       color: isWedding ? 0x7c3aed : 0x0ea5e9,
       description: `${mention} — **${staffRole || "Staff"}** telah hadir dan check-in.`,
       fields: [
-        { name: "📅 Tanggal Event", value: dateFormatted,          inline: true },
-        { name: "🕐 Waktu Check-in", value: `${timeFormatted} WIB`, inline: true },
-        { name: "📍 Venue",          value: event.venue || "-",     inline: true },
-        ...(event.time  ? [{ name: "🎬 Mulai",   value: event.time,  inline: true }] : []),
+        { name: "📅 Tanggal Event",  value: dateFormatted,           inline: true },
+        { name: "🕐 Waktu Check-in", value: `${timeFormatted} WIB`,  inline: true },
+        { name: "📍 Venue",          value: event.venue || "-",      inline: true },
+        ...(event.time  ? [{ name: "🎬 Mulai",  value: event.time,  inline: true }] : []),
         ...(event.addon ? [{ name: "✨ Add On", value: event.addon, inline: false }] : []),
-        {
-          name: `👥 Progress Kehadiran`,
-          value: progressBar,
-          inline: false,
-        },
-        {
-          name: `✅ Sudah Hadir (${checkinCount})`,
-          value: checkinList.slice(0, 1000), // Discord max 1024 char per field
-          inline: false,
-        },
+        { name: "👥 Progress Kehadiran", value: progressBar,   inline: false },
+        { name: `✅ Sudah Hadir (${checkinCount})`, value: checkinList.slice(0, 1000), inline: false },
       ],
       footer: { text: `ALTION Check-in System • ${isWedding ? "Wedding" : "Event"}` },
       timestamp: new Date().toISOString(),
@@ -77,39 +109,36 @@ async function sendCheckinNotification(staffName, staffRole, discordId, event, c
   }
 }
 
+// ── Handler ──────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
 
-  // GET — ambil semua check-in (bisa filter by event_id atau staff_user_id)
+  // GET
   if (req.method === "GET") {
     const { event_id, staff_user_id } = req.query;
     let query = supabase
       .from("staff_checkins")
       .select("*")
       .order("checked_in_at", { ascending: false });
-
     if (event_id)      query = query.eq("event_id", event_id);
     if (staff_user_id) query = query.eq("staff_user_id", staff_user_id);
-
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   }
 
-  // POST — staff check-in ke event
+  // POST — check-in
   if (req.method === "POST") {
     const { event_id, staff_user_id, staff_name, note } = req.body;
-
     if (!event_id || !staff_user_id || !staff_name?.trim())
       return res.status(400).json({ error: "event_id, staff_user_id, dan staff_name wajib diisi" });
 
-    // Pastikan staff sudah terdaftar di event ini
+    // Cek sudah terdaftar di event
     const { data: registered } = await supabase
       .from("event_staff")
       .select("id, role")
       .eq("event_id", event_id)
       .ilike("name", staff_name.trim())
       .single();
-
     if (!registered)
       return res.status(403).json({ error: "Kamu belum terdaftar di event ini. Daftar terlebih dahulu." });
 
@@ -120,7 +149,6 @@ export default async function handler(req, res) {
       .eq("event_id", event_id)
       .eq("staff_user_id", staff_user_id)
       .single();
-
     if (already) {
       const timeStr = new Date(already.checked_in_at).toLocaleTimeString("id-ID", {
         hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta",
@@ -128,26 +156,19 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: `Kamu sudah check-in pukul ${timeStr} WIB`, alreadyCheckedIn: true });
     }
 
-    // Waktu WIB
+    // Simpan waktu WIB
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const checked_in_at = wib.toISOString().replace("Z", "+07:00");
 
     const { data, error } = await supabase
       .from("staff_checkins")
-      .insert([{
-        event_id,
-        staff_user_id,
-        staff_name: staff_name.trim(),
-        checked_in_at,
-        note: note?.trim() || null,
-      }])
+      .insert([{ event_id, staff_user_id, staff_name: staff_name.trim(), checked_in_at, note: note?.trim() || null }])
       .select()
       .single();
-
     if (error) return res.status(500).json({ error: error.message });
 
-    // Ambil data event, staff user (untuk discord_id & role), dan semua checkin terbaru
+    // Ambil data pendukung
     const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes] = await Promise.all([
       supabase.from("wedding_events").select("*").eq("id", event_id).single(),
       supabase.from("staff_users").select("discord_id, jabatan, posisi").eq("id", staff_user_id).single(),
@@ -155,26 +176,44 @@ export default async function handler(req, res) {
       supabase.from("event_staff").select("id", { count: "exact" }).eq("event_id", event_id),
     ]);
 
-    const event      = eventRes.data;
-    const staffUser  = staffUserRes.data;
+    const event       = eventRes.data;
+    const staffUser   = staffUserRes.data;
     const allCheckins = allCheckinsRes.data || [];
     const totalStaff  = totalStaffRes.count || 0;
-
-    const discordId  = staffUser?.discord_id || null;
-    const staffRole  = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
+    const discordId   = staffUser?.discord_id || null;
+    const staffRole   = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
 
     if (event) {
-      await sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff);
+      const tanggalEvent = new Date(event.date).toLocaleDateString("id-ID", {
+        day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta",
+      });
+      const waktuCheckin = new Date(checked_in_at).toLocaleTimeString("id-ID", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Jakarta",
+      });
+      const tipeEvent = event.event_type === "wedding" ? "Wedding" : "Event";
+
+      // Kirim Discord + Google Sheets secara paralel
+      await Promise.all([
+        sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff),
+        appendToSheet([
+          "", // No (auto dari row number di sheet)
+          staff_name.trim(),
+          staffRole,
+          tipeEvent,
+          event.couple,
+          tanggalEvent,
+          waktuCheckin + " WIB",
+        ]),
+      ]);
     }
 
     return res.status(201).json(data);
   }
 
-  // DELETE — batalkan check-in (admin only)
+  // DELETE
   if (req.method === "DELETE") {
     const { id } = req.query;
     if (!id) return res.status(400).json({ error: "ID wajib diisi" });
-
     const { error } = await supabase.from("staff_checkins").delete().eq("id", id);
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ success: true });
