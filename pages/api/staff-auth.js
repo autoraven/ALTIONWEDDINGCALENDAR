@@ -7,7 +7,6 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-
   const { username, password } = req.body;
   if (!username || !password)
     return res.status(400).json({ success: false, message: "Username dan password wajib diisi" });
@@ -22,18 +21,18 @@ export default async function handler(req, res) {
   if (error || !user)
     return res.status(401).json({ success: false, message: "Username atau password salah" });
 
-  // Simple password check (plain text — upgrade to bcrypt if needed)
   if (user.password !== password)
     return res.status(401).json({ success: false, message: "Username atau password salah" });
 
   return res.status(200).json({
     success: true,
     user: {
-      id: user.id,
-      name: user.name,
+      id:       user.id,
+      name:     user.name,
       username: user.username,
-      jabatan: user.jabatan,
-      posisi: user.posisi,
+      jabatan:  user.jabatan,
+      posisi:   user.posisi,
+      is_admin: user.is_admin === true,
     },
   });
 }

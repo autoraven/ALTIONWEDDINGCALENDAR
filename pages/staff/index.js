@@ -64,6 +64,19 @@ export default function StaffPage() {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [search, setSearch] = useState("");
+
+  // Kelola Event (admin only)
+  const [staffUsers, setStaffUsers] = useState([]);
+  const [checkins, setCheckins] = useState([]);
+  const [absensiSearch, setAbsensiSearch] = useState("");
+  const [absensiFilter, setAbsensiFilter] = useState("all");
+  const [expandedEventId, setExpandedEventId] = useState(null);
+  const [addStaffPanel, setAddStaffPanel] = useState(null);
+  const [addStaffName, setAddStaffName] = useState("");
+  const [addStaffLoading, setAddStaffLoading] = useState(false);
+  const [addStaffErr, setAddStaffErr] = useState("");
+  const [deleteCheckinId, setDeleteCheckinId] = useState(null);
+  const [deleteRegId, setDeleteRegId] = useState(null);
   const { businessName } = CALENDAR_CONFIG;
   // Tanggal hari ini dalam WIB (UTC+7) — bukan UTC
   const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
@@ -113,13 +126,16 @@ export default function StaffPage() {
 
   async function fetchAll(user) {
     const u = user || currentUser;
-    const [evRes, stRes, ciRes] = await Promise.all([
+    const isAdminUser = u?.is_admin === true;
+    const fetches = [
       fetch("/api/events"),
       fetch("/api/staff"),
       u ? fetch(`/api/checkin?staff_user_id=${u.id}`) : Promise.resolve(null),
-    ]);
-    const evData = await evRes.json();
-    const stData = await stRes.json();
+      ...(isAdminUser ? [fetch("/api/staff-users"), fetch("/api/checkin")] : []),
+    ];
+    const results = await Promise.all(fetches);
+    const evData  = await results[0].json();
+    const stData  = await results[1].json();
 
     if (Array.isArray(evData)) setEvents(evData);
     if (Array.isArray(stData)) {
@@ -131,14 +147,55 @@ export default function StaffPage() {
       setStaffMap(map);
     }
 
-    if (ciRes) {
-      const ciData = await ciRes.json();
+    if (results[2]) {
+      const ciData = await results[2].json();
       if (Array.isArray(ciData)) {
         const ciMap = {};
         ciData.forEach(c => { ciMap[c.event_id] = c; });
         setCheckinMap(ciMap);
       }
     }
+
+    if (isAdminUser) {
+      if (results[3]) { const d = await results[3].json(); if (Array.isArray(d)) setStaffUsers(d); }
+      if (results[4]) { const d = await results[4].json(); if (Array.isArray(d)) setCheckins(d); }
+    }
+  }
+
+  // ── Admin: tambah staff ke event ─────────────────────────────────────────
+  async function handleAdminAddStaff(eventId) {
+    const name = addStaffName.trim();
+    if (!name) return;
+    setAddStaffLoading(true); setAddStaffErr("");
+    const matched = staffUsers.find(u => u.name.toLowerCase() === name.toLowerCase() && u.is_active);
+    const role = matched ? ([matched.jabatan, matched.posisi].filter(Boolean).join(" · ") || "Staff") : "Staff";
+    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null }) });
+    const data = await res.json();
+    setAddStaffLoading(false);
+    if (data.error) { setAddStaffErr(data.error); return; }
+    setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
+    setAddStaffName(""); setAddStaffPanel(null);
+  }
+
+  async function handleAdminDeleteCheckin(ciId) {
+    if (!confirm("Hapus data check-in ini?")) return;
+    const res = await fetch(`/api/checkin?id=${ciId}`, { method:"DELETE" });
+    if (res.ok) setCheckins(prev => prev.filter(c => c.id !== ciId));
+  }
+
+  async function handleAdminDeleteRegistration(staffId, eventId) {
+    if (!confirm("Hapus pendaftaran staff ini dari event?")) return;
+    const res = await fetch(`/api/staff?id=${staffId}`, { method:"DELETE" });
+    if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
+  }
+
+  function formatTime(ts) {
+    if (!ts) return "-";
+    return new Date(ts).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" });
+  }
+  function formatDateShort(dateStr) {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
   }
 
   async function handleJoin(event) {
@@ -334,6 +391,11 @@ export default function StaffPage() {
                   {label} <span style={{ background:activeTab===key?"rgba(255,255,255,0.25)":"rgba(30,96,213,0.1)",color:activeTab===key?"#fff":"var(--blue-1)",borderRadius:20,padding:"1px 7px",fontSize:10,marginLeft:5,fontWeight:800 }}>{count}</span>
                 </button>
               ))}
+              {currentUser?.is_admin && (
+                <button onClick={()=>setActiveTab("kelola")} style={{ padding:"7px 16px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.18s",border:"none",background:activeTab==="kelola"?"linear-gradient(135deg,#7c3aed,#a855f7)":"transparent",color:activeTab==="kelola"?"#fff":"var(--muted)",boxShadow:activeTab==="kelola"?"0 2px 10px rgba(124,58,237,0.25)":"none" }}>
+                  🗂️ Kelola Event
+                </button>
+              )}
             </div>
             <div style={{ flex:1,minWidth:200,position:"relative" }}>
               <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
@@ -346,6 +408,7 @@ export default function StaffPage() {
           </div>
 
           {/* Event Cards */}
+          {activeTab !== "kelola" && (
           <div style={{ columns:"340px",columnGap:20,columnFill:"balance" }}>
             {displayEvents.length === 0 && (
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
@@ -510,6 +573,165 @@ export default function StaffPage() {
               );
             })}
           </div>
+          )} {/* end activeTab !== kelola */}
+
+          {/* ── KELOLA EVENT (admin only) ────────────────────────────── */}
+          {activeTab === "kelola" && currentUser?.is_admin && (
+            <div>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
+                <div>
+                  <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",letterSpacing:-0.5,marginBottom:4 }}>🗂️ Kelola Absensi Staff</h2>
+                  <p style={{ fontSize:12,color:"var(--muted)" }}>Tambah, hapus pendaftaran dan check-in staff untuk setiap event.</p>
+                </div>
+                <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                  {["all","upcoming","past"].map(f => (
+                    <button key={f} onClick={()=>setAbsensiFilter(f)}
+                      style={{ padding:"7px 16px",borderRadius:10,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
+                        borderColor: absensiFilter===f ? "transparent" : "var(--border)",
+                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "rgba(255,255,255,0.9)",
+                        color:       absensiFilter===f ? "#fff" : "var(--muted)",
+                        boxShadow:   absensiFilter===f ? "0 2px 8px rgba(124,58,237,0.3)" : "none",
+                      }}>
+                      {f==="all"?"Semua Event":f==="upcoming"?"Mendatang":"Sudah Lewat"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ position:"relative",marginBottom:16 }}>
+                <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none" }}>🔍</span>
+                <input type="text" placeholder="Cari event atau nama staff..." value={absensiSearch} onChange={e=>setAbsensiSearch(e.target.value)}
+                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.95)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
+              </div>
+
+              {(() => {
+                const q2 = absensiSearch.trim().toLowerCase();
+                const filtEvs = events.filter(ev => {
+                  if (absensiFilter === "upcoming" && (ev.date_end||ev.date) < todayStr) return false;
+                  if (absensiFilter === "past"     && (ev.date_end||ev.date) >= todayStr) return false;
+                  if (!q2) return true;
+                  const sl = staffMap[ev.id] || [];
+                  return ev.couple?.toLowerCase().includes(q2) || ev.venue?.toLowerCase().includes(q2) ||
+                    sl.some(s => s.name.toLowerCase().includes(q2));
+                }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+                if (filtEvs.length === 0) return (
+                  <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
+                    <p style={{ fontSize:32 }}>🗂️</p>
+                    <p style={{ fontWeight:700,marginTop:8 }}>Tidak ada event ditemukan</p>
+                  </div>
+                );
+
+                return (
+                  <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                    {filtEvs.map(ev => {
+                      const staffList   = staffMap[ev.id] || [];
+                      const evCheckins  = checkins.filter(c => c.event_id === ev.id);
+                      const isExpanded  = expandedEventId === ev.id;
+                      const isPast      = (ev.date_end||ev.date) < todayStr;
+                      const isEvToday   = ev.date <= todayStr && (ev.date_end||ev.date) >= todayStr;
+                      const statusColor = isEvToday ? "#f59e0b" : isPast ? "#6b7280" : "#059669";
+                      const statusLabel = isEvToday ? "🟡 Hari Ini" : isPast ? "⚫ Selesai" : "🟢 Mendatang";
+                      return (
+                        <div key={ev.id} style={{ background:"rgba(255,255,255,0.93)",backdropFilter:"blur(12px)",borderRadius:18,border:`1.5px solid ${isExpanded?"rgba(124,58,237,0.4)":"var(--border)"}`,boxShadow:isExpanded?"0 8px 32px rgba(124,58,237,0.12)":"var(--shadow)",transition:"all 0.2s",overflow:"hidden" }}>
+                          <div onClick={()=>setExpandedEventId(isExpanded?null:ev.id)} style={{ padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap" }}>
+                            <div style={{ width:44,height:44,borderRadius:13,background:isEvToday?"linear-gradient(135deg,#f59e0b,#fbbf24)":isPast?"linear-gradient(135deg,#6b7280,#9ca3af)":"linear-gradient(135deg,#7c3aed,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(0,0,0,0.12)" }}>
+                              {ev.event_type==="wedding"?"💍":"🎉"}
+                            </div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:3,flexWrap:"wrap" }}>
+                                <p style={{ fontSize:15,fontWeight:800,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{ev.couple}</p>
+                                <span style={{ fontSize:10,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"2px 8px",borderRadius:8,whiteSpace:"nowrap",flexShrink:0 }}>{statusLabel}</span>
+                              </div>
+                              <p style={{ fontSize:11,color:"var(--muted)" }}>📅 {formatDateShort(ev.date)}{ev.date_end && ev.date_end!==ev.date?` – ${formatDateShort(ev.date_end)}`:""} {ev.venue?`· 📍 ${ev.venue}`:""}</p>
+                            </div>
+                            <div style={{ display:"flex",gap:12,flexShrink:0 }}>
+                              <div style={{ textAlign:"center" }}><p style={{ fontSize:18,fontWeight:800,color:"var(--blue-1)",lineHeight:1 }}>{staffList.length}</p><p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase" }}>Daftar</p></div>
+                              <div style={{ textAlign:"center" }}><p style={{ fontSize:18,fontWeight:800,color:"#059669",lineHeight:1 }}>{evCheckins.length}</p><p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase" }}>Check-in</p></div>
+                            </div>
+                            <span style={{ fontSize:18,color:"var(--muted)",flexShrink:0,transition:"transform 0.2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>⌄</span>
+                          </div>
+
+                          {isExpanded && (
+                            <div style={{ borderTop:"1px solid var(--border)",padding:"0 20px 20px" }}>
+                              <div style={{ marginTop:16 }}>
+                                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+                                  <p style={{ fontSize:11,fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1 }}>Daftar Staff ({staffList.length})</p>
+                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffErr(""); }}
+                                    style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",borderRadius:10,padding:"6px 14px",fontSize:11,fontWeight:800,color:"#fff",cursor:"pointer",boxShadow:"0 2px 8px rgba(124,58,237,0.3)" }}>
+                                    {addStaffPanel===ev.id?"✕ Batal":"+ Tambah Staff"}
+                                  </button>
+                                </div>
+
+                                {addStaffPanel===ev.id && (
+                                  <div style={{ background:"rgba(124,58,237,0.06)",border:"1.5px solid rgba(124,58,237,0.2)",borderRadius:14,padding:"14px 16px",marginBottom:12 }}>
+                                    <p style={{ fontSize:11,fontWeight:700,color:"#7c3aed",marginBottom:10 }}>➕ Tambah Staff oleh Admin</p>
+                                    <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                                      <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
+                                        style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"#fff",outline:"none",cursor:"pointer" }}>
+                                        <option value="">— Pilih Staff —</option>
+                                        {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
+                                          <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>
+                                        ))}
+                                      </select>
+                                      <button onClick={()=>handleAdminAddStaff(ev.id)} disabled={addStaffLoading||!addStaffName}
+                                        style={{ padding:"9px 18px",borderRadius:10,border:"none",background:addStaffLoading||!addStaffName?"rgba(124,58,237,0.3)":"linear-gradient(135deg,#7c3aed,#a855f7)",color:"#fff",fontSize:12,fontWeight:800,cursor:addStaffLoading||!addStaffName?"not-allowed":"pointer",whiteSpace:"nowrap" }}>
+                                        {addStaffLoading?"Menambah...":"✓ Tambah"}
+                                      </button>
+                                    </div>
+                                    {addStaffErr && <p style={{ fontSize:11,color:"#dc2626",marginTop:8 }}>⚠️ {addStaffErr}</p>}
+                                  </div>
+                                )}
+
+                                {staffList.length === 0 ? (
+                                  <p style={{ fontSize:12,color:"var(--muted)",fontStyle:"italic",textAlign:"center",padding:"16px 0" }}>Belum ada staff terdaftar</p>
+                                ) : (
+                                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                                    {staffList.map(s => {
+                                      const ci = evCheckins.find(c => c.staff_user_id ? c.staff_user_id===s.user_id : c.staff_name?.toLowerCase()===s.name?.toLowerCase());
+                                      return (
+                                        <div key={s.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)" }}>
+                                          <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                                            <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
+                                          </div>
+                                          <div style={{ flex:1,minWidth:0 }}>
+                                            <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
+                                            <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role||"Staff"}</p>
+                                          </div>
+                                          <div style={{ flexShrink:0,textAlign:"right" }}>
+                                            {ci
+                                              ? <span style={{ fontSize:10,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.1)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>✅ {formatTime(ci.checked_in_at)}</span>
+                                              : <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
+                                            }
+                                          </div>
+                                          <div style={{ display:"flex",gap:5,flexShrink:0 }}>
+                                            {ci && (
+                                              <button onClick={()=>handleAdminDeleteCheckin(ci.id)}
+                                                style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                                🗑️ CI
+                                              </button>
+                                            )}
+                                            <button onClick={()=>handleAdminDeleteRegistration(s.id, ev.id)}
+                                              style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                              🗑️ Daftar
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </main>
         <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG & Caramolly</footer>
       </div>

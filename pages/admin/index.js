@@ -172,11 +172,11 @@ export default function AdminPanel() {
 
   const [staffUsers, setStaffUsers] = useState([]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
-  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
+  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_admin:false });
   const [staffUserError, setStaffUserError] = useState("");
   const [staffUserSuccess, setStaffUserSuccess] = useState("");
   const [editingStaffUser, setEditingStaffUser] = useState(null);
-  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_active:true });
+  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_active:true, is_admin:false });
   const [editStaffUserError, setEditStaffUserError] = useState("");
   const [staffUserSearch, setStaffUserSearch] = useState("");
 
@@ -414,28 +414,28 @@ export default function AdminPanel() {
 
   async function handleAddStaffUser(e) {
     e.preventDefault(); setStaffUserError("");
-    const { name, username, password, jabatan, posisi, discord_id } = staffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id, is_admin } = staffUserForm;
     if (!name.trim() || !username.trim() || !password.trim()) return setStaffUserError("Nama, username, dan password wajib diisi");
-    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id }) });
+    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_admin }) });
     let data = null;
     try { data = await res.json(); } catch(_) {}
     if (data && data.error) return setStaffUserError(data.error);
     if (data && data.id) setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
     else fetchStaffUsers();
-    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"" });
+    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_admin:false });
     setShowAddStaffModal(false);
     setStaffUserSuccess(`✅ Akun "${(data && data.name) || name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
   async function handleSaveEditStaffUser(e) {
     e.preventDefault(); setEditStaffUserError("");
-    const { name, username, password, jabatan, posisi, discord_id, is_active } = editStaffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id, is_active, is_admin } = editStaffUserForm;
     if (!name.trim() || !username.trim()) return setEditStaffUserError("Nama dan username wajib diisi");
-    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_active }) });
+    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_active, is_admin }) });
     let data = null;
     try { data = await res.json(); } catch(_) {}
     if (data && data.error) return setEditStaffUserError(data.error);
-    const updatedUser = (data && data.id) ? data : { ...editingStaffUser, name, username, jabatan, posisi, discord_id, is_active };
+    const updatedUser = (data && data.id) ? data : { ...editingStaffUser, name, username, jabatan, posisi, discord_id, is_active, is_admin };
     setEditingStaffUser(null);
     setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? updatedUser : u));
     setStaffUserSuccess(`✅ Akun "${updatedUser.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
@@ -880,6 +880,7 @@ export default function AdminPanel() {
                           <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                             <p style={{ fontSize:14,fontWeight:700,color:"var(--dark)" }}>{user.name}</p>
                             {!user.is_active && <span style={{ fontSize:9,background:"rgba(239,68,68,0.1)",color:"#ef4444",borderRadius:6,padding:"1px 7px",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5 }}>Nonaktif</span>}
+                            {user.is_admin && <span style={{ fontSize:9,background:"rgba(251,191,36,0.15)",color:"#d97706",borderRadius:6,padding:"1px 7px",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5 }}>🔑 Admin</span>}
                           </div>
                           <p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>@{user.username}{(user.jabatan||user.posisi)?` · ${[user.jabatan,user.posisi].filter(Boolean).join(" · ")}`:""}</p>
                           {user.discord_id && (
@@ -891,7 +892,7 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       <div style={{ display:"flex",gap:6,flexShrink:0 }}>
-                        <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
+                        <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active,is_admin:user.is_admin===true }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
                         <button onClick={()=>openDeleteStaff(user)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
                       </div>
                     </div>
@@ -925,9 +926,18 @@ export default function AdminPanel() {
                   <div><label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} placeholder="Contoh: Crew Staff" className="input"/></div>
                   <div><label className="label">Posisi <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Collective" className="input"/></div>
                 </div>
-                <div style={{ marginBottom:20 }}>
+                <div style={{ marginBottom:14 }}>
                   <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
                   <input value={staffUserForm.discord_id} onChange={e=>setStaffUserForm({...staffUserForm,discord_id:e.target.value.replace(/\D/g,"")})} placeholder="Contoh: 123456789012345678" className="input" inputMode="numeric"/>
+                </div>
+                <div style={{ marginBottom:20,background:"rgba(251,191,36,0.08)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"12px 16px" }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
+                    <input type="checkbox" checked={staffUserForm.is_admin} onChange={e=>setStaffUserForm({...staffUserForm,is_admin:e.target.checked})} style={{ width:16,height:16,cursor:"pointer",accentColor:"#f59e0b" }}/>
+                    <div>
+                      <span style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>🔑 Akses Admin</span>
+                      <p style={{ fontSize:11,color:"var(--muted)",fontWeight:400,marginTop:2 }}>Staff ini bisa login ke halaman admin dan kelola event</p>
+                    </div>
+                  </label>
                 </div>
                 <div style={{ display:"flex",gap:10 }}>
                   <button type="submit" className="btn btn-primary" style={{ flex:1,padding:"12px" }}>Buat Akun Staff</button>
@@ -966,10 +976,19 @@ export default function AdminPanel() {
                   <input value={editStaffUserForm.discord_id} onChange={e=>setEditStaffUserForm({...editStaffUserForm,discord_id:e.target.value.replace(/\D/g,"")})} placeholder="Contoh: 123456789012345678" className="input" inputMode="numeric"/>
                   {editStaffUserForm.discord_id && <p style={{ fontSize:11,color:"#5865F2",marginTop:4,fontWeight:600 }}>✅ <code style={{ background:"rgba(88,101,242,0.1)",padding:"1px 5px",borderRadius:4 }}>&lt;@{editStaffUserForm.discord_id}&gt;</code></p>}
                 </div>
-                <div style={{ marginBottom:20 }}>
+                <div style={{ marginBottom:14 }}>
                   <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
                     <input type="checkbox" checked={editStaffUserForm.is_active} onChange={e=>setEditStaffUserForm({...editStaffUserForm,is_active:e.target.checked})} style={{ width:16,height:16,cursor:"pointer" }}/>
                     <span style={{ fontSize:13,fontWeight:600,color:"var(--dark)" }}>Akun aktif <span style={{ fontSize:11,color:"var(--muted)",fontWeight:400 }}>(nonaktif = tidak bisa login)</span></span>
+                  </label>
+                </div>
+                <div style={{ marginBottom:20,background:"rgba(251,191,36,0.08)",border:"1.5px solid rgba(251,191,36,0.3)",borderRadius:12,padding:"12px 16px" }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer" }}>
+                    <input type="checkbox" checked={editStaffUserForm.is_admin} onChange={e=>setEditStaffUserForm({...editStaffUserForm,is_admin:e.target.checked})} style={{ width:16,height:16,cursor:"pointer",accentColor:"#f59e0b" }}/>
+                    <div>
+                      <span style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>🔑 Akses Admin</span>
+                      <p style={{ fontSize:11,color:"var(--muted)",fontWeight:400,marginTop:2 }}>Staff ini bisa login ke halaman admin dan kelola event</p>
+                    </div>
                   </label>
                 </div>
                 <div style={{ display:"flex",gap:10 }}>

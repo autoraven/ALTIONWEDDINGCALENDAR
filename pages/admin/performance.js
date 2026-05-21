@@ -811,7 +811,7 @@ export default function PerformancePage() {
                   const staffList = staffMap[ev.id] || [];
                   return ev.couple?.toLowerCase().includes(q) || ev.venue?.toLowerCase().includes(q) ||
                     staffList.some(s => s.name.toLowerCase().includes(q));
-                }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+                }).sort((a,b)=>new Date(a.date)-new Date(b.date));
 
                 if (filtered.length === 0) return (
                   <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
