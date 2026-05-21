@@ -7,7 +7,8 @@ const supabase = createClient(
 );
 
 // ── Google Sheets helper ─────────────────────────────────────────────────────
-async function appendToSheet(row) {
+// Kolom: Timestamp | ID Karyawan | Nama Karyawan | Tanggal | Jam Masuk (WIB) | Jam Keluar (WIB) | Status Kehadiran | Keterangan
+async function appendToSheet({ timestamp, discordId, staffName, tanggal, jamMasuk, namaEvent }) {
   try {
     const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
     const spreadsheetId   = process.env.GOOGLE_SHEET_ID;
@@ -21,20 +22,20 @@ async function appendToSheet(row) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Pastikan header row ada (cek apakah sheet kosong)
+    // Pastikan header row ada
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: "Sheet1!A1:G1",
+      range: "Sheet1!A1:H1",
     });
 
     const hasHeader = existing.data.values && existing.data.values.length > 0;
     if (!hasHeader) {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: "Sheet1!A:G",
+        range: "Sheet1!A:H",
         valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [["No", "Nama Staff", "Jabatan / Posisi", "Tipe Event", "Nama Event", "Tanggal Event", "Waktu Check-in (WIB)"]],
+          values: [["Timestamp", "ID Karyawan", "Nama Karyawan", "Tanggal", "Jam Masuk (WIB)", "Jam Keluar (WIB)", "Status Kehadiran", "Keterangan"]],
         },
       });
     }
@@ -42,9 +43,11 @@ async function appendToSheet(row) {
     // Append data row
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: "Sheet1!A:G",
+      range: "Sheet1!A:H",
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [row] },
+      requestBody: {
+        values: [[timestamp, discordId || "", staffName, tanggal, jamMasuk, "", "Hadir", namaEvent]],
+      },
     });
   } catch (err) {
     console.error("Google Sheets append error:", err.message);
@@ -184,26 +187,29 @@ export default async function handler(req, res) {
     const staffRole   = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
 
     if (event) {
-      const tanggalEvent = new Date(event.date).toLocaleDateString("id-ID", {
-        day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta",
-      });
       const waktuCheckin = new Date(checked_in_at).toLocaleTimeString("id-ID", {
         hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Jakarta",
       });
-      const tipeEvent = event.event_type === "wedding" ? "Wedding" : "Event";
 
       // Kirim Discord + Google Sheets secara paralel
+      const timestamp = new Date(checked_in_at).toLocaleString("id-ID", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        timeZone: "Asia/Jakarta",
+      }).replace(/\//g, "-");
+
       await Promise.all([
         sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff),
-        appendToSheet([
-          "", // No (auto dari row number di sheet)
-          staff_name.trim(),
-          staffRole,
-          tipeEvent,
-          event.couple,
-          tanggalEvent,
-          waktuCheckin + " WIB",
-        ]),
+        appendToSheet({
+          timestamp,
+          discordId:  staffUser?.discord_id || "",
+          staffName:  staff_name.trim(),
+          tanggal:    new Date(event.date).toLocaleDateString("id-ID", {
+                        year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Jakarta",
+                      }).replace(/\//g, "-"),
+          jamMasuk:   waktuCheckin,
+          namaEvent:  event.couple,
+        }),
       ]);
     }
 
