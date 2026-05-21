@@ -89,9 +89,30 @@ export default function StaffPage() {
     if (saved) {
       try {
         const user = JSON.parse(saved);
-        setCurrentUser(user);
-        fetchAll(user);
-      } catch {}
+        // Re-fetch user terbaru dari API untuk pastikan is_admin up-to-date
+        fetch("/api/staff-users")
+          .then(r => r.json())
+          .then(users => {
+            if (Array.isArray(users)) {
+              const fresh = users.find(u => u.id === user.id);
+              if (fresh) {
+                const updated = { ...user, is_admin: fresh.is_admin === true, jabatan: fresh.jabatan, posisi: fresh.posisi };
+                sessionStorage.setItem("staff_user", JSON.stringify(updated));
+                setCurrentUser(updated);
+                fetchAll(updated);
+                return;
+              }
+            }
+            setCurrentUser(user);
+            fetchAll(user);
+          })
+          .catch(() => {
+            setCurrentUser(user);
+            fetchAll(user);
+          });
+      } catch {
+        // sessionStorage corrupt, ignore
+      }
     }
   }, []);
 
