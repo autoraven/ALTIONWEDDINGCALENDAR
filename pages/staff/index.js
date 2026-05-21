@@ -634,7 +634,12 @@ export default function StaffPage() {
                   const sl = staffMap[ev.id] || [];
                   return ev.couple?.toLowerCase().includes(q2) || ev.venue?.toLowerCase().includes(q2) ||
                     sl.some(s => s.name.toLowerCase().includes(q2));
-                }).sort((a,b) => new Date(a.date) - new Date(b.date));
+                }).sort((a,b) => {
+                  const aIsPast = (a.date_end||a.date) < todayStr;
+                  const bIsPast = (b.date_end||b.date) < todayStr;
+                  if (aIsPast !== bIsPast) return aIsPast ? 1 : -1; // past ke bawah
+                  return new Date(a.date) - new Date(b.date); // dalam grup, terdekat dulu
+                });
 
                 if (filtEvs.length === 0) return (
                   <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
