@@ -187,27 +187,21 @@ export default async function handler(req, res) {
     const staffRole   = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
 
     if (event) {
-      const waktuCheckin = new Date(checked_in_at).toLocaleTimeString("id-ID", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Jakarta",
-      });
+      const wibDate     = new Date(new Date(checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+      const pad         = (n) => String(n).padStart(2, "0");
+      const jamMasuk    = `${pad(wibDate.getHours())}:${pad(wibDate.getMinutes())}`;
+      const tanggal     = `${wibDate.getFullYear()}-${pad(wibDate.getMonth() + 1)}-${pad(wibDate.getDate())}`;
+      const timestamp   = `${tanggal} ${jamMasuk}`;
 
       // Kirim Discord + Google Sheets secara paralel
-      const timestamp = new Date(checked_in_at).toLocaleString("id-ID", {
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-        timeZone: "Asia/Jakarta",
-      }).replace(/\//g, "-");
-
       await Promise.all([
         sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff),
         appendToSheet({
           timestamp,
           discordId:  staffUser?.discord_id || "",
           staffName:  staff_name.trim(),
-          tanggal:    new Date(event.date).toLocaleDateString("id-ID", {
-                        year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Jakarta",
-                      }).replace(/\//g, "-"),
-          jamMasuk:   waktuCheckin,
+          tanggal,
+          jamMasuk,
           namaEvent:  event.couple,
         }),
       ]);
