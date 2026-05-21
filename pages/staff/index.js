@@ -634,7 +634,7 @@ export default function StaffPage() {
                   const sl = staffMap[ev.id] || [];
                   return ev.couple?.toLowerCase().includes(q2) || ev.venue?.toLowerCase().includes(q2) ||
                     sl.some(s => s.name.toLowerCase().includes(q2));
-                }).sort((a,b) => new Date(b.date) - new Date(a.date));
+                }).sort((a,b) => new Date(a.date) - new Date(b.date));
 
                 if (filtEvs.length === 0) return (
                   <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
