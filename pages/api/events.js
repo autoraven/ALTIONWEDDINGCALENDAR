@@ -45,7 +45,7 @@ async function sendDiscordNotification(event, action = "add") {
         ...(event.addon ? [{ name: "✨ Add On", value: event.addon }] : []),
         ...(event.notes ? [{ name: "📝 Catatan", value: event.notes }] : []),
       ],
-      footer: { text: "ALTION Event Calendar" },
+      footer: { text: "ALTION Event Calendar • Created by GG & Camolly" },
       timestamp: new Date().toISOString(),
     }],
   };

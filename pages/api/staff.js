@@ -57,7 +57,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
         { name: `📋 Daftar Staff (${allStaff.length} orang)`, value: memberList, inline: false },
         { name: "🔗 Website", value: "[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)", inline: false },
       ],
-      footer: { text: isWedding ? "ALTION Wedding System" : "ALTION Event System" },
+      footer: { text: `${isWedding ? "ALTION Wedding System" : "ALTION Event System"} • Created by GG & Camolly` },
       timestamp: new Date().toISOString(),
     }],
   };

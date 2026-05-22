@@ -95,7 +95,7 @@ async function sendReminder(event, type, discordMap) {
           inline: false,
         },
       ],
-      footer: { text: `ALTION Reminder System • ${isHariH ? "Hari H" : "H-2"} • WIB` },
+      footer: { text: `ALTION Reminder System • ${isHariH ? "Hari H" : "H-2"} • Created by GG & Camolly` },
       timestamp: new Date().toISOString(),
     }],
   };

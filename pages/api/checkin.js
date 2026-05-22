@@ -96,7 +96,7 @@ async function sendCheckinNotification(staffName, staffRole, discordId, event, c
         { name: "👥 Progress Kehadiran", value: progressBar,   inline: false },
         { name: `✅ Sudah Hadir (${checkinCount})`, value: checkinList.slice(0, 1000), inline: false },
       ],
-      footer: { text: `ALTION Check-in System • ${isWedding ? "Wedding" : "Event"}` },
+      footer: { text: `ALTION Check-in System • ${isWedding ? "Wedding" : "Event"} • Created by GG & Camolly` },
       timestamp: new Date().toISOString(),
     }],
   };
