@@ -1,11 +1,11 @@
 {
   "crons": [
     {
-      "path": "/api/reminder",
+      "path": "/api/reminder?type=hari-h",
       "schedule": "0 1 * * *"
     },
     {
-      "path": "/api/reminder",
+      "path": "/api/reminder?type=h2",
       "schedule": "55 4 * * *"
     }
   ]

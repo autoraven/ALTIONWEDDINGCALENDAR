@@ -115,21 +115,24 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  // Tanggal hari ini dan H-2 dalam WIB
+  // Tentukan mode: "hari-h", "h2", atau "all" (untuk manual test tanpa query param)
+  const typeParam = req.query.type || "all";
+  const runHariH  = typeParam === "hari-h" || typeParam === "all";
+  const runH2     = typeParam === "h2"     || typeParam === "all";
+
   const todayDate = getWIBDate(0);
   const h2Date    = getWIBDate(2);
 
-  // Cek apakah cron ini untuk Hari H (jam 01:00 UTC = 08:00 WIB) atau H-2 (jam 04:55 UTC = 11:55 WIB)
-  // Tapi kita jalankan KEDUANYA dalam satu request supaya satu endpoint bisa dipakai untuk test juga
   const [todayEvents, h2Events] = await Promise.all([
-    getEventsOnDate(todayDate),
-    getEventsOnDate(h2Date),
+    runHariH ? getEventsOnDate(todayDate) : Promise.resolve([]),
+    runH2    ? getEventsOnDate(h2Date)    : Promise.resolve([]),
   ]);
 
   const totalEvents = todayEvents.length + h2Events.length;
   if (totalEvents === 0) {
     return res.status(200).json({
-      message: "Tidak ada event hari ini maupun H-2",
+      message: "Tidak ada event untuk dikirim",
+      type: typeParam,
       today: todayDate,
       h2: h2Date,
     });
@@ -164,6 +167,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     message: `Reminder terkirim: ${todayEvents.length} hari H, ${h2Events.length} H-2`,
+    type: typeParam,
     today: todayDate,
     h2: h2Date,
     results,
