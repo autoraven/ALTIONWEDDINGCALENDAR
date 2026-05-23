@@ -201,7 +201,9 @@ export default function StaffPage() {
   async function handleAdminDeleteCheckin(ciId) {
     if (!confirm("Hapus data check-in ini?")) return;
     const res = await fetch(`/api/checkin?id=${ciId}`, { method:"DELETE" });
-    if (res.ok) setCheckins(prev => prev.filter(c => c.id !== ciId));
+    if (res.ok) {
+      setCheckins(prev => prev.filter(c => c.id !== ciId));
+    }
   }
 
   async function handleAdminDeleteRegistration(staffId, eventId) {
@@ -413,7 +415,12 @@ export default function StaffPage() {
                 </button>
               ))}
               {currentUser?.is_admin && (
-                <button onClick={()=>setActiveTab("kelola")} style={{ padding:"7px 16px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.18s",border:"none",background:activeTab==="kelola"?"linear-gradient(135deg,#7c3aed,#a855f7)":"transparent",color:activeTab==="kelola"?"#fff":"var(--muted)",boxShadow:activeTab==="kelola"?"0 2px 10px rgba(124,58,237,0.25)":"none" }}>
+                <button onClick={()=>{
+                  setActiveTab("kelola");
+                  // Refresh checkins terbaru setiap kali buka tab kelola
+                  fetch("/api/checkin").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCheckins(d); });
+                  fetch("/api/staff").then(r=>r.json()).then(d=>{ if(Array.isArray(d)){ const map={}; d.forEach(s=>{ if(!map[s.event_id]) map[s.event_id]=[]; map[s.event_id].push(s); }); setStaffMap(map); }});
+                }} style={{ padding:"7px 16px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.18s",border:"none",background:activeTab==="kelola"?"linear-gradient(135deg,#7c3aed,#a855f7)":"transparent",color:activeTab==="kelola"?"#fff":"var(--muted)",boxShadow:activeTab==="kelola"?"0 2px 10px rgba(124,58,237,0.25)":"none" }}>
                   🗂️ Kelola Event
                 </button>
               )}
@@ -604,7 +611,13 @@ export default function StaffPage() {
                   <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",letterSpacing:-0.5,marginBottom:4 }}>🗂️ Kelola Absensi Staff</h2>
                   <p style={{ fontSize:12,color:"var(--muted)" }}>Tambah, hapus pendaftaran dan check-in staff untuk setiap event.</p>
                 </div>
-                <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center" }}>
+                  <button onClick={()=>{
+                    fetch("/api/checkin").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCheckins(d); });
+                    fetch("/api/staff").then(r=>r.json()).then(d=>{ if(Array.isArray(d)){ const map={}; d.forEach(s=>{ if(!map[s.event_id]) map[s.event_id]=[]; map[s.event_id].push(s); }); setStaffMap(map); }});
+                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.9)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
+                    🔄 Refresh
+                  </button>
                   {["all","upcoming","past"].map(f => (
                     <button key={f} onClick={()=>setAbsensiFilter(f)}
                       style={{ padding:"7px 16px",borderRadius:10,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
@@ -714,7 +727,10 @@ export default function StaffPage() {
                                 ) : (
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
-                                      const ci = evCheckins.find(c => c.staff_user_id ? c.staff_user_id===s.user_id : c.staff_name?.toLowerCase()===s.name?.toLowerCase());
+                                      const ci = evCheckins.find(c =>
+                                        (s.user_id && c.staff_user_id && String(c.staff_user_id) === String(s.user_id)) ||
+                                        (c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim())
+                                      );
                                       return (
                                         <div key={s.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)" }}>
                                           <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
