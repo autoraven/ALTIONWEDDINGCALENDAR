@@ -131,9 +131,22 @@ export default async function handler(req, res) {
 
   // POST — check-in
   if (req.method === "POST") {
-    const { event_id, staff_user_id, staff_name, note } = req.body;
-    if (!event_id || !staff_user_id || !staff_name?.trim())
-      return res.status(400).json({ error: "event_id, staff_user_id, dan staff_name wajib diisi" });
+    const { event_id, staff_user_id, staff_name, note, admin_override, admin_user_id } = req.body;
+    if (!event_id || !staff_name?.trim())
+      return res.status(400).json({ error: "event_id dan staff_name wajib diisi" });
+    if (!admin_override && !staff_user_id)
+      return res.status(400).json({ error: "staff_user_id wajib diisi" });
+
+    // Jika admin_override, verifikasi admin
+    if (admin_override) {
+      const { data: adminUser } = await supabase
+        .from("staff_users")
+        .select("is_admin")
+        .eq("id", admin_user_id)
+        .single();
+      if (!adminUser?.is_admin)
+        return res.status(403).json({ error: "Hanya admin yang dapat melakukan check-in untuk staff lain." });
+    }
 
     // Cek sudah terdaftar di event
     const { data: registered } = await supabase
@@ -143,20 +156,27 @@ export default async function handler(req, res) {
       .ilike("name", staff_name.trim())
       .single();
     if (!registered)
-      return res.status(403).json({ error: "Kamu belum terdaftar di event ini. Daftar terlebih dahulu." });
+      return res.status(403).json({ error: admin_override ? "Staff belum terdaftar di event ini." : "Kamu belum terdaftar di event ini. Daftar terlebih dahulu." });
 
     // Cek sudah check-in belum
-    const { data: already } = await supabase
+    let alreadyQuery = supabase
       .from("staff_checkins")
       .select("id, checked_in_at")
-      .eq("event_id", event_id)
-      .eq("staff_user_id", staff_user_id)
-      .single();
+      .eq("event_id", event_id);
+    if (admin_override) {
+      alreadyQuery = alreadyQuery.ilike("staff_name", staff_name.trim());
+    } else {
+      alreadyQuery = alreadyQuery.eq("staff_user_id", staff_user_id);
+    }
+    const { data: already } = await alreadyQuery.maybeSingle();
     if (already) {
       const timeStr = new Date(already.checked_in_at).toLocaleTimeString("id-ID", {
         hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta",
       });
-      return res.status(409).json({ error: `Kamu sudah check-in pukul ${timeStr} WIB`, alreadyCheckedIn: true });
+      const errMsg = admin_override
+        ? `${staff_name} sudah check-in pukul ${timeStr} WIB`
+        : `Kamu sudah check-in pukul ${timeStr} WIB`;
+      return res.status(409).json({ error: errMsg, alreadyCheckedIn: true });
     }
 
     // Simpan waktu WIB
@@ -164,9 +184,20 @@ export default async function handler(req, res) {
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const checked_in_at = wib.toISOString().replace("Z", "+07:00");
 
+    // Jika admin_override, resolve staff_user_id dari nama
+    let resolvedUserId = staff_user_id || null;
+    if (admin_override && !resolvedUserId) {
+      const { data: suByName } = await supabase
+        .from("staff_users")
+        .select("id")
+        .ilike("name", staff_name.trim())
+        .maybeSingle();
+      resolvedUserId = suByName?.id || null;
+    }
+
     const { data, error } = await supabase
       .from("staff_checkins")
-      .insert([{ event_id, staff_user_id, staff_name: staff_name.trim(), checked_in_at, note: note?.trim() || null }])
+      .insert([{ event_id, staff_user_id: resolvedUserId, staff_name: staff_name.trim(), checked_in_at, note: note?.trim() || (admin_override ? "Check-in oleh Admin" : null) }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });

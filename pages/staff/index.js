@@ -77,6 +77,8 @@ export default function StaffPage() {
   const [addStaffErr, setAddStaffErr] = useState("");
   const [deleteCheckinId, setDeleteCheckinId] = useState(null);
   const [deleteRegId, setDeleteRegId] = useState(null);
+  const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
+  const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
   const { businessName } = CALENDAR_CONFIG;
   // Tanggal hari ini dalam WIB (UTC+7) — bukan UTC
   const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
@@ -210,6 +212,34 @@ export default function StaffPage() {
     if (!confirm("Hapus pendaftaran staff ini dari event?")) return;
     const res = await fetch(`/api/staff?id=${staffId}`, { method:"DELETE" });
     if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
+  }
+
+  // ── Admin: check-in untuk staff ────────────────────────────────────────────
+  async function handleAdminCheckin(event, staff) {
+    const key = staff.id;
+    setAdminCheckinLoading(prev => ({ ...prev, [key]: true }));
+    setAdminCheckinErr(prev => ({ ...prev, [key]: "" }));
+    const res = await fetch("/api/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_id: event.id,
+        staff_name: staff.name,
+        admin_override: true,
+        admin_user_id: currentUser.id,
+      }),
+    });
+    const data = await res.json();
+    setAdminCheckinLoading(prev => ({ ...prev, [key]: false }));
+    if (data.error && !data.alreadyCheckedIn) {
+      setAdminCheckinErr(prev => ({ ...prev, [key]: data.error }));
+      return;
+    }
+    if (data.id || data.alreadyCheckedIn) {
+      // Refresh semua checkins
+      const d = await fetch("/api/checkin").then(r => r.json());
+      if (Array.isArray(d)) setCheckins(d);
+    }
   }
 
   function formatTime(ts) {
@@ -746,17 +776,31 @@ export default function StaffPage() {
                                               : <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
                                             }
                                           </div>
-                                          <div style={{ display:"flex",gap:5,flexShrink:0 }}>
-                                            {ci && (
-                                              <button onClick={()=>handleAdminDeleteCheckin(ci.id)}
-                                                style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
-                                                🗑️ CI
+                                          <div style={{ display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"flex-end" }}>
+                                            <div style={{ display:"flex",gap:5 }}>
+                                              {!ci && (
+                                                <button
+                                                  onClick={()=>handleAdminCheckin(ev, s)}
+                                                  disabled={!!adminCheckinLoading[s.id]}
+                                                  title="Check-in staff ini sebagai admin"
+                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(245,158,11,0.35)",background:adminCheckinLoading[s.id]?"rgba(245,158,11,0.05)":"rgba(245,158,11,0.1)",fontSize:10,fontWeight:700,color:"#b45309",cursor:adminCheckinLoading[s.id]?"not-allowed":"pointer",whiteSpace:"nowrap",opacity:adminCheckinLoading[s.id]?0.6:1 }}>
+                                                  {adminCheckinLoading[s.id] ? "⏳..." : "⚡ CI"}
+                                                </button>
+                                              )}
+                                              {ci && (
+                                                <button onClick={()=>handleAdminDeleteCheckin(ci.id)}
+                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                                  🗑️ CI
+                                                </button>
+                                              )}
+                                              <button onClick={()=>handleAdminDeleteRegistration(s.id, ev.id)}
+                                                style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                                🗑️ Daftar
                                               </button>
+                                            </div>
+                                            {adminCheckinErr[s.id] && (
+                                              <span style={{ fontSize:9,color:"#dc2626",maxWidth:120,textAlign:"right",lineHeight:1.3 }}>⚠️ {adminCheckinErr[s.id]}</span>
                                             )}
-                                            <button onClick={()=>handleAdminDeleteRegistration(s.id, ev.id)}
-                                              style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
-                                              🗑️ Daftar
-                                            </button>
                                           </div>
                                         </div>
                                       );
