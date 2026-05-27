@@ -248,7 +248,7 @@ export default function PerformancePage() {
 
   // ── Open delete modal ────────────────────────────────────────────────────────
   function openDeleteCheckin(ci) {
-    const ev = events.find(e => e.id === ci.event_id);
+    const ev = events.find(e => String(e.id) === String(ci.event_id));
     setDeleteModal({
       isOpen: true,
       type: "checkin",
@@ -261,7 +261,7 @@ export default function PerformancePage() {
 
   function openDeleteRegistration(staffEntry) {
     // staffEntry = row from event_staff table (has id, name, role, event_id)
-    const ev = events.find(e => e.id === staffEntry.event_id);
+    const ev = events.find(e => String(e.id) === String(staffEntry.event_id));
     setDeleteModal({
       isOpen: true,
       type: "registration",
@@ -376,9 +376,14 @@ export default function PerformancePage() {
     });
 
     const userCheckins = checkins.filter(c => {
-      if (c.staff_user_id !== user.id) return false;
-      const d = new Date(c.checked_in_at);
-      return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+      // Match by staff_user_id (paksa string agar tidak gagal karena type mismatch uuid vs number)
+      // Fallback: match by staff_name jika staff_user_id null (admin_override tanpa resolvedUserId)
+      const matchById = c.staff_user_id != null && String(c.staff_user_id) === String(user.id);
+      const matchByName = !c.staff_user_id && c.staff_name?.toLowerCase().trim() === user.name?.toLowerCase().trim();
+      if (!matchById && !matchByName) return false;
+      // Konversi ke WIB untuk cek bulan/tahun
+      const dWIB = new Date(new Date(c.checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+      return dWIB.getFullYear() === filterYear && dWIB.getMonth() === filterMonth;
     });
 
     const checkinRate = joinedEvents.length > 0
@@ -401,8 +406,9 @@ export default function PerformancePage() {
 
   // ── All checkins in this month for log ───────────────────────────────────
   const monthCheckins = checkins.filter(c => {
-    const d = new Date(c.checked_in_at);
-    return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+    // Konversi ke WIB sebelum cek bulan/tahun agar tidak meleset karena UTC offset
+    const dWIB = new Date(new Date(c.checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
+    return dWIB.getFullYear() === filterYear && dWIB.getMonth() === filterMonth;
   }).sort((a, b) => new Date(b.checked_in_at) - new Date(a.checked_in_at));
 
   // ── Available years ───────────────────────────────────────────────────────
@@ -691,7 +697,7 @@ export default function PerformancePage() {
                           <tr><td colSpan={7} style={{ textAlign:"center",padding:"24px",color:"var(--muted)",fontStyle:"italic" }}>Tidak ada event di bulan ini</td></tr>
                         )}
                         {selectedStaff.joinedEvents.map(ev => {
-                          const ci = selectedStaff.userCheckins.find(c => c.event_id === ev.id);
+                          const ci = selectedStaff.userCheckins.find(c => String(c.event_id) === String(ev.id));
                           // Cari entry di staffMap untuk mendapat id row event_staff
                           const staffEntry = (staffMap[ev.id] || []).find(
                             s => s.name.toLowerCase() === selectedStaff.user.name.toLowerCase()
@@ -761,7 +767,7 @@ export default function PerformancePage() {
                       <tr><td colSpan={5} style={{ textAlign:"center",padding:"32px",color:"var(--muted)",fontStyle:"italic" }}>Tidak ada check-in di bulan ini</td></tr>
                     )}
                     {monthCheckins.map(ci => {
-                      const ev = events.find(e => e.id === ci.event_id);
+                      const ev = events.find(e => String(e.id) === String(ci.event_id));
                       return (
                         <tr key={ci.id} style={{ borderBottom:"1px solid var(--border)",transition:"background 0.15s" }}
                           onMouseEnter={e=>e.currentTarget.style.background="rgba(238,244,255,0.4)"}
@@ -861,7 +867,7 @@ export default function PerformancePage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                     {filtered.map(ev => {
                       const staffList = staffMap[ev.id] || [];
-                      const evCheckins = checkins.filter(c => c.event_id === ev.id);
+                      const evCheckins = checkins.filter(c => String(c.event_id) === String(ev.id));
                       const isExpanded = expandedEventId === ev.id;
                       const isPast = (ev.date_end||ev.date) < todayStr;
                       const isToday = ev.date <= todayStr && (ev.date_end||ev.date) >= todayStr;
@@ -945,7 +951,11 @@ export default function PerformancePage() {
                                 ) : (
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
-                                      const ci = evCheckins.find(c => c.staff_user_id ? c.staff_user_id === s.user_id : c.staff_name?.toLowerCase() === s.name?.toLowerCase());
+                                      const ci = evCheckins.find(c =>
+                                        c.staff_user_id != null
+                                          ? String(c.staff_user_id) === String(s.user_id)
+                                          : c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim()
+                                      );
                                       const isLoadingCI = !!adminCheckinLoading[s.id];
                                       const ciErr = adminCheckinErr[s.id];
                                       return (
