@@ -201,6 +201,7 @@ export default function PerformancePage() {
   const [addStaffErr, setAddStaffErr] = useState("");
   const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
   const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
+  const [loggedInAdminId, setLoggedInAdminId] = useState(null); // ID admin yang sedang login
 
   const { businessName } = CALENDAR_CONFIG;
 
@@ -232,7 +233,12 @@ export default function PerformancePage() {
     const [uData, eData, stData, ciData] = await Promise.all([
       uRes.json(), eRes.json(), stRes.json(), ciRes.json()
     ]);
-    if (Array.isArray(uData)) setStaffUsers(uData);
+    if (Array.isArray(uData)) {
+      setStaffUsers(uData);
+      // Simpan ID admin pertama yang ditemukan — dipakai untuk admin_override checkin
+      const firstAdmin = uData.find(u => u.is_admin === true);
+      if (firstAdmin) setLoggedInAdminId(firstAdmin.id);
+    }
     if (Array.isArray(eData)) setEvents(eData);
     if (Array.isArray(stData)) {
       const map = {};
@@ -332,14 +338,11 @@ export default function PerformancePage() {
     setAddStaffName(""); setAddStaffPanel(null);
   }
 
-  // ── Admin check-in untuk staff (Kelola Absensi) ───────────────────────────
+  // ── Admin check-in untuk staff (identik dengan staff/index.js) ───────────
   async function handleAdminCheckin(event, staff) {
     const key = staff.id;
     setAdminCheckinLoading(prev => ({ ...prev, [key]: true }));
     setAdminCheckinErr(prev => ({ ...prev, [key]: "" }));
-
-    // Ambil admin_user_id dari staffUsers yang is_admin — gunakan ID pertama yg is_admin
-    const adminUser = staffUsers.find(u => u.is_admin);
     const res = await fetch("/api/checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -347,19 +350,32 @@ export default function PerformancePage() {
         event_id: event.id,
         staff_name: staff.name,
         admin_override: true,
-        admin_user_id: adminUser?.id || null,
+        admin_user_id: loggedInAdminId,
       }),
     });
     const data = await res.json();
     setAdminCheckinLoading(prev => ({ ...prev, [key]: false }));
-
     if (data.error && !data.alreadyCheckedIn) {
       setAdminCheckinErr(prev => ({ ...prev, [key]: data.error }));
       return;
     }
-    // Refresh semua checkins
-    const fresh = await fetch("/api/checkin").then(r => r.json());
-    if (Array.isArray(fresh)) setCheckins(fresh);
+    if (data.id || data.alreadyCheckedIn) {
+      // Refresh semua checkins — identik dengan staff page
+      const d = await fetch("/api/checkin").then(r => r.json());
+      if (Array.isArray(d)) setCheckins(d);
+    }
+  }
+
+  async function handleAdminDeleteCheckin(ciId) {
+    if (!confirm("Hapus data check-in ini?")) return;
+    const res = await fetch(`/api/checkin?id=${ciId}`, { method: "DELETE" });
+    if (res.ok) setCheckins(prev => prev.filter(c => c.id !== ciId));
+  }
+
+  async function handleAdminDeleteRegistration(staffId, eventId) {
+    if (!confirm("Hapus pendaftaran staff ini dari event?")) return;
+    const res = await fetch(`/api/staff?id=${staffId}`, { method: "DELETE" });
+    if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
   }
 
   // ── Filter events by selected month/year ─────────────────────────────────
@@ -804,20 +820,25 @@ export default function PerformancePage() {
           {/* ── KELOLA ABSENSI ──────────────────────────────────────────────────────── */}
           {activeTab === "kelola_absensi" && (
             <div>
-              {/* Header */}
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12 }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
                 <div>
                   <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",letterSpacing:-0.5,marginBottom:4 }}>🗂️ Kelola Absensi Staff</h2>
-                  <p style={{ fontSize:12,color:"var(--muted)" }}>Admin dapat menambah, menghapus pendaftaran dan check-in staff untuk setiap event.</p>
+                  <p style={{ fontSize:12,color:"var(--muted)" }}>Tambah, hapus pendaftaran dan check-in staff untuk setiap event.</p>
                 </div>
-                <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+                <div style={{ display:"flex",gap:8,flexWrap:"wrap",alignItems:"center" }}>
+                  <button onClick={()=>{
+                    fetch("/api/checkin").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCheckins(d); });
+                    fetch("/api/staff").then(r=>r.json()).then(d=>{ if(Array.isArray(d)){ const map={}; d.forEach(s=>{ if(!map[s.event_id]) map[s.event_id]=[]; map[s.event_id].push(s); }); setStaffMap(map); }});
+                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.9)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
+                    🔄 Refresh
+                  </button>
                   {["all","upcoming","past"].map(f => (
                     <button key={f} onClick={()=>setAbsensiFilter(f)}
                       style={{ padding:"7px 16px",borderRadius:10,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
                         borderColor: absensiFilter===f ? "transparent" : "var(--border)",
-                        background: absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "rgba(255,255,255,0.9)",
-                        color: absensiFilter===f ? "#fff" : "var(--muted)",
-                        boxShadow: absensiFilter===f ? "0 2px 8px rgba(124,58,237,0.3)" : "none"
+                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "rgba(255,255,255,0.9)",
+                        color:       absensiFilter===f ? "#fff" : "var(--muted)",
+                        boxShadow:   absensiFilter===f ? "0 2px 8px rgba(124,58,237,0.3)" : "none",
                       }}>
                       {f==="all"?"Semua Event":f==="upcoming"?"Mendatang":"Sudah Lewat"}
                     </button>
@@ -825,38 +846,31 @@ export default function PerformancePage() {
                 </div>
               </div>
 
-              {/* Search bar */}
-              <div style={{ position:"relative",marginBottom:20 }}>
+              <div style={{ position:"relative",marginBottom:16 }}>
                 <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none" }}>🔍</span>
-                <input
-                  type="text"
-                  placeholder="Cari event atau nama staff..."
-                  value={absensiSearch}
-                  onChange={e=>setAbsensiSearch(e.target.value)}
-                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.95)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none",boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}
-                />
+                <input type="text" placeholder="Cari event atau nama staff..." value={absensiSearch} onChange={e=>setAbsensiSearch(e.target.value)}
+                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.95)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
               </div>
 
-              {/* Event list */}
               {(() => {
                 const nowWIB = new Date(new Date().getTime() + 7*60*60*1000);
                 const todayStr = nowWIB.toISOString().split("T")[0];
-                const q = absensiSearch.trim().toLowerCase();
-                const filtered = events.filter(ev => {
+                const q2 = absensiSearch.trim().toLowerCase();
+                const filtEvs = events.filter(ev => {
                   if (absensiFilter === "upcoming" && (ev.date_end||ev.date) < todayStr) return false;
-                  if (absensiFilter === "past" && (ev.date_end||ev.date) >= todayStr) return false;
-                  if (!q) return true;
-                  const staffList = staffMap[ev.id] || [];
-                  return ev.couple?.toLowerCase().includes(q) || ev.venue?.toLowerCase().includes(q) ||
-                    staffList.some(s => s.name.toLowerCase().includes(q));
-                  }).sort((a,b) => {
+                  if (absensiFilter === "past"     && (ev.date_end||ev.date) >= todayStr) return false;
+                  if (!q2) return true;
+                  const sl = staffMap[ev.id] || [];
+                  return ev.couple?.toLowerCase().includes(q2) || ev.venue?.toLowerCase().includes(q2) ||
+                    sl.some(s => s.name.toLowerCase().includes(q2));
+                }).sort((a,b) => {
                   const aIsPast = (a.date_end||a.date) < todayStr;
                   const bIsPast = (b.date_end||b.date) < todayStr;
-                  if (aIsPast !== bIsPast) return aIsPast ? 1 : -1; // past ke bawah
-                  return new Date(a.date) - new Date(b.date); // dalam grup, terdekat dulu
+                  if (aIsPast !== bIsPast) return aIsPast ? 1 : -1;
+                  return new Date(a.date) - new Date(b.date);
                 });
 
-                if (filtered.length === 0) return (
+                if (filtEvs.length === 0) return (
                   <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                     <p style={{ fontSize:32 }}>🗂️</p>
                     <p style={{ fontWeight:700,marginTop:8 }}>Tidak ada event ditemukan</p>
@@ -865,22 +879,18 @@ export default function PerformancePage() {
 
                 return (
                   <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-                    {filtered.map(ev => {
-                      const staffList = staffMap[ev.id] || [];
-                      const evCheckins = checkins.filter(c => String(c.event_id) === String(ev.id));
-                      const isExpanded = expandedEventId === ev.id;
-                      const isPast = (ev.date_end||ev.date) < todayStr;
-                      const isToday = ev.date <= todayStr && (ev.date_end||ev.date) >= todayStr;
-                      const statusColor = isToday ? "#f59e0b" : isPast ? "#6b7280" : "#059669";
-                      const statusLabel = isToday ? "🟡 Hari Ini" : isPast ? "⚫ Selesai" : "🟢 Mendatang";
-
+                    {filtEvs.map(ev => {
+                      const staffList   = staffMap[ev.id] || [];
+                      const evCheckins  = checkins.filter(c => String(c.event_id) === String(ev.id));
+                      const isExpanded  = expandedEventId === ev.id;
+                      const isPast      = (ev.date_end||ev.date) < todayStr;
+                      const isEvToday   = ev.date <= todayStr && (ev.date_end||ev.date) >= todayStr;
+                      const statusColor = isEvToday ? "#f59e0b" : isPast ? "#6b7280" : "#059669";
+                      const statusLabel = isEvToday ? "🟡 Hari Ini" : isPast ? "⚫ Selesai" : "🟢 Mendatang";
                       return (
                         <div key={ev.id} style={{ background:"rgba(255,255,255,0.93)",backdropFilter:"blur(12px)",borderRadius:18,border:`1.5px solid ${isExpanded?"rgba(124,58,237,0.4)":"var(--border)"}`,boxShadow:isExpanded?"0 8px 32px rgba(124,58,237,0.12)":"var(--shadow)",transition:"all 0.2s",overflow:"hidden" }}>
-                          
-                          {/* Event header row — clickable */}
                           <div onClick={()=>setExpandedEventId(isExpanded?null:ev.id)} style={{ padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap" }}>
-                            {/* Event type icon */}
-                            <div style={{ width:44,height:44,borderRadius:13,background:isToday?"linear-gradient(135deg,#f59e0b,#fbbf24)":isPast?"linear-gradient(135deg,#6b7280,#9ca3af)":"linear-gradient(135deg,#7c3aed,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(0,0,0,0.12)" }}>
+                            <div style={{ width:44,height:44,borderRadius:13,background:isEvToday?"linear-gradient(135deg,#f59e0b,#fbbf24)":isPast?"linear-gradient(135deg,#6b7280,#9ca3af)":"linear-gradient(135deg,#7c3aed,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:"0 4px 12px rgba(0,0,0,0.12)" }}>
                               {ev.event_type==="wedding"?"💍":"🎉"}
                             </div>
                             <div style={{ flex:1,minWidth:0 }}>
@@ -888,56 +898,38 @@ export default function PerformancePage() {
                                 <p style={{ fontSize:15,fontWeight:800,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{ev.couple}</p>
                                 <span style={{ fontSize:10,fontWeight:700,color:statusColor,background:`${statusColor}18`,padding:"2px 8px",borderRadius:8,whiteSpace:"nowrap",flexShrink:0 }}>{statusLabel}</span>
                               </div>
-                              <p style={{ fontSize:11,color:"var(--muted)" }}>📅 {formatDate(ev.date)}{ev.date_end && ev.date_end !== ev.date ? ` – ${formatDate(ev.date_end)}` : ""} {ev.venue ? `· 📍 ${ev.venue}` : ""}</p>
+                              <p style={{ fontSize:11,color:"var(--muted)" }}>📅 {formatDate(ev.date)}{ev.date_end && ev.date_end!==ev.date?` – ${formatDate(ev.date_end)}`:""} {ev.venue?`· 📍 ${ev.venue}`:""}</p>
                             </div>
-                            {/* Counters */}
                             <div style={{ display:"flex",gap:12,flexShrink:0 }}>
-                              <div style={{ textAlign:"center" }}>
-                                <p style={{ fontSize:18,fontWeight:800,color:"var(--blue-1)",lineHeight:1 }}>{staffList.length}</p>
-                                <p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:0.8 }}>Daftar</p>
-                              </div>
-                              <div style={{ textAlign:"center" }}>
-                                <p style={{ fontSize:18,fontWeight:800,color:"#059669",lineHeight:1 }}>{evCheckins.length}</p>
-                                <p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:0.8 }}>Check-in</p>
-                              </div>
+                              <div style={{ textAlign:"center" }}><p style={{ fontSize:18,fontWeight:800,color:"var(--blue-1)",lineHeight:1 }}>{staffList.length}</p><p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase" }}>Daftar</p></div>
+                              <div style={{ textAlign:"center" }}><p style={{ fontSize:18,fontWeight:800,color:"#059669",lineHeight:1 }}>{evCheckins.length}</p><p style={{ fontSize:9,color:"var(--muted)",fontWeight:700,textTransform:"uppercase" }}>Check-in</p></div>
                             </div>
                             <span style={{ fontSize:18,color:"var(--muted)",flexShrink:0,transition:"transform 0.2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>⌄</span>
                           </div>
 
-                          {/* Expanded panel */}
                           {isExpanded && (
                             <div style={{ borderTop:"1px solid var(--border)",padding:"0 20px 20px" }}>
-                              
-                              {/* Staff list */}
                               <div style={{ marginTop:16 }}>
                                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                                   <p style={{ fontSize:11,fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1 }}>Daftar Staff ({staffList.length})</p>
-                                  {/* Tambah staff button */}
-                                  <button
-                                    onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffErr(""); }}
-                                    style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",borderRadius:10,padding:"6px 14px",fontSize:11,fontWeight:800,color:"#fff",cursor:"pointer",boxShadow:"0 2px 8px rgba(124,58,237,0.3)",display:"flex",alignItems:"center",gap:5 }}>
+                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffErr(""); }}
+                                    style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",borderRadius:10,padding:"6px 14px",fontSize:11,fontWeight:800,color:"#fff",cursor:"pointer",boxShadow:"0 2px 8px rgba(124,58,237,0.3)" }}>
                                     {addStaffPanel===ev.id?"✕ Batal":"+ Tambah Staff"}
                                   </button>
                                 </div>
 
-                                {/* Add staff inline form */}
                                 {addStaffPanel===ev.id && (
                                   <div style={{ background:"rgba(124,58,237,0.06)",border:"1.5px solid rgba(124,58,237,0.2)",borderRadius:14,padding:"14px 16px",marginBottom:12 }}>
                                     <p style={{ fontSize:11,fontWeight:700,color:"#7c3aed",marginBottom:10 }}>➕ Tambah Staff oleh Admin</p>
                                     <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
-                                      {/* Dropdown dari staffUsers */}
-                                      <select
-                                        value={addStaffName}
-                                        onChange={e=>setAddStaffName(e.target.value)}
+                                      <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
                                         style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"#fff",outline:"none",cursor:"pointer" }}>
                                         <option value="">— Pilih Staff —</option>
                                         {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
-                                          <option key={u.id} value={u.name}>{u.name} {u.jabatan ? `(${u.jabatan})` : ""}</option>
+                                          <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>
                                         ))}
                                       </select>
-                                      <button
-                                        onClick={()=>handleAdminAddStaff(ev.id)}
-                                        disabled={addStaffLoading||!addStaffName}
+                                      <button onClick={()=>handleAdminAddStaff(ev.id)} disabled={addStaffLoading||!addStaffName}
                                         style={{ padding:"9px 18px",borderRadius:10,border:"none",background:addStaffLoading||!addStaffName?"rgba(124,58,237,0.3)":"linear-gradient(135deg,#7c3aed,#a855f7)",color:"#fff",fontSize:12,fontWeight:800,cursor:addStaffLoading||!addStaffName?"not-allowed":"pointer",whiteSpace:"nowrap" }}>
                                         {addStaffLoading?"Menambah...":"✓ Tambah"}
                                       </button>
@@ -952,66 +944,50 @@ export default function PerformancePage() {
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
                                       const ci = evCheckins.find(c =>
-                                        c.staff_user_id != null
-                                          ? String(c.staff_user_id) === String(s.user_id)
-                                          : c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim()
+                                        (s.user_id && c.staff_user_id && String(c.staff_user_id) === String(s.user_id)) ||
+                                        (c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim())
                                       );
-                                      const isLoadingCI = !!adminCheckinLoading[s.id];
-                                      const ciErr = adminCheckinErr[s.id];
                                       return (
-                                        <div key={s.id} style={{ borderRadius:12,overflow:"hidden",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)" }}>
-                                          <div style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",transition:"background 0.15s" }}>
-                                            {/* Avatar */}
-                                            <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                                              <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
-                                            </div>
-                                            {/* Name & role */}
-                                            <div style={{ flex:1,minWidth:0 }}>
-                                              <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
-                                              <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role || "Staff"}</p>
-                                            </div>
-                                            {/* Check-in status */}
-                                            <div style={{ flexShrink:0,textAlign:"right" }}>
-                                              {ci ? (
-                                                <span style={{ fontSize:10,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.1)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>✅ {formatTime(ci.checked_in_at)}</span>
-                                              ) : (
-                                                <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
-                                              )}
-                                            </div>
-                                            {/* Action buttons */}
-                                            <div style={{ display:"flex",gap:5,flexShrink:0 }}>
-                                              {/* Tombol Check-in Admin — hanya jika belum check-in */}
+                                        <div key={s.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)" }}>
+                                          <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                                            <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
+                                          </div>
+                                          <div style={{ flex:1,minWidth:0 }}>
+                                            <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
+                                            <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role||"Staff"}</p>
+                                          </div>
+                                          <div style={{ flexShrink:0,textAlign:"right" }}>
+                                            {ci
+                                              ? <span style={{ fontSize:10,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.1)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>✅ {formatTime(ci.checked_in_at)}</span>
+                                              : <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
+                                            }
+                                          </div>
+                                          <div style={{ display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"flex-end" }}>
+                                            <div style={{ display:"flex",gap:5 }}>
                                               {!ci && (
                                                 <button
                                                   onClick={()=>handleAdminCheckin(ev, s)}
-                                                  disabled={isLoadingCI}
-                                                  title="Check-in oleh Admin"
-                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(5,150,105,0.35)",background:isLoadingCI?"rgba(5,150,105,0.2)":"linear-gradient(135deg,#059669,#10b981)",fontSize:10,fontWeight:800,color:"#fff",cursor:isLoadingCI?"not-allowed":"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 6px rgba(5,150,105,0.25)" }}>
-                                                  {isLoadingCI ? "..." : "✅ Check-in"}
+                                                  disabled={!!adminCheckinLoading[s.id]}
+                                                  title="Check-in staff ini sebagai admin"
+                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(245,158,11,0.35)",background:adminCheckinLoading[s.id]?"rgba(245,158,11,0.05)":"rgba(245,158,11,0.1)",fontSize:10,fontWeight:700,color:"#b45309",cursor:adminCheckinLoading[s.id]?"not-allowed":"pointer",whiteSpace:"nowrap",opacity:adminCheckinLoading[s.id]?0.6:1 }}>
+                                                  {adminCheckinLoading[s.id] ? "⏳..." : "⚡ CI"}
                                                 </button>
                                               )}
                                               {ci && (
-                                                <button
-                                                  onClick={()=>openDeleteCheckin(ci)}
-                                                  title="Hapus Check-in"
+                                                <button onClick={()=>handleAdminDeleteCheckin(ci.id)}
                                                   style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
                                                   🗑️ CI
                                                 </button>
                                               )}
-                                              <button
-                                                onClick={()=>openDeleteRegistration(s)}
-                                                title="Hapus Pendaftaran"
+                                              <button onClick={()=>handleAdminDeleteRegistration(s.id, ev.id)}
                                                 style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
                                                 🗑️ Daftar
                                               </button>
                                             </div>
+                                            {adminCheckinErr[s.id] && (
+                                              <span style={{ fontSize:9,color:"#dc2626",maxWidth:120,textAlign:"right",lineHeight:1.3 }}>⚠️ {adminCheckinErr[s.id]}</span>
+                                            )}
                                           </div>
-                                          {/* Error row */}
-                                          {ciErr && (
-                                            <div style={{ padding:"6px 14px",background:"rgba(239,68,68,0.06)",borderTop:"1px solid rgba(239,68,68,0.15)" }}>
-                                              <p style={{ fontSize:11,color:"#dc2626",fontWeight:600 }}>⚠️ {ciErr}</p>
-                                            </div>
-                                          )}
                                         </div>
                                       );
                                     })}
