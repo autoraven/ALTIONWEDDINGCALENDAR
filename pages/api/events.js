@@ -50,6 +50,7 @@ async function sendDiscordNotification(event, action = "add") {
         ...(event.max_staff ? [{ name: "👥 Maks. Staff", value: `${event.max_staff} orang`, inline: true }] : []),
         ...(event.addon ? [{ name: "✨ Add On", value: event.addon }] : []),
         ...(event.notes ? [{ name: "📝 Catatan", value: event.notes }] : []),
+        { name: "🔗 Website", value: "[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)", inline: false },
       ],
       footer: { text: "ALTION Event Calendar • Created by GG & Camolly" },
       timestamp: new Date().toISOString(),
