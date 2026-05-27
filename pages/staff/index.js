@@ -40,11 +40,37 @@ function BgDecor() {
   );
 }
 
-// Check apakah hari ini adalah hari event (termasuk multi-day)
+// Check apakah hari ini adalah hari event (untuk badge/label UI)
 function isEventToday(event, todayStr) {
   const start = event.date;
   const end = event.date_end || event.date;
   return todayStr >= start && todayStr <= end;
+}
+
+// Check apakah checkin sedang dibuka:
+// Window: hari H jam 18:00 WIB s/d keesokan hari jam 06:00 WIB
+function isCheckinOpen(event) {
+  const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
+  const hh = nowWIB.getUTCHours();
+  const mm = nowWIB.getUTCMinutes();
+  const nowMinutes = hh * 60 + mm; // menit dalam hari WIB
+
+  // Jam sekarang dalam WIB sebagai string tanggal
+  const todayWIB = nowWIB.toISOString().split("T")[0];
+
+  // Kemarin dalam WIB (untuk cek apakah kita sedang di window 00:00-06:00 esok hari event)
+  const yesterdayWIB = new Date(nowWIB.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+  const eventStart = event.date;
+  const eventEnd = event.date_end || event.date;
+
+  // Skenario 1: sekarang jam 18:00-23:59 WIB, dan hari ini adalah hari event
+  const isAfternoonOnEventDay = nowMinutes >= 18 * 60 && todayWIB >= eventStart && todayWIB <= eventEnd;
+
+  // Skenario 2: sekarang jam 00:00-05:59 WIB, dan KEMARIN adalah hari event
+  const isMorningAfterEventDay = nowMinutes < 6 * 60 && yesterdayWIB >= eventStart && yesterdayWIB <= eventEnd;
+
+  return isAfternoonOnEventDay || isMorningAfterEventDay;
 }
 
 export default function StaffPage() {
@@ -481,6 +507,7 @@ export default function StaffPage() {
               const myEntry = staffList.find(s => s.name?.toLowerCase().trim() === currentUser.name?.toLowerCase().trim());
               const isFull = event.max_staff && staffList.length >= event.max_staff;
               const isToday = isEventToday(event, todayStr);
+              const checkinOpen = isCheckinOpen(event);
               const myCheckin = checkinMap[event.id];
               const isCheckinLoading = !!checkinLoading[event.id];
               if (typeof window !== "undefined") console.log(`[ALTION] Event: ${event.couple} | date: ${event.date} | date_end: ${event.date_end} | isToday: ${isToday} | myEntry: ${!!myEntry} | isPast: ${isPast}`);
@@ -550,7 +577,7 @@ export default function StaffPage() {
                                     <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>{highlight(s.role,q)}</p>
                                   </div>
                                 </div>
-                                {!isPast && isMe && !isToday && (
+                                {!isPast && isMe && !checkinOpen && (
                                   <button onClick={()=>handleLeave(s.id,event.id)} style={{ background:"transparent",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:"2px 6px",borderRadius:6,transition:"all 0.15s",flexShrink:0 }} title="Keluar dari event">✕</button>
                                 )}
                               </div>
@@ -564,8 +591,8 @@ export default function StaffPage() {
 
                     {/* Action Buttons */}
                     {!isPast && (() => {
-                      // ── HARI H: tampilkan tombol check-in ──
-                      if (isToday && myEntry) {
+                      // ── Window check-in terbuka (hari H jam 18:00 - keesokan 06:00) ──
+                      if (checkinOpen && myEntry) {
                         if (myCheckin) {
                           const t = new Date(myCheckin.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" });
                           return (
@@ -585,8 +612,8 @@ export default function StaffPage() {
                         );
                       }
 
-                      // ── HARI H tapi belum daftar ──
-                      if (isToday && !myEntry) {
+                      // ── Window terbuka tapi belum daftar ──
+                      if (checkinOpen && !myEntry) {
                         return (
                           <div style={{ background:"rgba(255,247,237,0.9)",border:"1px solid rgba(251,191,36,0.4)",borderRadius:12,padding:"10px 14px",textAlign:"center" }}>
                             <p style={{ fontSize:12,color:"#b45309",fontWeight:600 }}>⚠️ Kamu belum terdaftar di event ini</p>

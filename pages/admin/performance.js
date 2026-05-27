@@ -199,6 +199,8 @@ export default function PerformancePage() {
   const [addStaffName, setAddStaffName] = useState("");
   const [addStaffLoading, setAddStaffLoading] = useState(false);
   const [addStaffErr, setAddStaffErr] = useState("");
+  const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
+  const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
 
   const { businessName } = CALENDAR_CONFIG;
 
@@ -328,6 +330,36 @@ export default function PerformancePage() {
     if (data.error) { setAddStaffErr(data.error); return; }
     setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
     setAddStaffName(""); setAddStaffPanel(null);
+  }
+
+  // ── Admin check-in untuk staff (Kelola Absensi) ───────────────────────────
+  async function handleAdminCheckin(event, staff) {
+    const key = staff.id;
+    setAdminCheckinLoading(prev => ({ ...prev, [key]: true }));
+    setAdminCheckinErr(prev => ({ ...prev, [key]: "" }));
+
+    // Ambil admin_user_id dari staffUsers yang is_admin — gunakan ID pertama yg is_admin
+    const adminUser = staffUsers.find(u => u.is_admin);
+    const res = await fetch("/api/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_id: event.id,
+        staff_name: staff.name,
+        admin_override: true,
+        admin_user_id: adminUser?.id || null,
+      }),
+    });
+    const data = await res.json();
+    setAdminCheckinLoading(prev => ({ ...prev, [key]: false }));
+
+    if (data.error && !data.alreadyCheckedIn) {
+      setAdminCheckinErr(prev => ({ ...prev, [key]: data.error }));
+      return;
+    }
+    // Refresh semua checkins
+    const fresh = await fetch("/api/checkin").then(r => r.json());
+    if (Array.isArray(fresh)) setCheckins(fresh);
   }
 
   // ── Filter events by selected month/year ─────────────────────────────────
@@ -914,42 +946,62 @@ export default function PerformancePage() {
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
                                       const ci = evCheckins.find(c => c.staff_user_id ? c.staff_user_id === s.user_id : c.staff_name?.toLowerCase() === s.name?.toLowerCase());
+                                      const isLoadingCI = !!adminCheckinLoading[s.id];
+                                      const ciErr = adminCheckinErr[s.id];
                                       return (
-                                        <div key={s.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)",transition:"background 0.15s" }}>
-                                          {/* Avatar */}
-                                          <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                                            <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
-                                          </div>
-                                          {/* Name & role */}
-                                          <div style={{ flex:1,minWidth:0 }}>
-                                            <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
-                                            <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role || "Staff"}</p>
-                                          </div>
-                                          {/* Check-in status */}
-                                          <div style={{ flexShrink:0,textAlign:"right" }}>
-                                            {ci ? (
-                                              <span style={{ fontSize:10,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.1)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>✅ {formatTime(ci.checked_in_at)}</span>
-                                            ) : (
-                                              <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
-                                            )}
-                                          </div>
-                                          {/* Action buttons */}
-                                          <div style={{ display:"flex",gap:5,flexShrink:0 }}>
-                                            {ci && (
+                                        <div key={s.id} style={{ borderRadius:12,overflow:"hidden",border:ci?"1px solid rgba(16,185,129,0.25)":"1px solid rgba(209,221,247,0.5)" }}>
+                                          <div style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:ci?"rgba(16,185,129,0.07)":"rgba(238,244,255,0.6)",transition:"background 0.15s" }}>
+                                            {/* Avatar */}
+                                            <div style={{ width:34,height:34,borderRadius:10,background:ci?"linear-gradient(135deg,#059669,#10b981)":"linear-gradient(135deg,var(--blue-3),var(--blue-1))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                                              <span style={{ color:"#fff",fontSize:13,fontWeight:800 }}>{s.name.charAt(0).toUpperCase()}</span>
+                                            </div>
+                                            {/* Name & role */}
+                                            <div style={{ flex:1,minWidth:0 }}>
+                                              <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
+                                              <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role || "Staff"}</p>
+                                            </div>
+                                            {/* Check-in status */}
+                                            <div style={{ flexShrink:0,textAlign:"right" }}>
+                                              {ci ? (
+                                                <span style={{ fontSize:10,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.1)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>✅ {formatTime(ci.checked_in_at)}</span>
+                                              ) : (
+                                                <span style={{ fontSize:10,fontWeight:700,color:"#ef4444",background:"rgba(239,68,68,0.08)",padding:"3px 8px",borderRadius:8,display:"block",marginBottom:4 }}>⛔ Belum CI</span>
+                                              )}
+                                            </div>
+                                            {/* Action buttons */}
+                                            <div style={{ display:"flex",gap:5,flexShrink:0 }}>
+                                              {/* Tombol Check-in Admin — hanya jika belum check-in */}
+                                              {!ci && (
+                                                <button
+                                                  onClick={()=>handleAdminCheckin(ev, s)}
+                                                  disabled={isLoadingCI}
+                                                  title="Check-in oleh Admin"
+                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(5,150,105,0.35)",background:isLoadingCI?"rgba(5,150,105,0.2)":"linear-gradient(135deg,#059669,#10b981)",fontSize:10,fontWeight:800,color:"#fff",cursor:isLoadingCI?"not-allowed":"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 6px rgba(5,150,105,0.25)" }}>
+                                                  {isLoadingCI ? "..." : "✅ Check-in"}
+                                                </button>
+                                              )}
+                                              {ci && (
+                                                <button
+                                                  onClick={()=>openDeleteCheckin(ci)}
+                                                  title="Hapus Check-in"
+                                                  style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                                  🗑️ CI
+                                                </button>
+                                              )}
                                               <button
-                                                onClick={()=>openDeleteCheckin(ci)}
-                                                title="Hapus Check-in"
-                                                style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(16,185,129,0.25)",background:"rgba(16,185,129,0.08)",fontSize:10,fontWeight:700,color:"#059669",cursor:"pointer",whiteSpace:"nowrap" }}>
-                                                🗑️ CI
+                                                onClick={()=>openDeleteRegistration(s)}
+                                                title="Hapus Pendaftaran"
+                                                style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
+                                                🗑️ Daftar
                                               </button>
-                                            )}
-                                            <button
-                                              onClick={()=>openDeleteRegistration(s)}
-                                              title="Hapus Pendaftaran"
-                                              style={{ padding:"5px 10px",borderRadius:8,border:"1px solid rgba(239,68,68,0.2)",background:"rgba(239,68,68,0.07)",fontSize:10,fontWeight:700,color:"#ef4444",cursor:"pointer",whiteSpace:"nowrap" }}>
-                                              🗑️ Daftar
-                                            </button>
+                                            </div>
                                           </div>
+                                          {/* Error row */}
+                                          {ciErr && (
+                                            <div style={{ padding:"6px 14px",background:"rgba(239,68,68,0.06)",borderTop:"1px solid rgba(239,68,68,0.15)" }}>
+                                              <p style={{ fontSize:11,color:"#dc2626",fontWeight:600 }}>⚠️ {ciErr}</p>
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })}
