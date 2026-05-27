@@ -27,9 +27,15 @@ async function sendDiscordNotification(event, action = "add") {
     ? (isWedding ? "💍 Wedding Baru Ditambahkan!" : "🎉 Event Baru Ditambahkan!")
     : isEdit
     ? (isWedding ? "✏️ Detail Wedding Diperbarui" : "✏️ Detail Event Diperbarui")
-    : "🗑️ Event Dihapus";
+    : (isWedding ? "🗑️ Wedding Dihapus" : "🗑️ Event Dihapus");
 
   const color = isAdd ? (isWedding ? 0x1a8fff : 0x0fb87a) : isEdit ? 0xf59e0b : 0xe53e3e;
+
+  const content = isAdd
+    ? "@here Event baru telah ditambahkan ke kalender."
+    : isEdit
+    ? "Detail event telah diperbarui."
+    : "Sebuah event telah dihapus dari kalender.";
 
   const payload = {
     content,
