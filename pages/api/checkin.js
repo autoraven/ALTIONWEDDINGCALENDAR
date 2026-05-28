@@ -205,7 +205,7 @@ export default async function handler(req, res) {
     // Ambil data pendukung
     const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes] = await Promise.all([
       supabase.from("wedding_events").select("*").eq("id", event_id).single(),
-      supabase.from("staff_users").select("discord_id, employee_id, jabatan, posisi").eq("id", staff_user_id).single(),
+      supabase.from("staff_users").select("discord_id, employee_id, jabatan, posisi").eq("id", resolvedUserId).single(),
       supabase.from("staff_checkins").select("staff_name, checked_in_at").eq("event_id", event_id).order("checked_in_at", { ascending: true }),
       supabase.from("event_staff").select("id", { count: "exact" }).eq("event_id", event_id),
     ]);
