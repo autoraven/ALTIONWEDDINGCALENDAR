@@ -928,7 +928,10 @@ export default function AdminPanel() {
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">ID Karyawan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — kosongkan untuk auto-generate</span></label>
-                  <input value={staffUserForm.employee_id} onChange={e=>setStaffUserForm({...staffUserForm,employee_id:e.target.value})} placeholder="Contoh: EMP-001" className="input"/>
+                  <div style={{ display:"flex",alignItems:"center",gap:0 }}>
+                    <span style={{ padding:"0 12px",height:40,display:"flex",alignItems:"center",background:"rgba(26,143,255,0.08)",border:"1.5px solid var(--blue-2)",borderRight:"none",borderRadius:"10px 0 0 10px",fontSize:13,fontWeight:700,color:"var(--blue-1)",whiteSpace:"nowrap",flexShrink:0 }}>EMP-</span>
+                    <input value={staffUserForm.employee_id.replace(/^EMP-/,"")} onChange={e=>setStaffUserForm({...staffUserForm,employee_id:e.target.value?"EMP-"+e.target.value.replace(/[^0-9]/g,""):""})} placeholder="001" className="input" inputMode="numeric" style={{ borderRadius:"0 10px 10px 0",borderLeft:"none" }}/>
+                  </div>
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
@@ -977,7 +980,10 @@ export default function AdminPanel() {
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">ID Karyawan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
-                  <input value={editStaffUserForm.employee_id} onChange={e=>setEditStaffUserForm({...editStaffUserForm,employee_id:e.target.value})} placeholder="Contoh: EMP-001" className="input"/>
+                  <div style={{ display:"flex",alignItems:"center",gap:0 }}>
+                    <span style={{ padding:"0 12px",height:40,display:"flex",alignItems:"center",background:"rgba(26,143,255,0.08)",border:"1.5px solid var(--blue-2)",borderRight:"none",borderRadius:"10px 0 0 10px",fontSize:13,fontWeight:700,color:"var(--blue-1)",whiteSpace:"nowrap",flexShrink:0 }}>EMP-</span>
+                    <input value={editStaffUserForm.employee_id.replace(/^EMP-/,"")} onChange={e=>setEditStaffUserForm({...editStaffUserForm,employee_id:e.target.value?"EMP-"+e.target.value.replace(/[^0-9]/g,""):""})} placeholder="001" className="input" inputMode="numeric" style={{ borderRadius:"0 10px 10px 0",borderLeft:"none" }}/>
+                  </div>
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
