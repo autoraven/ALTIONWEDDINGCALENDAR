@@ -58,8 +58,8 @@ async function appendToSheet({ timestamp, discordId, staffName, tanggal, jamMasu
 async function sendCheckinNotification(staffName, staffRole, discordId, event, checkinTime, allCheckins, totalStaff) {
   const isWedding  = event.event_type === "wedding";
   const webhookUrl = isWedding
-    ? process.env.DISCORD_STAFF_WEBHOOK_WEDDING
-    : process.env.DISCORD_STAFF_WEBHOOK_EVENT;
+    ? process.env.DISCORD_CHECKIN_WEBHOOK_WEDDING
+    : process.env.DISCORD_CHECKIN_WEBHOOK_EVENT;
   if (!webhookUrl) return;
 
   const timeFormatted = new Date(checkinTime).toLocaleTimeString("id-ID", {
