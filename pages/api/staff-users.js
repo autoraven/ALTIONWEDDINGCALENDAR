@@ -9,20 +9,30 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const { data, error } = await supabase
       .from("staff_users")
-      .select("id, name, username, jabatan, posisi, discord_id, is_active, is_admin, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, employee_id, is_active, is_admin, created_at")
       .order("name", { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   }
 
   if (req.method === "POST") {
-    const { name, username, password, jabatan, posisi, discord_id, is_admin } = req.body;
+    const { name, username, password, jabatan, posisi, discord_id, is_admin, employee_id } = req.body;
     if (!name?.trim() || !username?.trim() || !password?.trim())
       return res.status(400).json({ error: "Nama, username, dan password wajib diisi" });
 
     const { data: existing } = await supabase
       .from("staff_users").select("id").eq("username", username.trim().toLowerCase()).single();
     if (existing) return res.status(409).json({ error: "Username sudah digunakan" });
+
+    // Auto-generate employee_id jika tidak diisi
+    let finalEmployeeId = employee_id?.trim() || null;
+    if (!finalEmployeeId) {
+      const { count } = await supabase
+        .from("staff_users")
+        .select("id", { count: "exact", head: true });
+      const nextNumber = String((count || 0) + 1).padStart(3, "0");
+      finalEmployeeId = `EMP-${nextNumber}`;
+    }
 
     const { data, error } = await supabase
       .from("staff_users")
@@ -33,10 +43,11 @@ export default async function handler(req, res) {
         jabatan: jabatan?.trim() || "",
         posisi: posisi?.trim() || "",
         discord_id: discord_id?.trim() || null,
+        employee_id: finalEmployeeId,
         is_active: true,
         is_admin: is_admin === true,
       }])
-      .select("id, name, username, jabatan, posisi, discord_id, is_active, is_admin, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, employee_id, is_active, is_admin, created_at")
       .single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
@@ -44,7 +55,7 @@ export default async function handler(req, res) {
 
   if (req.method === "PUT") {
     const { id } = req.query;
-    const { name, username, password, jabatan, posisi, discord_id, is_active, is_admin } = req.body;
+    const { name, username, password, jabatan, posisi, discord_id, is_active, is_admin, employee_id } = req.body;
     if (!id) return res.status(400).json({ error: "ID wajib diisi" });
 
     if (username) {
@@ -54,19 +65,20 @@ export default async function handler(req, res) {
     }
 
     const updateData = {};
-    if (name !== undefined)     updateData.name       = name.trim();
-    if (username !== undefined) updateData.username   = username.trim().toLowerCase();
+    if (name !== undefined)        updateData.name        = name.trim();
+    if (username !== undefined)    updateData.username    = username.trim().toLowerCase();
     if (password !== undefined && password.trim()) updateData.password = password.trim();
-    if (jabatan !== undefined)  updateData.jabatan    = jabatan.trim();
-    if (posisi !== undefined)   updateData.posisi     = posisi.trim();
-    if (discord_id !== undefined) updateData.discord_id = discord_id?.trim() || null;
-    if (is_active !== undefined) updateData.is_active = is_active;
-    if (is_admin !== undefined)  updateData.is_admin  = is_admin;
+    if (jabatan !== undefined)     updateData.jabatan     = jabatan.trim();
+    if (posisi !== undefined)      updateData.posisi      = posisi.trim();
+    if (discord_id !== undefined)  updateData.discord_id  = discord_id?.trim() || null;
+    if (employee_id !== undefined) updateData.employee_id = employee_id?.trim() || null;
+    if (is_active !== undefined)   updateData.is_active   = is_active;
+    if (is_admin !== undefined)    updateData.is_admin    = is_admin;
 
     const { data, error } = await supabase
       .from("staff_users")
       .update(updateData).eq("id", id)
-      .select("id, name, username, jabatan, posisi, discord_id, is_active, is_admin, created_at")
+      .select("id, name, username, jabatan, posisi, discord_id, employee_id, is_active, is_admin, created_at")
       .single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);

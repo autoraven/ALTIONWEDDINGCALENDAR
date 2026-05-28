@@ -172,11 +172,11 @@ export default function AdminPanel() {
 
   const [staffUsers, setStaffUsers] = useState([]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
-  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_admin:false });
+  const [staffUserForm, setStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", employee_id:"", is_admin:false });
   const [staffUserError, setStaffUserError] = useState("");
   const [staffUserSuccess, setStaffUserSuccess] = useState("");
   const [editingStaffUser, setEditingStaffUser] = useState(null);
-  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_active:true, is_admin:false });
+  const [editStaffUserForm, setEditStaffUserForm] = useState({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", employee_id:"", is_active:true, is_admin:false });
   const [editStaffUserError, setEditStaffUserError] = useState("");
   const [staffUserSearch, setStaffUserSearch] = useState("");
 
@@ -414,28 +414,28 @@ export default function AdminPanel() {
 
   async function handleAddStaffUser(e) {
     e.preventDefault(); setStaffUserError("");
-    const { name, username, password, jabatan, posisi, discord_id, is_admin } = staffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id, employee_id, is_admin } = staffUserForm;
     if (!name.trim() || !username.trim() || !password.trim()) return setStaffUserError("Nama, username, dan password wajib diisi");
-    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_admin }) });
+    const res = await fetch("/api/staff-users", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, employee_id, is_admin }) });
     let data = null;
     try { data = await res.json(); } catch(_) {}
     if (data && data.error) return setStaffUserError(data.error);
     if (data && data.id) setStaffUsers(prev => [...prev, data].sort((a,b)=>a.name.localeCompare(b.name)));
     else fetchStaffUsers();
-    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", is_admin:false });
+    setStaffUserForm({ name:"", username:"", password:"", jabatan:"", posisi:"", discord_id:"", employee_id:"", is_admin:false });
     setShowAddStaffModal(false);
     setStaffUserSuccess(`✅ Akun "${(data && data.name) || name}" berhasil dibuat!`); setTimeout(()=>setStaffUserSuccess(""),3500);
   }
 
   async function handleSaveEditStaffUser(e) {
     e.preventDefault(); setEditStaffUserError("");
-    const { name, username, password, jabatan, posisi, discord_id, is_active, is_admin } = editStaffUserForm;
+    const { name, username, password, jabatan, posisi, discord_id, employee_id, is_active, is_admin } = editStaffUserForm;
     if (!name.trim() || !username.trim()) return setEditStaffUserError("Nama dan username wajib diisi");
-    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, is_active, is_admin }) });
+    const res = await fetch(`/api/staff-users?id=${editingStaffUser.id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, username, password, jabatan, posisi, discord_id, employee_id, is_active, is_admin }) });
     let data = null;
     try { data = await res.json(); } catch(_) {}
     if (data && data.error) return setEditStaffUserError(data.error);
-    const updatedUser = (data && data.id) ? data : { ...editingStaffUser, name, username, jabatan, posisi, discord_id, is_active, is_admin };
+    const updatedUser = (data && data.id) ? data : { ...editingStaffUser, name, username, jabatan, posisi, discord_id, employee_id, is_active, is_admin };
     setEditingStaffUser(null);
     setStaffUsers(prev => prev.map(u => u.id === editingStaffUser.id ? updatedUser : u));
     setStaffUserSuccess(`✅ Akun "${updatedUser.name}" berhasil diperbarui!`); setTimeout(()=>setStaffUserSuccess(""),3500);
@@ -840,7 +840,7 @@ export default function AdminPanel() {
                 <h2 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Manajemen Akun Staff</h2>
                 <p style={{ fontSize:12,color:"var(--muted)",marginTop:2 }}>Buat dan kelola akun login untuk setiap anggota tim.</p>
               </div>
-              <button onClick={()=>{ setShowAddStaffModal(true); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:""}); }} className="btn btn-primary" style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
+              <button onClick={()=>{ setShowAddStaffModal(true); setStaffUserError(""); setStaffUserForm({name:"",username:"",password:"",jabatan:"",posisi:"",discord_id:"",employee_id:""}); }} className="btn btn-primary" style={{ fontSize:13,padding:"9px 20px",flexShrink:0 }}>
                 + Tambah Akun Staff
               </button>
             </div>
@@ -892,7 +892,7 @@ export default function AdminPanel() {
                         </div>
                       </div>
                       <div style={{ display:"flex",gap:6,flexShrink:0 }}>
-                        <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",is_active:user.is_active,is_admin:user.is_admin===true }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
+                        <button onClick={()=>{ setEditingStaffUser(user); setEditStaffUserForm({ name:user.name,username:user.username,password:"",jabatan:user.jabatan||"",posisi:user.posisi||"",discord_id:user.discord_id||"",employee_id:user.employee_id||"",is_active:user.is_active,is_admin:user.is_admin===true }); setEditStaffUserError(""); }} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
                         <button onClick={()=>openDeleteStaff(user)} className="btn btn-danger" style={{ fontSize:11,padding:"6px 12px" }}>Hapus</button>
                       </div>
                     </div>
@@ -925,6 +925,10 @@ export default function AdminPanel() {
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div><label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} placeholder="Contoh: Crew Staff" className="input"/></div>
                   <div><label className="label">Posisi <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Collective" className="input"/></div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">ID Karyawan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional — kosongkan untuk auto-generate</span></label>
+                  <input value={staffUserForm.employee_id} onChange={e=>setStaffUserForm({...staffUserForm,employee_id:e.target.value})} placeholder="Contoh: EMP-001" className="input"/>
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
@@ -970,6 +974,10 @@ export default function AdminPanel() {
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div><label className="label">Jabatan</label><input value={editStaffUserForm.jabatan} onChange={e=>setEditStaffUserForm({...editStaffUserForm,jabatan:e.target.value})} className="input"/></div>
                   <div><label className="label">Posisi</label><input value={editStaffUserForm.posisi} onChange={e=>setEditStaffUserForm({...editStaffUserForm,posisi:e.target.value})} className="input"/></div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <label className="label">ID Karyawan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>
+                  <input value={editStaffUserForm.employee_id} onChange={e=>setEditStaffUserForm({...editStaffUserForm,employee_id:e.target.value})} placeholder="Contoh: EMP-001" className="input"/>
                 </div>
                 <div style={{ marginBottom:14 }}>
                   <label className="label">Discord ID <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label>

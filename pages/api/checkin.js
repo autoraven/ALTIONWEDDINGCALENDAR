@@ -8,7 +8,7 @@ const supabase = createClient(
 
 // ── Google Sheets helper ─────────────────────────────────────────────────────
 // Kolom: Timestamp | ID Karyawan | Nama Karyawan | Tanggal | Jam Masuk (WIB) | Jam Keluar (WIB) | Status Kehadiran | Keterangan
-async function appendToSheet({ timestamp, discordId, staffName, tanggal, jamMasuk, namaEvent }) {
+async function appendToSheet({ timestamp, employeeId, staffName, tanggal, jamMasuk, namaEvent }) {
   try {
     const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
     const spreadsheetId   = process.env.GOOGLE_SHEET_ID;
@@ -46,7 +46,7 @@ async function appendToSheet({ timestamp, discordId, staffName, tanggal, jamMasu
       range: "Sheet1!A:H",
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[timestamp, discordId || "", staffName, tanggal, jamMasuk, "", "Hadir", namaEvent]],
+        values: [[timestamp, employeeId || "", staffName, tanggal, jamMasuk, "", "Hadir", namaEvent]],
       },
     });
   } catch (err) {
@@ -205,7 +205,7 @@ export default async function handler(req, res) {
     // Ambil data pendukung
     const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes] = await Promise.all([
       supabase.from("wedding_events").select("*").eq("id", event_id).single(),
-      supabase.from("staff_users").select("discord_id, jabatan, posisi").eq("id", staff_user_id).single(),
+      supabase.from("staff_users").select("discord_id, employee_id, jabatan, posisi").eq("id", staff_user_id).single(),
       supabase.from("staff_checkins").select("staff_name, checked_in_at").eq("event_id", event_id).order("checked_in_at", { ascending: true }),
       supabase.from("event_staff").select("id", { count: "exact" }).eq("event_id", event_id),
     ]);
@@ -229,7 +229,7 @@ export default async function handler(req, res) {
         sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff),
         appendToSheet({
           timestamp,
-          discordId:  staffUser?.discord_id || "",
+          employeeId: staffUser?.employee_id || "",
           staffName:  staff_name.trim(),
           tanggal,
           jamMasuk,
