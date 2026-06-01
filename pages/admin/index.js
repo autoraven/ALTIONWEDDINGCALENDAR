@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Head from "next/head";
+import { ThemeToggle } from "../../lib/useTheme";
 import Link from "next/link";
 import { CALENDAR_CONFIG } from "../../lib/config";
 
@@ -521,6 +522,7 @@ export default function AdminPanel() {
           <div style={{ display:"flex",gap:10 }}>
             <Link href="/admin/performance" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>📊 Performa Staff</Link>
             <Link href="/" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Lihat Kalender</Link>
+            <ThemeToggle style={{ border:"1.5px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.12)", color:"#fff" }} />
             <button onClick={logout} className="btn btn-danger" style={{ fontSize:12,padding:"8px 18px" }}>Logout</button>
           </div>
         </header>

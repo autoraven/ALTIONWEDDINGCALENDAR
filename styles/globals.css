@@ -202,3 +202,185 @@ h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color
 .dot-twinkle { animation: twinkle 3s ease-in-out infinite; }
 .dot-twinkle-2 { animation: twinkle 4.5s ease-in-out infinite; animation-delay:1.2s; }
 .dot-twinkle-3 { animation: twinkle 3.8s ease-in-out infinite; animation-delay:2.4s; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — override CSS variables only
+   Applied via <html data-theme="dark">
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg:         #0b1120;
+  --bg2:        #111827;
+  --card:       #1a2236;
+  --border:     #2a3a55;
+  --dark:       #e8eef8;
+  --mid:        #94aacf;
+  --muted:      #6b85b0;
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.4);
+  --shadow:     0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.6);
+  --blue-light: #1a2a4a;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(30,96,213,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(21,53,160,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(64,128,240,0.04) 0%, transparent 40%);
+}
+
+/* Cards & panels */
+[data-theme="dark"] .card {
+  background: rgba(26,34,54,0.95);
+  border-color: var(--border);
+}
+
+/* Inputs */
+[data-theme="dark"] .input {
+  background: rgba(11,17,32,0.8);
+  border-color: var(--border);
+  color: var(--dark);
+}
+[data-theme="dark"] .input:focus {
+  background: #0e1828;
+  box-shadow: 0 0 0 3px rgba(56,123,236,0.2);
+}
+[data-theme="dark"] .input::placeholder { color: #3d5070; }
+
+/* Buttons */
+[data-theme="dark"] .btn-outline {
+  background: rgba(26,34,54,0.8);
+  color: var(--accent);
+  border-color: var(--border);
+}
+[data-theme="dark"] .btn-outline:hover:not(:disabled) {
+  background: rgba(56,123,236,0.15);
+  border-color: var(--accent);
+}
+[data-theme="dark"] .btn-danger {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.3);
+}
+
+/* Scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg2); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* Inline white panels (used heavily via style={{}}) */
+[data-theme="dark"] [style*="background:rgba(255,255,255"],
+[data-theme="dark"] [style*="background: rgba(255,255,255"] {
+  background: rgba(26,34,54,0.95) !important;
+}
+[data-theme="dark"] [style*="background:\"rgba(255,255,255"] {
+  background: rgba(26,34,54,0.95) !important;
+}
+
+/* Tables */
+[data-theme="dark"] tr:hover {
+  background: rgba(56,123,236,0.06) !important;
+}
+
+/* Selects */
+[data-theme="dark"] select {
+  color: var(--dark);
+  background: transparent;
+}
+
+/* Orbs dimmer in dark */
+[data-theme="dark"] .bg-orb { opacity: 0.08; }
+
+/* Prevent white flash on modal overlays */
+[data-theme="dark"] [style*="background:\"#fff\""],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:\"#ffffff\""],
+[data-theme="dark"] [style*="background: #ffffff"] {
+  background: var(--card) !important;
+  color: var(--dark) !important;
+}
+
+/* ── Dark mode: white/light surface overrides ─────────────────────────────── */
+/* Panels with white background used throughout pages */
+[data-theme="dark"] .card,
+[data-theme="dark"] [class*="card"] {
+  background: rgba(26,34,54,0.95) !important;
+  border-color: var(--border) !important;
+}
+
+/* Table rows hover */
+[data-theme="dark"] table tr:hover td {
+  background: rgba(56,123,236,0.05) !important;
+}
+
+/* Tab switcher containers */
+[data-theme="dark"] [style*="background:\"rgba(255,255,255,0.85)\""],
+[data-theme="dark"] [style*="background:\"rgba(255,255,255,0.9)\""],
+[data-theme="dark"] [style*="background:\"rgba(255,255,255,0.92)\""],
+[data-theme="dark"] [style*="background:\"rgba(255,255,255,0.95)\""] {
+  background: rgba(26,34,54,0.95) !important;
+}
+
+/* Transition for smooth mode switching */
+body, .card, header, main, section, aside,
+[class*="modal"], [class*="panel"] {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* Dark modal backgrounds */
+[data-theme="dark"] [style*="background:\"#fff\""],
+[data-theme="dark"] [style*='background: "#fff"'] {
+  background: var(--card) !important;
+}
+
+/* ── CSS custom property cascade for inline-style overrides ──────────────── */
+/* These work because inline styles that use var() will pick up dark values  */
+/* Inline styles using hardcoded rgba(255,255,255,X) still need JS override  */
+
+/* Ensure text colors adapt on dark panels */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] label,
+[data-theme="dark"] td,
+[data-theme="dark"] th {
+  /* Only override where color is explicitly `color: var(--dark)` or similar
+     — don't override colored text (green/red/blue status indicators) */
+}
+
+/* White cards / containers used inline throughout the app */
+[data-theme="dark"] div[style*="rgba(255,255,255,0.9"],
+[data-theme="dark"] div[style*="rgba(255,255,255,0.8"],
+[data-theme="dark"] div[style*="rgba(255,255,255,0.7"],
+[data-theme="dark"] div[style*="rgba(255,255,255,0.6"],
+[data-theme="dark"] div[style*="rgba(255, 255, 255"] {
+  background: rgba(26,34,54,0.95) !important;
+}
+
+/* White modal / dialog boxes */
+[data-theme="dark"] div[style*="background:\"#fff\""],
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: #ffffff"],
+[data-theme="dark"] div[style*="background:#ffffff"] {
+  background: var(--card) !important;
+}
+
+/* Borders that are light grey */
+[data-theme="dark"] div[style*="border:\"1px solid #"],
+[data-theme="dark"] div[style*="border: 1px solid #e"],
+[data-theme="dark"] div[style*="border: 1.5px solid #e"] {
+  border-color: var(--border) !important;
+}
+
+/* Text that may be hardcoded dark */
+[data-theme="dark"] [style*="color:\"#0a1628\""],
+[data-theme="dark"] [style*="color: #0a1628"],
+[data-theme="dark"] [style*="color:\"#1e3a6e\""],
+[data-theme="dark"] [style*="color:\"#374151\""],
+[data-theme="dark"] [style*="color:\"#111827\""] {
+  color: var(--dark) !important;
+}

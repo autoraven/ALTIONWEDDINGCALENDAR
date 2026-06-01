@@ -1,6 +1,7 @@
 // pages/staff/index.js
 import { useState, useEffect } from "react";
 import Head from "next/head";
+import { ThemeToggle } from "../../lib/useTheme";
 import Link from "next/link";
 import { CALENDAR_CONFIG } from "../../lib/config";
 
@@ -425,6 +426,7 @@ export default function StaffPage() {
               </div>
             </div>
             <Link href="/" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Kalender</Link>
+            <ThemeToggle style={{ border:"1.5px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.12)", color:"#fff" }} />
             <button onClick={handleLogout} className="btn btn-danger" style={{ fontSize:12,padding:"8px 18px" }}>Logout</button>
           </div>
         </header>

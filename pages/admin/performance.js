@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { CALENDAR_CONFIG } from "../../lib/config";
+import { ThemeToggle } from "../../lib/useTheme";
 import { ADMIN_CREDENTIALS } from "../../lib/config";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -534,6 +535,7 @@ export default function PerformancePage() {
               🔄 Refresh
             </button>
             {loading && <span style={{ fontSize:12,color:"var(--muted)" }}>Memuat data...</span>}
+            <ThemeToggle />
           </div>
 
           {/* Stat Cards */}
