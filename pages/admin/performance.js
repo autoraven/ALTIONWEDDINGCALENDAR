@@ -397,9 +397,14 @@ export default function PerformancePage() {
       const matchById = c.staff_user_id != null && String(c.staff_user_id) === String(user.id);
       const matchByName = !c.staff_user_id && c.staff_name?.toLowerCase().trim() === user.name?.toLowerCase().trim();
       if (!matchById && !matchByName) return false;
-      // Konversi ke WIB untuk cek bulan/tahun
-      const dWIB = new Date(new Date(c.checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
-      return dWIB.getFullYear() === filterYear && dWIB.getMonth() === filterMonth;
+      // FIX: Filter berdasarkan tanggal EVENT (bukan waktu check-in).
+      // Check-in bisa terjadi jam 00:00-06:00 WIB keesokan harinya (window isMorningAfterEventDay),
+      // sehingga jika difilter by checked_in_at akan masuk ke bulan yang salah.
+      // Solusi: cari event yang di-checkin, lalu cek bulan/tahun dari event.date.
+      const ev = events.find(e => String(e.id) === String(c.event_id));
+      if (!ev) return false;
+      const evDate = new Date(ev.date + "T00:00:00"); // Pakai tanggal event, bukan timestamp check-in
+      return evDate.getFullYear() === filterYear && evDate.getMonth() === filterMonth;
     });
 
     const checkinRate = joinedEvents.length > 0
@@ -421,10 +426,13 @@ export default function PerformancePage() {
     : 0;
 
   // ── All checkins in this month for log ───────────────────────────────────
+  // FIX: Filter log check-in berdasarkan tanggal EVENT, bukan waktu check-in.
+  // Supaya check-in yang terjadi jam 00:00-06:00 WIB (window esok pagi) tetap masuk ke bulan event.
   const monthCheckins = checkins.filter(c => {
-    // Konversi ke WIB sebelum cek bulan/tahun agar tidak meleset karena UTC offset
-    const dWIB = new Date(new Date(c.checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
-    return dWIB.getFullYear() === filterYear && dWIB.getMonth() === filterMonth;
+    const ev = events.find(e => String(e.id) === String(c.event_id));
+    if (!ev) return false;
+    const evDate = new Date(ev.date + "T00:00:00");
+    return evDate.getFullYear() === filterYear && evDate.getMonth() === filterMonth;
   }).sort((a, b) => new Date(b.checked_in_at) - new Date(a.checked_in_at));
 
   // ── Available years ───────────────────────────────────────────────────────
