@@ -226,35 +226,36 @@ h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color
    Applied via <html data-theme="dark">
    ═══════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg:         #0b1120;
-  --bg2:        #111827;
-  --card:       #1a2236;
-  --border:     #2a3a55;
-  --dark:       #e8eef8;
-  --mid:        #94aacf;
-  --muted:      #6b85b0;
-  --shadow-sm:  0 1px 4px rgba(0,0,0,0.4);
-  --shadow:     0 4px 16px rgba(0,0,0,0.5);
-  --shadow-lg:  0 12px 40px rgba(0,0,0,0.6);
-  --blue-light: #1a2a4a;
+  --bg:         #090e1a;
+  --bg2:        #0d1525;
+  --card:       #111d33;
+  --border:     #1c2d4a;
+  --dark:       #dce8f8;
+  --mid:        #7a96c0;
+  --muted:      #4d6a94;
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.5);
+  --shadow:     0 4px 20px rgba(0,0,0,0.6);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.7);
+  --blue-light: #0f1e38;
   color-scheme: dark;
   /* ── Extended semantic tokens dark ──────────────────── */
-  --cell-empty:     rgba(16,22,36,0.6);
-  --cell-past:      rgba(14,19,30,0.55);
-  --cell-booked:    rgba(20,32,60,0.9);
-  --cell-cond:      rgba(40,20,20,0.85);
-  --cell-avail:     rgba(14,36,28,0.85);
-  --cell-selected:  rgba(20,40,80,0.98);
-  --panel-soft:     rgba(22,30,50,0.97);
-  --panel-mid:      rgba(18,26,42,0.9);
-  --panel-success:  rgba(10,30,20,0.9);
-  --panel-error:    rgba(36,12,12,0.9);
-  --modal-bg:       #1a2236;
+  /* Calendar cells — match screenshot: saturated dark tints */
+  --cell-empty:     #0d1525;
+  --cell-past:      #0d1525;
+  --cell-booked:    #0e1c38;
+  --cell-cond:      #1a0d0d;
+  --cell-avail:     #091a10;
+  --cell-selected:  #0e2050;
+  --panel-soft:     #111d33;
+  --panel-mid:      #0d1829;
+  --panel-success:  #071a0f;
+  --panel-error:    #1a0808;
+  --modal-bg:       #111d33;
   --accent-tint:    rgba(56,123,236,0.08);
   --accent-tint-mid:rgba(56,123,236,0.14);
   --accent-border:  rgba(56,123,236,0.22);
-  --text-dim:       #3d5070;
-  --dot-past:       #2a3a55;
+  --text-dim:       #253550;
+  --dot-past:       #1e2d45;
 
 }
 
@@ -505,4 +506,118 @@ body, .card, header, main, section, aside,
 }
 [data-theme="dark"] .site-header {
   background: linear-gradient(135deg, #071020 0%, #0d1f40 50%, #112a60 100%);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — PIXEL-MATCHED TO DESIGN (screenshot reference)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Page background: very deep navy ───────────────────────── */
+[data-theme="dark"] body {
+  background: #090e1a !important;
+  background-image:
+    radial-gradient(ellipse at 15% 25%, rgba(20,50,120,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 75%, rgba(10,30,80,0.10) 0%, transparent 55%) !important;
+}
+
+/* ── Navbar: flat dark, not gradient ───────────────────────── */
+[data-theme="dark"] .site-header {
+  background: #0d1525 !important;
+  border-bottom: 1px solid #1c2d4a;
+  box-shadow: 0 1px 0 #1c2d4a !important;
+}
+
+/* ── Hero section stays gradient but darker ────────────────── */
+[data-theme="dark"] [style*="linear-gradient(135deg,var(--navy)"] {
+  background: linear-gradient(135deg, #0d1a30 0%, #112040 60%, #0d1e3a 100%) !important;
+}
+
+/* ── Calendar card container ───────────────────────────────── */
+[data-theme="dark"] .card {
+  background: #111d33 !important;
+  border-color: #1c2d4a !important;
+}
+
+/* ── Calendar header (month nav bar) ───────────────────────── */
+[data-theme="dark"] [style*="linear-gradient(135deg,var(--navy) 0%,var(--blue-1)"] {
+  background: linear-gradient(135deg, #0a1628 0%, #0f1e38 100%) !important;
+}
+
+/* ── Day-of-week header row ─────────────────────────────────── */
+[data-theme="dark"] [style*="background:\"var(--bg2)\""],
+[data-theme="dark"] [style*="background: var(--bg2)"] {
+  background: #0d1525 !important;
+}
+
+/* ── Calendar cells: strong saturated tints ─────────────────── */
+[data-theme="dark"] .day-cell {
+  border-color: rgba(28,45,74,0.7) !important;
+}
+
+/* Conditional (weekday) cells — deep dark red */
+[data-theme="dark"] .day-cell[style*="var(--cell-cond)"],
+[data-theme="dark"] [style*="background: var(--cell-cond)"],
+[data-theme="dark"] [style*="background:\"var(--cell-cond)\""] {
+  background: #1a0d0d !important;
+}
+
+/* Available (weekend) cells — deep dark green */
+[data-theme="dark"] .day-cell[style*="var(--cell-avail)"],
+[data-theme="dark"] [style*="background: var(--cell-avail)"],
+[data-theme="dark"] [style*="background:\"var(--cell-avail)\""] {
+  background: #091a10 !important;
+}
+
+/* Booked cells */
+[data-theme="dark"] .day-cell[style*="var(--cell-booked)"],
+[data-theme="dark"] [style*="background:\"var(--cell-booked)\""] {
+  background: #0e1c38 !important;
+}
+
+/* Empty / past cells */
+[data-theme="dark"] .day-cell[style*="var(--cell-empty)"],
+[data-theme="dark"] .day-cell[style*="var(--cell-past)"] {
+  background: #0d1525 !important;
+}
+
+/* ── Btn ghost (Staff / Admin buttons in nav) ───────────────── */
+[data-theme="dark"] .btn-ghost {
+  color: rgba(220,232,248,0.85);
+  border-color: #2a3d5c;
+  background: rgba(255,255,255,0.04);
+}
+[data-theme="dark"] .btn-ghost:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: #3d5878;
+  color: #fff;
+}
+
+/* ── ThemeToggle in navbar ──────────────────────────────────── */
+[data-theme="dark"] .site-header button[title] {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: #2a3d5c !important;
+}
+
+/* ── Selected event detail card ─────────────────────────────── */
+[data-theme="dark"] .card[style*="borderLeft"] {
+  background: #111d33 !important;
+  border-left-color: var(--accent) !important;
+}
+[data-theme="dark"] .card h3[style*="color:\"var(--navy)\""],
+[data-theme="dark"] [style*="color:\"var(--navy)\""] {
+  color: var(--dark) !important;
+}
+
+/* ── Day number text on past cells ──────────────────────────── */
+[data-theme="dark"] .day-cell [style*="color:\"var(--text-dim)\""],
+[data-theme="dark"] .day-cell [style*="color:\"#ccc\""] {
+  color: #2a3d5c !important;
+}
+
+/* ── Daftar Sekarang card ────────────────────────────────────── */
+[data-theme="dark"] .card[style*="padding:\"24px 32px\""] {
+  background: #111d33 !important;
+}
+[data-theme="dark"] [style*="color:\"var(--mid)\""] {
+  color: #7a96c0 !important;
 }

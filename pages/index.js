@@ -142,8 +142,8 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
         const isMultiDay = event && event.date_end && event.date_end !== event.date;
         const s = {
           booked:      { bg:"var(--cell-booked)", dot:"#4080f0", tc:"var(--dark)" },
-          conditional: { bg:"var(--cell-cond)", dot:"#ef4444", tc:"#999" },
-          past:        { bg:"var(--cell-past)", dot:"var(--dot-past)",    tc:"#ccc" },
+          conditional: { bg:"var(--cell-cond)", dot:"#ef4444", tc:"var(--muted)" },
+          past:        { bg:"var(--cell-past)", dot:"var(--dot-past)", tc:"var(--text-dim)" },
           available:   { bg:"var(--cell-avail)", dot:"#10b981", tc:"var(--dark)" },
         }[status];
 
