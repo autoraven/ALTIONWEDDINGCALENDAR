@@ -495,3 +495,14 @@ body, .card, header, main, section, aside,
   background: var(--bg2);
   color: var(--dark);
 }
+
+/* ── BFCache / render-before-vars fix ───────────────────────────────────────
+   Header gradient is hardcoded as fallback so if CSS vars haven't resolved yet
+   (e.g. back navigation restore), the correct color shows immediately.       */
+.site-header {
+  background: #0e387e; /* fallback solid for instant paint */
+  background: linear-gradient(135deg, #0e387e 0%, #1751b7 50%, #387bec 100%);
+}
+[data-theme="dark"] .site-header {
+  background: linear-gradient(135deg, #071020 0%, #0d1f40 50%, #112a60 100%);
+}
