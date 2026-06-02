@@ -357,7 +357,7 @@ export default function StaffPage() {
         <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none" }}/>
         <div style={{ position:"absolute",top:-120,right:-80,width:500,height:500,borderRadius:"50%",background:"rgba(64,128,240,0.15)",filter:"blur(70px)",pointerEvents:"none" }}/>
         <div style={{ position:"absolute",bottom:-100,left:-60,width:400,height:400,borderRadius:"50%",background:"rgba(21,53,160,0.2)",filter:"blur(60px)",pointerEvents:"none" }}/>
-        <div className={mounted?"scale-in":""} style={{ background:"rgba(255,255,255,0.97)",width:"100%",maxWidth:420,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)",position:"relative",zIndex:1 }}>
+        <div className={mounted?"scale-in":""} style={{ background:"var(--modal-bg)",width:"100%",maxWidth:420,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)",position:"relative",zIndex:1 }}>
           <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"40px 40px 32px",textAlign:"center",position:"relative",overflow:"hidden" }}>
             <div style={{ width:68,height:68,borderRadius:18,background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",border:"2px solid rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",padding:8,overflow:"hidden",position:"relative",zIndex:1 }}>
               <img src="/logo.png" alt="Logo" style={{ width:"100%",height:"100%",objectFit:"contain" }}/>
@@ -369,7 +369,7 @@ export default function StaffPage() {
             <p style={{ fontSize:13,color:"var(--muted)",marginBottom:20,textAlign:"center",lineHeight:1.6 }}>
               Masuk dengan akun staff kamu untuk mendaftar ke event.
             </p>
-            {loginError && <div style={{ background:"#fff0f0",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:20,fontSize:13,fontWeight:500 }}>⚠️ {loginError}</div>}
+            {loginError && <div style={{ background:"var(--panel-error)",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:20,fontSize:13,fontWeight:500 }}>⚠️ {loginError}</div>}
             <div style={{ marginBottom:16 }}>
               <label className="label">Username</label>
               <input type="text" value={loginUsername} onChange={e=>setLoginUsername(e.target.value)} placeholder="Masukkan username..." className="input" required autoFocus autoCapitalize="none"/>
@@ -461,12 +461,12 @@ export default function StaffPage() {
             </div>
           </div>
 
-          {success && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:20,fontSize:13,fontWeight:600 }}>{success}</div>}
-          {error && <div style={{ background:"#fff0f0",border:"1px solid #fecaca",color:"#dc2626",padding:"12px 20px",borderRadius:14,marginBottom:20,fontSize:13,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center" }}>⚠️ {error}<button onClick={()=>setError("")} style={{ background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontWeight:700 }}>✕</button></div>}
+          {success && <div className="scale-in" style={{ background:"var(--panel-success)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:20,fontSize:13,fontWeight:600 }}>{success}</div>}
+          {error && <div style={{ background:"var(--panel-error)",border:"1px solid #fecaca",color:"#dc2626",padding:"12px 20px",borderRadius:14,marginBottom:20,fontSize:13,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center" }}>⚠️ {error}<button onClick={()=>setError("")} style={{ background:"none",border:"none",cursor:"pointer",color:"#dc2626",fontWeight:700 }}>✕</button></div>}
 
           {/* Toolbar */}
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:20,flexWrap:"wrap" }}>
-            <div style={{ display:"flex",gap:6,background:"rgba(255,255,255,0.85)",border:"1.5px solid var(--border)",borderRadius:14,padding:4,backdropFilter:"blur(8px)" }}>
+            <div style={{ display:"flex",gap:6,background:"var(--panel-soft)",border:"1.5px solid var(--border)",borderRadius:14,padding:4,backdropFilter:"blur(8px)" }}>
               {[{key:"upcoming",label:"Mendatang",count:upcomingEvents.length},{key:"all",label:"Semua",count:events.length}].map(({key,label,count})=>(
                 <button key={key} onClick={()=>setActiveTab(key)} style={{ padding:"7px 16px",borderRadius:10,fontWeight:700,fontSize:12,cursor:"pointer",transition:"all 0.18s",border:"none",background:activeTab===key?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"transparent",color:activeTab===key?"#fff":"var(--muted)",boxShadow:activeTab===key?"0 2px 10px rgba(30,96,213,0.25)":"none" }}>
                   {label} <span style={{ background:activeTab===key?"rgba(255,255,255,0.25)":"rgba(30,96,213,0.1)",color:activeTab===key?"#fff":"var(--blue-1)",borderRadius:20,padding:"1px 7px",fontSize:10,marginLeft:5,fontWeight:800 }}>{count}</span>
@@ -486,7 +486,7 @@ export default function StaffPage() {
             <div style={{ flex:1,minWidth:200,position:"relative" }}>
               <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari event, venue, atau nama staff…"
-                style={{ width:"100%",paddingLeft:36,paddingRight:search?36:14,paddingTop:9,paddingBottom:9,border:"1.5px solid var(--border)",borderRadius:12,fontSize:13,fontWeight:500,background:"rgba(255,255,255,0.9)",backdropFilter:"blur(8px)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
+                style={{ width:"100%",paddingLeft:36,paddingRight:search?36:14,paddingTop:9,paddingBottom:9,border:"1.5px solid var(--border)",borderRadius:12,fontSize:13,fontWeight:500,background:"var(--panel-soft)",backdropFilter:"blur(8px)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
                 onFocus={e=>{e.target.style.borderColor="var(--blue-2)";}} onBlur={e=>{e.target.style.borderColor="var(--border)";}}/> 
               {search && <button onClick={()=>setSearch("")} style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:11,color:"var(--muted)" }}>✕</button>}
             </div>
@@ -500,7 +500,7 @@ export default function StaffPage() {
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                 <p style={{ fontSize:32,marginBottom:12 }}>{q?"🔍":"📅"}</p>
                 <p style={{ fontWeight:700,fontSize:14,color:"var(--dark)",marginBottom:4 }}>{q?`Tidak ada hasil untuk "${search}"`:activeTab==="upcoming"?"Tidak ada event mendatang":"Tidak ada event"}</p>
-                {q && <button onClick={()=>setSearch("")} style={{ fontSize:12,padding:"7px 18px",borderRadius:10,border:"1.5px solid var(--border)",background:"#fff",cursor:"pointer",fontWeight:600,color:"var(--blue-1)" }}>Hapus pencarian</button>}
+                {q && <button onClick={()=>setSearch("")} style={{ fontSize:12,padding:"7px 18px",borderRadius:10,border:"1.5px solid var(--border)",background:"var(--card)",cursor:"pointer",fontWeight:600,color:"var(--blue-1)" }}>Hapus pencarian</button>}
               </div>
             )}
             {[...displayEvents].sort((a,b)=>a.date.localeCompare(b.date)).map(event => {
@@ -674,14 +674,14 @@ export default function StaffPage() {
                   <button onClick={()=>{
                     fetch("/api/checkin").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCheckins(d); });
                     fetch("/api/staff").then(r=>r.json()).then(d=>{ if(Array.isArray(d)){ const map={}; d.forEach(s=>{ if(!map[s.event_id]) map[s.event_id]=[]; map[s.event_id].push(s); }); setStaffMap(map); }});
-                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.9)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
+                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
                     🔄 Refresh
                   </button>
                   {["all","upcoming","past"].map(f => (
                     <button key={f} onClick={()=>setAbsensiFilter(f)}
                       style={{ padding:"7px 16px",borderRadius:10,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
                         borderColor: absensiFilter===f ? "transparent" : "var(--border)",
-                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "rgba(255,255,255,0.9)",
+                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--panel-soft)",
                         color:       absensiFilter===f ? "#fff" : "var(--muted)",
                         boxShadow:   absensiFilter===f ? "0 2px 8px rgba(124,58,237,0.3)" : "none",
                       }}>
@@ -694,7 +694,7 @@ export default function StaffPage() {
               <div style={{ position:"relative",marginBottom:16 }}>
                 <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none" }}>🔍</span>
                 <input type="text" placeholder="Cari event atau nama staff..." value={absensiSearch} onChange={e=>setAbsensiSearch(e.target.value)}
-                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.95)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
+                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
               </div>
 
               {(() => {
@@ -766,7 +766,7 @@ export default function StaffPage() {
                                     <p style={{ fontSize:11,fontWeight:700,color:"#7c3aed",marginBottom:10 }}>➕ Tambah Staff oleh Admin</p>
                                     <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
                                       <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
-                                        style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"#fff",outline:"none",cursor:"pointer" }}>
+                                        style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
                                         <option value="">— Pilih Staff —</option>
                                         {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
                                           <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>

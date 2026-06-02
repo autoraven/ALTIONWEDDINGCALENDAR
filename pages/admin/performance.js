@@ -39,7 +39,7 @@ function BgDecor() {
 
 function StatCard({ icon, label, value, sub, color }) {
   return (
-    <div style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:18,padding:"20px 24px",border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",display:"flex",alignItems:"center",gap:16 }}>
+    <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,padding:"20px 24px",border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",display:"flex",alignItems:"center",gap:16 }}>
       <div style={{ width:48,height:48,borderRadius:14,background:`linear-gradient(135deg,${color}22,${color}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,border:`1px solid ${color}33` }}>{icon}</div>
       <div>
         <p style={{ fontSize:11,color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:2 }}>{label}</p>
@@ -67,7 +67,7 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
       display:"flex", alignItems:"center", justifyContent:"center", padding:20,
     }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{
-        background:"#fff", borderRadius:24, width:"100%", maxWidth:420,
+        background:"var(--card)", borderRadius:24, width:"100%", maxWidth:420,
         boxShadow:"0 32px 80px rgba(10,22,40,0.4)",
         animation:"modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1)",
         overflow:"hidden",
@@ -105,12 +105,12 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
             </div>
             <div>
               <p style={{ fontSize:14, fontWeight:800, color:"#1a1a1a", margin:0 }}>{itemName}</p>
-              {itemSub && <p style={{ fontSize:11, color:"#666", marginTop:2 }}>{itemSub}</p>}
+              {itemSub && <p style={{ fontSize:11, color:"var(--mid)", marginTop:2 }}>{itemSub}</p>}
             </div>
           </div>
 
           <p style={{
-            fontSize:12, color:"#999", textAlign:"center",
+            fontSize:12, color:"var(--muted)", textAlign:"center",
             margin:"16px 0 0", lineHeight:1.6,
           }}>
             Data yang dihapus <strong style={{ color:"#dc2626" }}>tidak dapat dikembalikan</strong>.
@@ -126,8 +126,8 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
             style={{
               flex:1, padding:"12px", borderRadius:12,
               border:"1.5px solid var(--border,#e5e7eb)",
-              background:"rgba(255,255,255,0.9)",
-              fontSize:13, fontWeight:700, color:"#666",
+              background:"var(--panel-soft)",
+              fontSize:13, fontWeight:700, color:"var(--mid)",
               cursor:"pointer",
             }}
           >
@@ -445,7 +445,7 @@ export default function PerformancePage() {
     <>
       <Head><title>Admin Performance — {businessName}</title></Head>
       <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
-        <div style={{ background:"rgba(255,255,255,0.97)",width:"100%",maxWidth:400,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)" }}>
+        <div style={{ background:"var(--modal-bg)",width:"100%",maxWidth:400,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)" }}>
           <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"36px 36px 28px",textAlign:"center" }}>
             <div style={{ width:56,height:56,borderRadius:16,background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",padding:8,overflow:"hidden" }}>
               <img src="/logo.png" alt="Logo" style={{ width:"100%",height:"100%",objectFit:"contain" }}/>
@@ -454,7 +454,7 @@ export default function PerformancePage() {
             <p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,letterSpacing:3,marginTop:6,textTransform:"uppercase",fontWeight:600 }}>Admin · Performa Staff</p>
           </div>
           <form onSubmit={handleLogin} style={{ padding:"32px 36px" }}>
-            {loginErr && <div style={{ background:"#fff0f0",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:16,fontSize:13 }}>⚠️ {loginErr}</div>}
+            {loginErr && <div style={{ background:"var(--panel-error)",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:16,fontSize:13 }}>⚠️ {loginErr}</div>}
             <div style={{ marginBottom:14 }}>
               <label className="label">Username Admin</label>
               <input type="text" value={adminUser} onChange={e=>setAdminUser(e.target.value)} className="input" required autoFocus autoCapitalize="none"/>
@@ -522,7 +522,7 @@ export default function PerformancePage() {
 
           {/* Filter Bar */}
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:24,flexWrap:"wrap" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.9)",backdropFilter:"blur(8px)",border:"1.5px solid var(--border)",borderRadius:14,padding:"8px 16px" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8,background:"var(--panel-soft)",backdropFilter:"blur(8px)",border:"1.5px solid var(--border)",borderRadius:14,padding:"8px 16px" }}>
               <span style={{ fontSize:14 }}>📅</span>
               <select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)} style={{ border:"none",background:"transparent",fontSize:13,fontWeight:700,color:"var(--dark)",cursor:"pointer",outline:"none" }}>
                 {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
@@ -531,7 +531,7 @@ export default function PerformancePage() {
                 {years.map(y=><option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <button onClick={fetchAll} style={{ background:"rgba(255,255,255,0.9)",border:"1.5px solid var(--border)",borderRadius:12,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"var(--dark)" }}>
+            <button onClick={fetchAll} style={{ background:"var(--panel-soft)",border:"1.5px solid var(--border)",borderRadius:12,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"var(--dark)" }}>
               🔄 Refresh
             </button>
             {loading && <span style={{ fontSize:12,color:"var(--muted)" }}>Memuat data...</span>}
@@ -547,7 +547,7 @@ export default function PerformancePage() {
           </div>
 
           {/* Tab Nav */}
-          <div style={{ display:"flex",gap:6,background:"rgba(255,255,255,0.85)",border:"1.5px solid var(--border)",borderRadius:16,padding:5,backdropFilter:"blur(8px)",marginBottom:24,width:"fit-content",flexWrap:"wrap" }}>
+          <div style={{ display:"flex",gap:6,background:"var(--panel-soft)",border:"1.5px solid var(--border)",borderRadius:16,padding:5,backdropFilter:"blur(8px)",marginBottom:24,width:"fit-content",flexWrap:"wrap" }}>
             {[
               { key:"leaderboard", label:"🏆 Leaderboard" },
               { key:"detail", label:"📊 Detail Staff" },
@@ -576,7 +576,7 @@ export default function PerformancePage() {
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {perfData.map((p, idx) => (
                     <div key={p.user.id} onClick={()=>{ setSelectedStaff(p); setActiveTab("detail"); }}
-                      style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:16,padding:"16px 20px",border:idx===0?"2px solid rgba(251,191,36,0.5)":idx===1?"2px solid rgba(192,192,192,0.5)":idx===2?"2px solid rgba(205,127,50,0.5)":"1.5px solid var(--border)",boxShadow:"var(--shadow)",cursor:"pointer",transition:"transform 0.15s,box-shadow 0.15s",display:"flex",alignItems:"center",gap:16 }}
+                      style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:16,padding:"16px 20px",border:idx===0?"2px solid rgba(251,191,36,0.5)":idx===1?"2px solid rgba(192,192,192,0.5)":idx===2?"2px solid rgba(205,127,50,0.5)":"1.5px solid var(--border)",boxShadow:"var(--shadow)",cursor:"pointer",transition:"transform 0.15s,box-shadow 0.15s",display:"flex",alignItems:"center",gap:16 }}
                       onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="var(--shadow-lg)";}}
                       onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="var(--shadow)";}}>
                       <div style={{ width:36,textAlign:"center",flexShrink:0 }}><Medal rank={idx+1}/></div>
@@ -630,7 +630,7 @@ export default function PerformancePage() {
                 <select value={selectedStaff?.user?.id || ""} onChange={e=>{
                   const found = perfData.find(p=>p.user.id===e.target.value);
                   setSelectedStaff(found || null);
-                }} style={{ border:"1.5px solid var(--border)",borderRadius:12,padding:"8px 14px",fontSize:13,fontWeight:600,color:"var(--dark)",background:"rgba(255,255,255,0.9)",cursor:"pointer",outline:"none" }}>
+                }} style={{ border:"1.5px solid var(--border)",borderRadius:12,padding:"8px 14px",fontSize:13,fontWeight:600,color:"var(--dark)",background:"var(--panel-soft)",cursor:"pointer",outline:"none" }}>
                   <option value="">— Pilih Staff —</option>
                   {perfData.map(p=><option key={p.user.id} value={p.user.id}>{p.user.name}</option>)}
                 </select>
@@ -638,7 +638,7 @@ export default function PerformancePage() {
 
               {!selectedStaff ? (
                 // Summary table all staff
-                <div style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
+                <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                   <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
                     <thead>
                       <tr style={{ background:"rgba(238,244,255,0.8)" }}>
@@ -668,7 +668,7 @@ export default function PerformancePage() {
                             <span style={{ background:p.checkinRate>=80?"rgba(16,185,129,0.12)":p.checkinRate>=50?"rgba(245,158,11,0.12)":"rgba(239,68,68,0.12)",color:p.checkinRate>=80?"#059669":p.checkinRate>=50?"#b45309":"#ef4444",padding:"3px 10px",borderRadius:20,fontWeight:800,fontSize:12 }}>{p.checkinRate}%</span>
                           </td>
                           <td style={{ padding:"12px 16px" }}>
-                            <button onClick={()=>setSelectedStaff(p)} style={{ background:"rgba(30,96,213,0.08)",border:"1px solid rgba(30,96,213,0.2)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,color:"var(--blue-1)",cursor:"pointer" }}>Detail</button>
+                            <button onClick={()=>setSelectedStaff(p)} style={{ background:"var(--accent-tint)",border:"1px solid rgba(30,96,213,0.2)",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,color:"var(--blue-1)",cursor:"pointer" }}>Detail</button>
                           </td>
                         </tr>
                       ))}
@@ -679,7 +679,7 @@ export default function PerformancePage() {
               ) : (
                 // Detail satu staff
                 <div>
-                  <button onClick={()=>setSelectedStaff(null)} style={{ background:"rgba(255,255,255,0.9)",border:"1.5px solid var(--border)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"var(--muted)",marginBottom:20 }}>← Kembali ke tabel</button>
+                  <button onClick={()=>setSelectedStaff(null)} style={{ background:"var(--panel-soft)",border:"1.5px solid var(--border)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"var(--muted)",marginBottom:20 }}>← Kembali ke tabel</button>
                   <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",borderRadius:20,padding:"28px 32px",marginBottom:20,position:"relative",overflow:"hidden" }}>
                     <div style={{ position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:20,flexWrap:"wrap" }}>
                       <div style={{ width:64,height:64,borderRadius:18,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
@@ -692,7 +692,7 @@ export default function PerformancePage() {
                       </div>
                       <div style={{ display:"flex",gap:16,flexWrap:"wrap" }}>
                         {[
-                          {label:"Event Daftar",value:selectedStaff.joinedCount,color:"rgba(255,255,255,0.9)"},
+                          {label:"Event Daftar",value:selectedStaff.joinedCount,color:"var(--panel-soft)"},
                           {label:"Check-in",value:selectedStaff.checkinCount,color:"#6ee7b7"},
                           {label:"Rate",value:`${selectedStaff.checkinRate}%`,color:selectedStaff.checkinRate>=80?"#6ee7b7":selectedStaff.checkinRate>=50?"#fde68a":"#fca5a5"},
                         ].map(({label,value,color})=>(
@@ -706,7 +706,7 @@ export default function PerformancePage() {
                   </div>
 
                   {/* Event list for this staff — DENGAN tombol Hapus Pendaftaran */}
-                  <div style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
+                  <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                     <div style={{ padding:"16px 20px",borderBottom:"1px solid var(--border)" }}>
                       <p style={{ fontWeight:800,fontSize:14,color:"var(--dark)" }}>Daftar Event — {MONTHS[filterMonth]} {filterYear}</p>
                     </div>
@@ -779,7 +779,7 @@ export default function PerformancePage() {
               <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",marginBottom:16,letterSpacing:-0.5 }}>
                 🕐 Log Check-in — {MONTHS[filterMonth]} {filterYear}
               </h2>
-              <div style={{ background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
+              <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                 <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
                   <thead>
                     <tr style={{ background:"rgba(238,244,255,0.8)" }}>
@@ -839,14 +839,14 @@ export default function PerformancePage() {
                   <button onClick={()=>{
                     fetch("/api/checkin").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setCheckins(d); });
                     fetch("/api/staff").then(r=>r.json()).then(d=>{ if(Array.isArray(d)){ const map={}; d.forEach(s=>{ if(!map[s.event_id]) map[s.event_id]=[]; map[s.event_id].push(s); }); setStaffMap(map); }});
-                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.9)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
+                  }} style={{ padding:"7px 14px",borderRadius:10,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:11,fontWeight:700,cursor:"pointer",color:"var(--muted)",display:"flex",alignItems:"center",gap:5 }}>
                     🔄 Refresh
                   </button>
                   {["all","upcoming","past"].map(f => (
                     <button key={f} onClick={()=>setAbsensiFilter(f)}
                       style={{ padding:"7px 16px",borderRadius:10,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.15s",
                         borderColor: absensiFilter===f ? "transparent" : "var(--border)",
-                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "rgba(255,255,255,0.9)",
+                        background:  absensiFilter===f ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--panel-soft)",
                         color:       absensiFilter===f ? "#fff" : "var(--muted)",
                         boxShadow:   absensiFilter===f ? "0 2px 8px rgba(124,58,237,0.3)" : "none",
                       }}>
@@ -859,7 +859,7 @@ export default function PerformancePage() {
               <div style={{ position:"relative",marginBottom:16 }}>
                 <span style={{ position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:14,pointerEvents:"none" }}>🔍</span>
                 <input type="text" placeholder="Cari event atau nama staff..." value={absensiSearch} onChange={e=>setAbsensiSearch(e.target.value)}
-                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"rgba(255,255,255,0.95)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
+                  style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
               </div>
 
               {(() => {
@@ -933,7 +933,7 @@ export default function PerformancePage() {
                                     <p style={{ fontSize:11,fontWeight:700,color:"#7c3aed",marginBottom:10 }}>➕ Tambah Staff oleh Admin</p>
                                     <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
                                       <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
-                                        style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"#fff",outline:"none",cursor:"pointer" }}>
+                                        style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
                                         <option value="">— Pilih Staff —</option>
                                         {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
                                           <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>

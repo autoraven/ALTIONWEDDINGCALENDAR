@@ -53,7 +53,7 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
       style={{ position:"fixed",inset:0,zIndex:10000,background:"rgba(10,22,40,0.65)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}
       onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}
     >
-      <div style={{ background:"#fff",borderRadius:24,width:"100%",maxWidth:420,boxShadow:"0 32px 80px rgba(10,22,40,0.4)",animation:"modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1)",overflow:"hidden" }}>
+      <div style={{ background:"var(--card)",borderRadius:24,width:"100%",maxWidth:420,boxShadow:"0 32px 80px rgba(10,22,40,0.4)",animation:"modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1)",overflow:"hidden" }}>
         <div style={{ background:"linear-gradient(135deg,#dc2626,#ef4444)",padding:"24px 28px 20px",textAlign:"center" }}>
           <div style={{ width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 12px" }}>🗑️</div>
           <h3 style={{ color:"#fff",fontSize:18,fontWeight:800,margin:0 }}>{title}</h3>
@@ -66,15 +66,15 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
             </div>
             <div>
               <p style={{ fontSize:14,fontWeight:800,color:"#1a1a1a",margin:0 }}>{itemName}</p>
-              {itemSub && <p style={{ fontSize:11,color:"#666",marginTop:2 }}>{itemSub}</p>}
+              {itemSub && <p style={{ fontSize:11,color:"var(--mid)",marginTop:2 }}>{itemSub}</p>}
             </div>
           </div>
-          <p style={{ fontSize:12,color:"#999",textAlign:"center",margin:"16px 0 0",lineHeight:1.6 }}>
+          <p style={{ fontSize:12,color:"var(--muted)",textAlign:"center",margin:"16px 0 0",lineHeight:1.6 }}>
             Data yang dihapus <strong style={{ color:"#dc2626" }}>tidak dapat dikembalikan</strong>.
           </p>
         </div>
         <div style={{ padding:"20px 28px 28px",display:"flex",gap:10 }}>
-          <button onClick={onClose} disabled={loading} style={{ flex:1,padding:"12px",borderRadius:12,border:"1.5px solid #e5e7eb",background:"rgba(255,255,255,0.9)",fontSize:13,fontWeight:700,color:"#666",cursor:loading?"not-allowed":"pointer" }}>Batal</button>
+          <button onClick={onClose} disabled={loading} style={{ flex:1,padding:"12px",borderRadius:12,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:13,fontWeight:700,color:"var(--mid)",cursor:loading?"not-allowed":"pointer" }}>Batal</button>
           <button onClick={onConfirm} disabled={loading} style={{ flex:1,padding:"12px",borderRadius:12,border:"none",background:loading?"rgba(239,68,68,0.5)":"linear-gradient(135deg,#dc2626,#ef4444)",fontSize:13,fontWeight:700,color:"#fff",cursor:loading?"not-allowed":"pointer",boxShadow:"0 4px 14px rgba(220,38,38,0.35)" }}>
             {loading ? "Menghapus..." : "Ya, Hapus"}
           </button>
@@ -115,7 +115,7 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gridTemplateRows:`repeat(${numRows},1fr)` }}>
       {cells.map((cell) => {
         if (cell.type==="empty") return (
-          <div key={cell.key} style={{ minHeight:64,background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
+          <div key={cell.key} style={{ minHeight:64,background:"var(--cell-empty)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
         );
         const {day}=cell;
         const {status,event,dateStr}=getDayInfo(day);
@@ -130,10 +130,10 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
         const inPreview    = pickingEnd && rangeStart && dateStr >= rangeStart && dateStr <= pickingEnd;
 
         const s={
-          booked:{bg:"rgba(238,244,255,0.9)",dot:"#4080f0"},
-          conditional:{bg:"rgba(255,245,245,0.9)",dot:"#ef4444"},
-          past:{bg:"rgba(250,250,250,0.5)",dot:"#ddd"},
-          available:{bg:"rgba(240,253,248,0.9)",dot:"#10b981"}
+          booked:{bg:"var(--cell-booked)",dot:"#4080f0"},
+          conditional:{bg:"var(--cell-cond)",dot:"#ef4444"},
+          past:{bg:"var(--cell-past)",dot:"var(--dot-past)"},
+          available:{bg:"var(--cell-avail)",dot:"#10b981"}
         }[status];
 
         let bg = s.bg;
@@ -464,7 +464,7 @@ export default function AdminPanel() {
       <Head><title>Admin Login — {businessName}</title><link rel="icon" href="/favicon.ico"/></Head>
       <div style={{ minHeight:"100vh",background:"linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 50%,var(--blue-1) 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"28px 28px",pointerEvents:"none" }}/>
-        <div className={mounted?"scale-in":""} style={{ background:"rgba(255,255,255,0.97)",width:"100%",maxWidth:420,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)",position:"relative",zIndex:1 }}>
+        <div className={mounted?"scale-in":""} style={{ background:"var(--modal-bg)",width:"100%",maxWidth:420,borderRadius:24,overflow:"hidden",boxShadow:"0 32px 80px rgba(10,22,40,0.5)",position:"relative",zIndex:1 }}>
           <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"40px 40px 32px",textAlign:"center",position:"relative",overflow:"hidden" }}>
             <div style={{ width:68,height:68,borderRadius:18,background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",border:"2px solid rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",padding:8,overflow:"hidden",position:"relative",zIndex:1 }}>
               <img src="/logo.png" alt="Logo" style={{ width:"100%",height:"100%",objectFit:"contain" }}/>
@@ -473,7 +473,7 @@ export default function AdminPanel() {
             <p style={{ color:"rgba(255,255,255,0.45)",fontSize:11,letterSpacing:3,marginTop:6,textTransform:"uppercase",fontWeight:600,position:"relative",zIndex:1 }}>Admin Panel</p>
           </div>
           <form onSubmit={handleLogin} style={{ padding:"36px 40px" }}>
-            {loginError&&<div style={{ background:"#fff0f0",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:20,fontSize:13,fontWeight:500 }}>⚠️ {loginError}</div>}
+            {loginError&&<div style={{ background:"var(--panel-error)",border:"1px solid #fecaca",color:"#dc2626",padding:"10px 14px",borderRadius:12,marginBottom:20,fontSize:13,fontWeight:500 }}>⚠️ {loginError}</div>}
             {[{label:"Username",value:username,setter:setUsername,type:"text",placeholder:"Masukkan username"},{label:"Password",value:password,setter:setPassword,type:"password",placeholder:"Masukkan password"}].map(({label,value,setter,type,placeholder})=>(
               <div key={label} style={{ marginBottom:18 }}>
                 <label className="label">{label}</label>
@@ -528,7 +528,7 @@ export default function AdminPanel() {
         </header>
 
         <main style={{ maxWidth:1080,margin:"0 auto",padding:"32px 20px",position:"relative",zIndex:1 }}>
-          {success&&<div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:24,fontSize:13,fontWeight:600,backdropFilter:"blur(8px)" }}>✅ {success}</div>}
+          {success&&<div className="scale-in" style={{ background:"var(--panel-success)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:24,fontSize:13,fontWeight:600,backdropFilter:"blur(8px)" }}>✅ {success}</div>}
 
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28 }}>
             {[{label:"Total Event",value:events.length,icon:"📅",color:"var(--blue-2)"},{label:"Bulan Ini",value:thisMonthEvents.length,icon:"🗓️",color:"var(--blue-1)"},{label:"Wedding",value:events.filter(e=>e.event_type==="wedding").length,icon:"💍",color:"#7c3aed"},{label:"Event Biasa",value:events.filter(e=>e.event_type==="event").length,icon:"🎉",color:"#059669"}].map(({label,value,icon,color},idx)=>(
@@ -570,7 +570,7 @@ export default function AdminPanel() {
               </div>
 
               {pickingStep===1 && (
-                <div style={{ padding:"8px 16px",background:"rgba(30,96,213,0.08)",borderBottom:"1px solid rgba(30,96,213,0.15)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                <div style={{ padding:"8px 16px",background:"var(--accent-tint)",borderBottom:"1px solid var(--accent-border)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                   <span style={{ fontSize:12,color:"var(--blue-1)",fontWeight:700 }}>
                     🗓️ Klik tanggal akhir event <span style={{ opacity:0.7,fontWeight:500 }}>(mulai: {formatDateShort(selectedRange.start)})</span>
                   </span>
@@ -597,7 +597,7 @@ export default function AdminPanel() {
                 )}
               </div>
 
-              <div style={{ padding:"10px 16px",background:"rgba(232,238,247,0.8)",borderTop:"1px solid var(--border)",display:"flex",gap:16,flexWrap:"wrap",backdropFilter:"blur(4px)" }}>
+              <div style={{ padding:"10px 16px",background:"var(--panel-mid)",borderTop:"1px solid var(--border)",display:"flex",gap:16,flexWrap:"wrap",backdropFilter:"blur(4px)" }}>
                 {[{color:"#10b981",label:"Weekend"},{color:"#ef4444",label:"Bersyarat"},{color:"#4080f0",label:"Dipesan"}].map(({color,label})=>(
                   <p key={label} style={{ fontSize:10,color:"var(--muted)",display:"flex",alignItems:"center",gap:5,fontWeight:600 }}>
                     <span style={{ display:"inline-block",width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 5px ${color}` }}/>{label}
@@ -615,7 +615,7 @@ export default function AdminPanel() {
                 <div className="card slide-right" style={{ padding:24,borderTop:"3px solid var(--blue-2)",boxShadow:"var(--shadow)" }}>
                   <h3 style={{ fontSize:18,fontWeight:800,marginBottom:4,color:"var(--navy)",letterSpacing:-0.5 }}>Tambah Event</h3>
                   <div style={{ marginBottom:14 }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8,background:"rgba(30,96,213,0.06)",borderRadius:10,padding:"8px 12px",border:"1px solid rgba(30,96,213,0.12)" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8,background:"var(--accent-tint)",borderRadius:10,padding:"8px 12px",border:"1px solid var(--accent-tint-mid)" }}>
                       <span style={{ fontSize:13 }}>📅</span>
                       <div>
                         <p style={{ fontSize:12,fontWeight:700,color:"var(--blue-1)",lineHeight:1.2 }}>
@@ -642,9 +642,9 @@ export default function AdminPanel() {
                       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
                         {[{type:"wedding",icon:"💍",label:"Wedding"},{type:"event",icon:"🎉",label:"Event Biasa"}].map(({type,icon,label})=>(
                           <button key={type} type="button" onClick={()=>setEventType(type)}
-                            style={{ padding:"18px 10px",border:"2px solid var(--border)",borderRadius:14,background:"rgba(248,250,255,0.8)",cursor:"pointer",textAlign:"center",transition:"all 0.2s" }}
-                            onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--blue-2)";e.currentTarget.style.background="#eef4ff";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(30,96,213,0.15)";}}
-                            onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="rgba(248,250,255,0.8)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}
+                            style={{ padding:"18px 10px",border:"2px solid var(--border)",borderRadius:14,background:"var(--panel-soft)",cursor:"pointer",textAlign:"center",transition:"all 0.2s" }}
+                            onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--blue-2)";e.currentTarget.style.background="#eef4ff";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 6px 20px var(--accent-border)";}}
+                            onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.background="var(--panel-soft)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}
                           >
                             <div style={{ fontSize:26,marginBottom:8 }}>{icon}</div>
                             <div style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>{label}</div>
@@ -663,7 +663,7 @@ export default function AdminPanel() {
                         </span>
                         <button type="button" onClick={()=>setEventType("")} style={{ fontSize:11,color:"var(--muted)",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",fontWeight:600 }}>Ganti</button>
                       </div>
-                      {formError&&<div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:14,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {formError}</div>}
+                      {formError&&<div style={{ background:"var(--cell-cond)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:14,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {formError}</div>}
                       <form onSubmit={handleAddEvent}>
                         <div style={{ marginBottom:14 }}>
                           <label className="label">{eventType==="wedding"?"Nama Pasangan *":"Nama Event *"}</label>
@@ -678,7 +678,7 @@ export default function AdminPanel() {
                         <div style={{ marginBottom:14 }}>
                           <label className="label" style={{ display:"flex",alignItems:"center",gap:6 }}>
                             <span>👥 Maks. Slot Staff</span>
-                            <span style={{ fontSize:10,color:"var(--muted)",fontWeight:500,background:"rgba(30,96,213,0.08)",padding:"2px 8px",borderRadius:20 }}>opsional</span>
+                            <span style={{ fontSize:10,color:"var(--muted)",fontWeight:500,background:"var(--accent-tint)",padding:"2px 8px",borderRadius:20 }}>opsional</span>
                           </label>
                           <div style={{ position:"relative" }}>
                             <input type="number" min="1" max="99" value={form.max_staff} onChange={e=>setForm({...form,max_staff:e.target.value})} placeholder="Kosongkan = tidak dibatasi" className="input" style={{ paddingRight:80 }}/>
@@ -698,12 +698,12 @@ export default function AdminPanel() {
 
               {/* Event list */}
               <div className="card" style={{ overflow:"hidden",boxShadow:"var(--shadow-sm)" }}>
-                <div style={{ padding:"16px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",backdropFilter:"blur(4px)" }}>
+                <div style={{ padding:"16px 20px",borderBottom:"1px solid var(--border)",background:"var(--panel-mid)",backdropFilter:"blur(4px)" }}>
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12 }}>
                     <h3 style={{ fontSize:16,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>Kelola Event</h3>
                     <span style={{ background:"linear-gradient(135deg,var(--blue-2),var(--blue-1))",color:"#fff",fontSize:12,fontWeight:700,padding:"3px 12px",borderRadius:20 }}>{events.length} total</span>
                   </div>
-                  <div style={{ display:"flex",gap:6,background:"rgba(255,255,255,0.7)",border:"1.5px solid var(--border)",borderRadius:12,padding:4,marginBottom:10 }}>
+                  <div style={{ display:"flex",gap:6,background:"var(--panel-soft)",border:"1.5px solid var(--border)",borderRadius:12,padding:4,marginBottom:10 }}>
                     {[{key:"upcoming",label:"Mendatang",count:upcomingEvents.length},{key:"past",label:"Sudah Lewat",count:pastEvents.length}].map(({key,label,count})=>(
                       <button key={key} onClick={()=>setEventTab(key)}
                         style={{ flex:1,padding:"6px 10px",borderRadius:9,fontWeight:700,fontSize:11,cursor:"pointer",border:"none",transition:"all 0.15s",background:eventTab===key?"linear-gradient(135deg,var(--blue-3),var(--blue-1))":"transparent",color:eventTab===key?"#fff":"var(--muted)",boxShadow:eventTab===key?"0 2px 8px rgba(30,96,213,0.2)":"none" }}>
@@ -714,7 +714,7 @@ export default function AdminPanel() {
                   <div style={{ position:"relative" }}>
                     <span style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
                     <input value={eventSearch} onChange={e=>setEventSearch(e.target.value)} placeholder="Cari nama, venue, tipe event…"
-                      style={{ width:"100%",paddingLeft:32,paddingRight:eventSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"rgba(255,255,255,0.9)",outline:"none",color:"var(--dark)",boxSizing:"border-box",transition:"border-color 0.15s" }}
+                      style={{ width:"100%",paddingLeft:32,paddingRight:eventSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"var(--panel-soft)",outline:"none",color:"var(--dark)",boxSizing:"border-box",transition:"border-color 0.15s" }}
                       onFocus={e=>{e.target.style.borderColor="var(--blue-2)";}} onBlur={e=>{e.target.style.borderColor="var(--border)";}}/>
                     {eventSearch&&(<button onClick={()=>setEventSearch("")} style={{ position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:"var(--muted)" }}>✕</button>)}
                   </div>
@@ -726,7 +726,7 @@ export default function AdminPanel() {
                     <div style={{ padding:"32px",textAlign:"center" }}>
                       <p style={{ fontSize:28,marginBottom:8 }}>{q?"🔍":"📅"}</p>
                       <p style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>{q?`Tidak ada hasil untuk "${eventSearch}"`:`Tidak ada event ${eventTab==="upcoming"?"mendatang":"yang sudah lewat"}`}</p>
-                      {q&&<button onClick={()=>setEventSearch("")} style={{ marginTop:10,fontSize:12,padding:"6px 16px",borderRadius:10,border:"1.5px solid var(--border)",background:"#fff",cursor:"pointer",fontWeight:600,color:"var(--blue-1)" }}>Hapus pencarian</button>}
+                      {q&&<button onClick={()=>setEventSearch("")} style={{ marginTop:10,fontSize:12,padding:"6px 16px",borderRadius:10,border:"1.5px solid var(--border)",background:"var(--card)",cursor:"pointer",fontWeight:600,color:"var(--blue-1)" }}>Hapus pencarian</button>}
                     </div>
                   )}
                   {[...filteredEvents].sort((a,b)=>eventTab==="past"?b.date.localeCompare(a.date):a.date.localeCompare(b.date)).map(event=>{
@@ -774,7 +774,7 @@ export default function AdminPanel() {
                 <button onClick={()=>{ if(!editSaving) setEditingEvent(null); }} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
               </div>
 
-              {editError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editError}</div>}
+              {editError && <div style={{ background:"var(--cell-cond)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editError}</div>}
 
               <form onSubmit={handleSaveEdit}>
                 <div style={{ marginBottom:14 }}>
@@ -782,7 +782,7 @@ export default function AdminPanel() {
                   <div style={{ display:"flex",gap:8 }}>
                     {[{type:"wedding",icon:"💍",label:"Wedding"},{type:"event",icon:"🎉",label:"Event Biasa"}].map(({type,icon,label})=>(
                       <button key={type} type="button" onClick={()=>setEditForm({...editForm,event_type:type})}
-                        style={{ flex:1,padding:"10px",border:`2px solid ${editForm.event_type===type?"var(--blue-2)":"var(--border)"}`,borderRadius:12,background:editForm.event_type===type?"rgba(238,244,255,0.9)":"rgba(248,250,255,0.8)",cursor:"pointer",textAlign:"center",transition:"all 0.15s" }}>
+                        style={{ flex:1,padding:"10px",border:`2px solid ${editForm.event_type===type?"var(--blue-2)":"var(--border)"}`,borderRadius:12,background:editForm.event_type===type?"var(--cell-booked)":"var(--panel-soft)",cursor:"pointer",textAlign:"center",transition:"all 0.15s" }}>
                         <span style={{ fontSize:18 }}>{icon}</span>
                         <p style={{ fontSize:11,fontWeight:700,color:editForm.event_type===type?"var(--blue-1)":"var(--muted)",marginTop:4 }}>{label}</p>
                       </button>
@@ -847,14 +847,14 @@ export default function AdminPanel() {
               </button>
             </div>
 
-            {staffUserSuccess && <div className="scale-in" style={{ background:"rgba(240,253,244,0.95)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
+            {staffUserSuccess && <div className="scale-in" style={{ background:"var(--panel-success)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:16,fontSize:13,fontWeight:600 }}>{staffUserSuccess}</div>}
 
             <div className="card" style={{ overflow:"hidden" }}>
-              <div style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",background:"rgba(232,238,247,0.8)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:12 }}>
+              <div style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",background:"var(--panel-mid)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:12 }}>
                 <div style={{ position:"relative",flex:1,maxWidth:320 }}>
                   <span style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:13,pointerEvents:"none",color:"var(--muted)" }}>🔍</span>
                   <input value={staffUserSearch} onChange={e=>setStaffUserSearch(e.target.value)} placeholder="Cari nama atau username…"
-                    style={{ width:"100%",paddingLeft:32,paddingRight:staffUserSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"rgba(255,255,255,0.9)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
+                    style={{ width:"100%",paddingLeft:32,paddingRight:staffUserSearch?32:12,paddingTop:8,paddingBottom:8,border:"1.5px solid var(--border)",borderRadius:10,fontSize:12,fontWeight:500,background:"var(--panel-soft)",outline:"none",color:"var(--dark)",boxSizing:"border-box" }}
                     onFocus={e=>e.target.style.borderColor="var(--blue-2)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
                   {staffUserSearch && <button onClick={()=>setStaffUserSearch("")} style={{ position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,0.08)",border:"none",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:10,color:"var(--muted)" }}>✕</button>}
                 </div>
@@ -914,7 +914,7 @@ export default function AdminPanel() {
                 <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>👤 Buat Akun Staff Baru</h3>
                 <button onClick={()=>setShowAddStaffModal(false)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
               </div>
-              {staffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {staffUserError}</div>}
+              {staffUserError && <div style={{ background:"var(--cell-cond)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {staffUserError}</div>}
               <form onSubmit={handleAddStaffUser}>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div><label className="label">Nama Lengkap *</label><input value={staffUserForm.name} onChange={e=>setStaffUserForm({...staffUserForm,name:e.target.value})} placeholder="Contoh: Budi Santoso" className="input" required/></div>
@@ -966,7 +966,7 @@ export default function AdminPanel() {
                 <h3 style={{ fontSize:18,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>✏️ Edit Akun Staff</h3>
                 <button onClick={()=>setEditingStaffUser(null)} style={{ background:"rgba(0,0,0,0.06)",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:14,color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
               </div>
-              {editStaffUserError && <div style={{ background:"rgba(255,245,245,0.9)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editStaffUserError}</div>}
+              {editStaffUserError && <div style={{ background:"var(--cell-cond)",color:"#dc2626",padding:"8px 12px",fontSize:12,borderRadius:10,marginBottom:16,border:"1px solid #fecaca",fontWeight:500 }}>⚠️ {editStaffUserError}</div>}
               <form onSubmit={handleSaveEditStaffUser}>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
                   <div><label className="label">Nama Lengkap *</label><input value={editStaffUserForm.name} onChange={e=>setEditStaffUserForm({...editStaffUserForm,name:e.target.value})} className="input" required/></div>

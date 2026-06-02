@@ -23,6 +23,23 @@
   --shadow-sm:  0 1px 4px rgba(10,22,40,0.08);
   --shadow:     0 4px 16px rgba(10,22,40,0.12);
   --shadow-lg:  0 12px 40px rgba(10,22,40,0.18);
+  /* ── Extended semantic tokens ─────────────────────────── */
+  --cell-empty:     rgba(246,249,255,0.7);
+  --cell-past:      rgba(248,248,250,0.5);
+  --cell-booked:    rgba(235,244,255,0.95);
+  --cell-cond:      rgba(255,243,243,0.95);
+  --cell-avail:     rgba(238,253,246,0.95);
+  --cell-selected:  rgba(219,238,255,0.98);
+  --panel-soft:     rgba(252,254,255,0.96);
+  --panel-mid:      rgba(232,238,247,0.85);
+  --panel-success:  rgba(240,253,244,0.95);
+  --panel-error:    rgba(255,245,245,0.95);
+  --modal-bg:       #ffffff;
+  --accent-tint:    rgba(30,96,213,0.06);
+  --accent-tint-mid:rgba(30,96,213,0.11);
+  --accent-border:  rgba(30,96,213,0.18);
+  --text-dim:       #c8d4e8;
+  --dot-past:       #c8d4e8;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -221,6 +238,24 @@ h1,h2,h3,h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; color
   --shadow-lg:  0 12px 40px rgba(0,0,0,0.6);
   --blue-light: #1a2a4a;
   color-scheme: dark;
+  /* ── Extended semantic tokens dark ──────────────────── */
+  --cell-empty:     rgba(16,22,36,0.6);
+  --cell-past:      rgba(14,19,30,0.55);
+  --cell-booked:    rgba(20,32,60,0.9);
+  --cell-cond:      rgba(40,20,20,0.85);
+  --cell-avail:     rgba(14,36,28,0.85);
+  --cell-selected:  rgba(20,40,80,0.98);
+  --panel-soft:     rgba(22,30,50,0.97);
+  --panel-mid:      rgba(18,26,42,0.9);
+  --panel-success:  rgba(10,30,20,0.9);
+  --panel-error:    rgba(36,12,12,0.9);
+  --modal-bg:       #1a2236;
+  --accent-tint:    rgba(56,123,236,0.08);
+  --accent-tint-mid:rgba(56,123,236,0.14);
+  --accent-border:  rgba(56,123,236,0.22);
+  --text-dim:       #3d5070;
+  --dot-past:       #2a3a55;
+
 }
 
 [data-theme="dark"] body {
@@ -383,4 +418,80 @@ body, .card, header, main, section, aside,
 [data-theme="dark"] [style*="color:\"#374151\""],
 [data-theme="dark"] [style*="color:\"#111827\""] {
   color: var(--dark) !important;
+}
+
+/* ── Dark mode: refined targeted overrides ───────────────────────────────── */
+
+/* Calendar day cells — ensure text readable */
+[data-theme="dark"] .day-cell {
+  border-color: rgba(42,58,85,0.6) !important;
+}
+
+/* Modal overlay */
+[data-theme="dark"] [style*="background:\"var(--modal-bg)\""] {
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7) !important;
+}
+
+/* Success / error banners */
+[data-theme="dark"] [style*="background:\"var(--panel-success)\""] {
+  color: #4ade80 !important;
+  border-color: rgba(74,222,128,0.2) !important;
+}
+[data-theme="dark"] [style*="background:\"var(--panel-error)\""],
+[data-theme="dark"] [style*="background:\"#fff0f0\""] {
+  color: #f87171 !important;
+  border-color: rgba(248,113,113,0.25) !important;
+}
+
+/* Table striping in dark */
+[data-theme="dark"] tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.02) !important;
+}
+[data-theme="dark"] tbody tr:hover {
+  background: rgba(56,123,236,0.07) !important;
+}
+[data-theme="dark"] th {
+  background: rgba(18,26,44,0.9) !important;
+  color: var(--muted) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] td {
+  border-color: var(--border) !important;
+  color: var(--dark) !important;
+}
+
+/* Login panel specific fix */
+[data-theme="dark"] [style*="background:\"var(--modal-bg)\""] input {
+  background: rgba(10,16,28,0.7) !important;
+  color: var(--dark) !important;
+  border-color: var(--border) !important;
+}
+
+/* Status badges */
+[data-theme="dark"] [style*="rgba(124,58,237,0.1)"] {
+  background: rgba(124,58,237,0.18) !important;
+}
+[data-theme="dark"] [style*="rgba(16,185,129,0.1)"] {
+  background: rgba(16,185,129,0.12) !important;
+}
+
+/* Slot availability boxes */
+[data-theme="dark"] [style*="var(--panel-soft)"] {
+  border-color: var(--border) !important;
+}
+
+/* Nav month header subtitle dim color */
+[data-theme="dark"] [style*="rgba(255,255,255,0.45)"] {
+  color: rgba(160,185,220,0.6) !important;
+}
+
+/* Scrollbar in dark panels */
+[data-theme="dark"] * {
+  scrollbar-color: var(--border) var(--bg2);
+}
+
+/* Force select option readable */
+[data-theme="dark"] select option {
+  background: var(--bg2);
+  color: var(--dark);
 }

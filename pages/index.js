@@ -131,7 +131,7 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
     <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridTemplateRows:`repeat(${numRows}, 1fr)` }}>
       {cells.map((cell) => {
         if (cell.type === "empty") return (
-          <div key={cell.key} style={{ background:"rgba(250,252,255,0.6)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",minHeight:76 }}/>
+          <div key={cell.key} style={{ background:"var(--cell-empty)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)",minHeight:76 }}/>
         );
 
         const { day } = cell;
@@ -141,17 +141,17 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
         const isToday = new Date(dateStr).toDateString() === today.toDateString();
         const isMultiDay = event && event.date_end && event.date_end !== event.date;
         const s = {
-          booked:      { bg:"rgba(238,244,255,0.9)", dot:"#4080f0", tc:"var(--dark)" },
-          conditional: { bg:"rgba(255,245,245,0.9)", dot:"#ef4444", tc:"#999" },
-          past:        { bg:"rgba(250,250,250,0.5)", dot:"#ddd",    tc:"#ccc" },
-          available:   { bg:"rgba(240,253,248,0.9)", dot:"#10b981", tc:"var(--dark)" },
+          booked:      { bg:"var(--cell-booked)", dot:"#4080f0", tc:"var(--dark)" },
+          conditional: { bg:"var(--cell-cond)", dot:"#ef4444", tc:"#999" },
+          past:        { bg:"var(--cell-past)", dot:"var(--dot-past)",    tc:"#ccc" },
+          available:   { bg:"var(--cell-avail)", dot:"#10b981", tc:"var(--dark)" },
         }[status];
 
         return (
           <div key={day} className="day-cell"
             onClick={() => status==="booked" ? onSelectDay(isSelected?null:day) : null}
             style={{
-              background: isSelected ? "rgba(219,238,255,0.95)" : s.bg,
+              background: isSelected ? "var(--cell-selected)" : s.bg,
               borderRight:"1px solid var(--border)",
               borderBottom:"1px solid var(--border)",
               padding:"8px 6px 6px",
@@ -393,7 +393,7 @@ export default function Home() {
           )}
 
           <div className={mounted?"card fade-up anim-delay-2":"card"} style={{ padding:"24px 32px",boxShadow:"var(--shadow-sm)",position:"relative",overflow:"hidden" }}>
-            <div style={{ position:"absolute",top:0,right:0,width:130,height:130,borderRadius:"0 20px 0 100%",background:"linear-gradient(135deg,rgba(30,96,213,0.07),transparent)",pointerEvents:"none" }}/>
+            <div style={{ position:"absolute",top:0,right:0,width:130,height:130,borderRadius:"0 20px 0 100%",background:"linear-gradient(135deg,var(--accent-tint),transparent)",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",bottom:0,left:0,width:80,height:80,borderRadius:"0 100% 0 20px",background:"linear-gradient(315deg,rgba(64,128,240,0.05),transparent)",pointerEvents:"none" }}/>
             <p style={{ fontSize:13,color:"var(--mid)",lineHeight:1.8,marginBottom:18,fontWeight:500,position:"relative" }}>
               Diharapkan untuk mengkonfirmasi pendaftaran dikota terlebih dahulu bersama Staff Altion. Untuk booklet dan pendaftaran dapat diakses di tombol berikut.
