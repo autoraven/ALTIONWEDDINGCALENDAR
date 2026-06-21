@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_REMINDER_WEBHOOK_URL;
-const BANNER_GIF_URL = "https://altioneventcalendar.vercel.app/bannerwebhook.gif";
+const BANNER_GIF_URL = `https://altioneventcalendar.vercel.app/bannerwebhook.gif?v=${Date.now()}`;
 
 // Hitung tanggal WIB dari offset hari
 function getWIBDate(offsetDays = 0) {

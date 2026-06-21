@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const BANNER_GIF_URL = "https://altioneventcalendar.vercel.app/bannerwebhook.gif";
+const BANNER_GIF_URL = `https://altioneventcalendar.vercel.app/bannerwebhook.gif?v=${Date.now()}`;
 
 function formatDateID(dateStr) {
   return new Date(dateStr).toLocaleDateString("id-ID", {
