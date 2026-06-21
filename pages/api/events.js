@@ -6,6 +6,7 @@ const supabase = createClient(
 );
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const BANNER_GIF_URL = "https://altioneventcalendar.vercel.app/bannerwebhook.gif";
 
 function formatDateID(dateStr) {
   return new Date(dateStr).toLocaleDateString("id-ID", {
@@ -42,6 +43,9 @@ async function sendDiscordNotification(event, action = "add") {
     embeds: [{
       title,
       color,
+      image: {
+        url: BANNER_GIF_URL,
+      },
       fields: [
         { name: isWedding ? "👫 Pasangan" : "📌 Nama Event", value: event.couple || "-", inline: true },
         { name: "📅 Tanggal", value: tanggal, inline: true },

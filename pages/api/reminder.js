@@ -6,6 +6,7 @@ const supabase = createClient(
 );
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_REMINDER_WEBHOOK_URL;
+const BANNER_GIF_URL = "https://altioneventcalendar.vercel.app/bannerwebhook.gif";
 
 // Hitung tanggal WIB dari offset hari
 function getWIBDate(offsetDays = 0) {
@@ -83,6 +84,9 @@ async function sendReminder(event, type, discordMap) {
       title: embedTitle,
       color: embedColor,
       description,
+      image: {
+        url: BANNER_GIF_URL,
+      },
       fields: [
         { name: "📅 Tanggal",  value: dateFormatted,       inline: true },
         { name: "🏛️ Venue",   value: event.venue || "-",  inline: true },
