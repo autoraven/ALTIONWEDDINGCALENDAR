@@ -188,12 +188,48 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
   );
 }
 
+function CalendarSkeleton() {
+  return (
+    <div style={{ overflow:"hidden",marginBottom:24,borderRadius:20,border:"1px solid var(--border)",boxShadow:"var(--shadow)" }}>
+      {/* header bulan */}
+      <div style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",padding:"22px 32px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+        <div className="skeleton sk-box sk-pulse" style={{ width:38,height:38,borderRadius:10 }}/>
+        <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
+          <div className="skeleton sk-pulse" style={{ width:120,height:22,borderRadius:8 }}/>
+          <div className="skeleton sk-pulse" style={{ width:60,height:12,borderRadius:6 }}/>
+        </div>
+        <div className="skeleton sk-box sk-pulse" style={{ width:38,height:38,borderRadius:10 }}/>
+      </div>
+      {/* day headers */}
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"var(--bg2)",borderBottom:"1px solid var(--border)" }}>
+        {Array.from({length:7}).map((_,i)=>(
+          <div key={i} style={{ padding:"12px 0",display:"flex",justifyContent:"center" }}>
+            <div className="skeleton" style={{ width:24,height:10,borderRadius:5 }}/>
+          </div>
+        ))}
+      </div>
+      {/* calendar cells — 5 rows x 7 */}
+      <div className="sk-calendar-grid">
+        {Array.from({length:35}).map((_,i)=>(
+          <div key={i} className="sk-cal-cell">
+            <div className="skeleton" style={{ width:22,height:22,borderRadius:7,marginBottom:8 }}/>
+            <div style={{ marginTop:"auto" }}>
+              <div className="skeleton" style={{ width:6,height:6,borderRadius:"50%",marginBottom:4 }}/>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [displayDate, setDisplayDate] = useState(new Date());
   const [pendingDate, setPendingDate] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [direction, setDirection] = useState(null); // "next"|"prev"|null
   const [isAnimating, setIsAnimating] = useState(false);
   const [labelKey, setLabelKey] = useState(0);
@@ -202,7 +238,10 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    fetch("/api/events").then(r=>r.json()).then(d=>{ if(Array.isArray(d)) setEvents(d); });
+    fetch("/api/events")
+      .then(r=>r.json())
+      .then(d=>{ if(Array.isArray(d)) setEvents(d); })
+      .finally(()=>setLoadingData(false));
   }, []);
 
   function changeMonth(dir) {
@@ -305,6 +344,9 @@ export default function Home() {
             </div>
           </div>
 
+          {loadingData ? (
+            <CalendarSkeleton />
+          ) : (
           <div className={mounted?"card fade-up anim-delay-1":"card"} style={{ overflow:"hidden",marginBottom:24,boxShadow:"var(--shadow)" }}>
 
             <div style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",padding:"22px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden" }}>
@@ -365,6 +407,7 @@ export default function Home() {
               )}
             </div>
           </div>
+          )} {/* end loadingData conditional */}
           {selectedDay && selectedEvents.length > 0 && (
             <div className="card scale-in" style={{ padding:"24px 28px",borderLeft:"4px solid var(--blue-2)",marginBottom:24,boxShadow:"var(--shadow)" }}>
               <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap" }}>
@@ -392,6 +435,16 @@ export default function Home() {
             </div>
           )}
 
+          {loadingData ? (
+            <div className="card" style={{ padding:"24px 32px" }}>
+              <div className="skeleton sk-pulse" style={{ width:"90%",height:13,borderRadius:6,marginBottom:10 }}/>
+              <div className="skeleton sk-pulse" style={{ width:"75%",height:13,borderRadius:6,marginBottom:10 }}/>
+              <div className="skeleton sk-pulse" style={{ width:"55%",height:13,borderRadius:6,marginBottom:22 }}/>
+              <div style={{ display:"flex",justifyContent:"center" }}>
+                <div className="skeleton sk-pulse" style={{ width:160,height:40,borderRadius:14 }}/>
+              </div>
+            </div>
+          ) : (
           <div className={mounted?"card fade-up anim-delay-2":"card"} style={{ padding:"24px 32px",boxShadow:"var(--shadow-sm)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",top:0,right:0,width:130,height:130,borderRadius:"0 20px 0 100%",background:"linear-gradient(135deg,var(--accent-tint),transparent)",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",bottom:0,left:0,width:80,height:80,borderRadius:"0 100% 0 20px",background:"linear-gradient(315deg,rgba(64,128,240,0.05),transparent)",pointerEvents:"none" }}/>
@@ -404,6 +457,7 @@ export default function Home() {
               </a>
             </div>
           </div>
+          )}
         </main>
 
         <footer style={{ textAlign:"center",padding:"24px 0 16px",color:"var(--muted)",fontSize:11,opacity:0.4,position:"relative",zIndex:1 }}>Created by GG & Caramolly</footer>

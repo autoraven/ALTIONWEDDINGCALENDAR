@@ -170,6 +170,7 @@ export default function AdminPanel() {
   const [password,setPassword]=useState("");
   const [loginError,setLoginError]=useState("");
   const [events,setEvents]=useState([]);
+  const [loadingData,setLoadingData]=useState(false);
 
   const [staffUsers, setStaffUsers] = useState([]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
@@ -235,7 +236,9 @@ export default function AdminPanel() {
     setMounted(true);
     // FIX: kunci "admin_authed" konsisten dengan performance.js → SSO, tidak perlu login ulang
     if(sessionStorage.getItem("admin_authed")==="1"){
-      setIsLoggedIn(true); fetchEvents(); fetchStaffUsers();
+      setIsLoggedIn(true);
+      setLoadingData(true);
+      Promise.all([fetchEvents(), fetchStaffUsers()]).finally(()=>setLoadingData(false));
     }
   },[fetchEvents, fetchStaffUsers]);
 
@@ -252,7 +255,9 @@ export default function AdminPanel() {
     const data=await res.json();
     if(data.success){
       sessionStorage.setItem("admin_authed","1");
-      setIsLoggedIn(true); fetchEvents(); fetchStaffUsers();
+      setIsLoggedIn(true);
+      setLoadingData(true);
+      Promise.all([fetchEvents(), fetchStaffUsers()]).finally(()=>setLoadingData(false));
     } else setLoginError(data.message);
   }
 
@@ -531,7 +536,15 @@ export default function AdminPanel() {
           {success&&<div className="scale-in" style={{ background:"var(--panel-success)",border:"1px solid #86efac",color:"#15803d",padding:"12px 20px",borderRadius:14,marginBottom:24,fontSize:13,fontWeight:600,backdropFilter:"blur(8px)" }}>✅ {success}</div>}
 
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28 }}>
-            {[{label:"Total Event",value:events.length,icon:"📅",color:"var(--blue-2)"},{label:"Bulan Ini",value:thisMonthEvents.length,icon:"🗓️",color:"var(--blue-1)"},{label:"Wedding",value:events.filter(e=>e.event_type==="wedding").length,icon:"💍",color:"#7c3aed"},{label:"Event Biasa",value:events.filter(e=>e.event_type==="event").length,icon:"🎉",color:"#059669"}].map(({label,value,icon,color},idx)=>(
+            {loadingData
+              ? Array.from({length:4}).map((_,idx)=>(
+                  <div key={idx} className="card" style={{ padding:"22px 24px",textAlign:"center" }}>
+                    <div className="skeleton sk-circle sk-pulse" style={{ width:36,height:36,margin:"0 auto 10px" }}/>
+                    <div className="skeleton sk-pulse" style={{ width:60,height:36,margin:"0 auto 6px",borderRadius:10 }}/>
+                    <div className="skeleton sk-pulse" style={{ width:80,height:10,margin:"0 auto",borderRadius:6 }}/>
+                  </div>
+                ))
+              : [{label:"Total Event",value:events.length,icon:"📅",color:"var(--blue-2)"},{label:"Bulan Ini",value:thisMonthEvents.length,icon:"🗓️",color:"var(--blue-1)"},{label:"Wedding",value:events.filter(e=>e.event_type==="wedding").length,icon:"💍",color:"#7c3aed"},{label:"Event Biasa",value:events.filter(e=>e.event_type==="event").length,icon:"🎉",color:"#059669"}].map(({label,value,icon,color},idx)=>(
               <div key={label} className={mounted?`card fade-up anim-delay-${idx+1}`:"card"} style={{ padding:"22px 24px",textAlign:"center",position:"relative",overflow:"hidden" }}>
                 <div style={{ position:"absolute",top:-10,right:-10,width:70,height:70,borderRadius:"50%",background:`${color}12`,pointerEvents:"none" }}/>
                 <div style={{ fontSize:22,marginBottom:10 }}>{icon}</div>
@@ -543,6 +556,44 @@ export default function AdminPanel() {
 
           <div style={{ display:"grid",gridTemplateColumns:"1fr 400px",gap:24,alignItems:"start" }}>
             {/* Calendar */}
+            {loadingData ? (
+              <div className="card" style={{ overflow:"hidden",boxShadow:"var(--shadow)" }}>
+                {/* Header skeleton */}
+                <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"20px 28px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                  <div className="skeleton sk-box sk-pulse" style={{ width:36,height:36,borderRadius:10 }}/>
+                  <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                    <div className="skeleton sk-pulse" style={{ width:110,height:20,borderRadius:8 }}/>
+                    <div className="skeleton sk-pulse" style={{ width:50,height:11,borderRadius:5 }}/>
+                  </div>
+                  <div className="skeleton sk-box sk-pulse" style={{ width:36,height:36,borderRadius:10 }}/>
+                </div>
+                {/* Day headers */}
+                <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"var(--bg2)",borderBottom:"1px solid var(--border)" }}>
+                  {Array.from({length:7}).map((_,i)=>(
+                    <div key={i} style={{ padding:"10px 0",display:"flex",justifyContent:"center" }}>
+                      <div className="skeleton" style={{ width:20,height:9,borderRadius:4 }}/>
+                    </div>
+                  ))}
+                </div>
+                {/* Calendar cells — 5 rows x 7 */}
+                <div className="sk-calendar-grid">
+                  {Array.from({length:35}).map((_,i)=>(
+                    <div key={i} className="sk-cal-cell">
+                      <div className="skeleton sk-pulse" style={{ width:20,height:20,borderRadius:6,marginBottom:8 }}/>
+                      <div style={{ marginTop:"auto" }}>
+                        <div className="skeleton" style={{ width:6,height:6,borderRadius:"50%" }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Legend footer */}
+                <div style={{ padding:"10px 16px",background:"var(--panel-mid)",borderTop:"1px solid var(--border)",display:"flex",gap:16 }}>
+                  {[1,2,3].map(i=>(
+                    <div key={i} className="skeleton" style={{ width:60,height:9,borderRadius:4 }}/>
+                  ))}
+                </div>
+              </div>
+            ) : (
             <div className="card" style={{ overflow:"hidden",boxShadow:"var(--shadow)" }}>
               <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"20px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden" }}>
                 <button onClick={()=>changeMonth(-1)} disabled={isAnimating} style={{ background:"rgba(255,255,255,0.1)",border:"1.5px solid rgba(255,255,255,0.2)",color:"#fff",width:36,height:36,borderRadius:10,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1 }}>‹</button>
@@ -608,6 +659,7 @@ export default function AdminPanel() {
                 </p>
               </div>
             </div>
+            )}
 
             {/* Right column */}
             <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
@@ -722,6 +774,23 @@ export default function AdminPanel() {
                 </div>
 
                 <div style={{ maxHeight:500,overflowY:"auto" }}>
+                  {loadingData ? (
+                    Array.from({length:3}).map((_,i)=>(
+                      <div key={i} style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12 }}>
+                        <div style={{ flex:1 }}>
+                          <div className="skeleton sk-pulse" style={{ width:80,height:18,marginBottom:8,borderRadius:20 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:"65%",height:18,marginBottom:6,borderRadius:8 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:120,height:12,marginBottom:4,borderRadius:6 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:100,height:12,borderRadius:6 }}/>
+                        </div>
+                        <div style={{ display:"flex",gap:6,flexShrink:0,paddingTop:4 }}>
+                          <div className="skeleton sk-pulse" style={{ width:60,height:30,borderRadius:10 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:50,height:30,borderRadius:10 }}/>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                  <>
                   {filteredEvents.length===0&&(
                     <div style={{ padding:"32px",textAlign:"center" }}>
                       <p style={{ fontSize:28,marginBottom:8 }}>{q?"🔍":"📅"}</p>
@@ -754,6 +823,8 @@ export default function AdminPanel() {
                       </div>
                     );
                   })}
+                  </>
+                  )} {/* end loadingData */}
                 </div>
               </div>
             </div>
@@ -861,6 +932,22 @@ export default function AdminPanel() {
                 <span style={{ fontSize:12,fontWeight:700,color:"var(--muted)",marginLeft:"auto" }}>{staffUsers.length} akun terdaftar</span>
               </div>
               <div style={{ maxHeight:500,overflowY:"auto" }}>
+                {loadingData ? (
+                  Array.from({length:4}).map((_,i) => (
+                    <div key={i} style={{ padding:"14px 20px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:12 }}>
+                      <div className="skeleton sk-circle sk-pulse" style={{ width:38,height:38,flexShrink:0 }}/>
+                      <div style={{ flex:1 }}>
+                        <div className="skeleton sk-pulse" style={{ width:"45%",height:14,marginBottom:6,borderRadius:7 }}/>
+                        <div className="skeleton sk-pulse" style={{ width:"60%",height:11,borderRadius:5 }}/>
+                      </div>
+                      <div style={{ display:"flex",gap:6 }}>
+                        <div className="skeleton sk-pulse" style={{ width:60,height:30,borderRadius:10 }}/>
+                        <div className="skeleton sk-pulse" style={{ width:50,height:30,borderRadius:10 }}/>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                <>
                 {staffUsers.length === 0 && (
                   <div style={{ padding:"40px",textAlign:"center" }}>
                     <p style={{ fontSize:28,marginBottom:8 }}>👤</p>
@@ -900,6 +987,8 @@ export default function AdminPanel() {
                     </div>
                   ));
                 })()}
+              </>
+              )}
               </div>
             </div>
           </div>

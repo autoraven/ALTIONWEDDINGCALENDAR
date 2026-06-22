@@ -85,6 +85,7 @@ export default function StaffPage() {
   const [staffMap, setStaffMap] = useState({});
   const [checkinMap, setCheckinMap] = useState({}); // { event_id: checkin_record | null }
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [checkinLoading, setCheckinLoading] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -177,6 +178,7 @@ export default function StaffPage() {
   async function fetchAll(user) {
     const u = user || currentUser;
     const isAdminUser = u?.is_admin === true;
+    setLoadingData(true);
     const fetches = [
       fetch("/api/events"),
       fetch("/api/staff"),
@@ -210,6 +212,7 @@ export default function StaffPage() {
       if (results[3]) { const d = await results[3].json(); if (Array.isArray(d)) setStaffUsers(d); }
       if (results[4]) { const d = await results[4].json(); if (Array.isArray(d)) setCheckins(d); }
     }
+    setLoadingData(false);
   }
 
   // ── Admin: tambah staff ke event ─────────────────────────────────────────
@@ -496,6 +499,26 @@ export default function StaffPage() {
           {/* Event Cards */}
           {activeTab !== "kelola" && (
           <div style={{ columns:"340px",columnGap:20,columnFill:"balance" }}>
+            {loadingData ? (
+              Array.from({length:3}).map((_,i)=>(
+                <div key={i} className="card" style={{ overflow:"hidden",marginBottom:20,display:"inline-block",width:"100%" }}>
+                  <div style={{ padding:"18px 20px",background:"linear-gradient(135deg,var(--navy),var(--blue-1))" }}>
+                    <div className="skeleton sk-pulse" style={{ width:80,height:18,marginBottom:10,borderRadius:20 }}/>
+                    <div className="skeleton sk-pulse" style={{ width:"70%",height:20,marginBottom:8,borderRadius:8 }}/>
+                    <div className="skeleton sk-pulse" style={{ width:160,height:12,marginBottom:4,borderRadius:6 }}/>
+                    <div className="skeleton sk-pulse" style={{ width:130,height:12,borderRadius:6 }}/>
+                  </div>
+                  <div style={{ padding:"14px 18px" }}>
+                    <div className="skeleton sk-pulse" style={{ width:"100%",height:6,borderRadius:99,marginBottom:14 }}/>
+                    <div style={{ display:"flex",gap:8,marginTop:8 }}>
+                      <div className="skeleton sk-pulse" style={{ flex:1,height:38,borderRadius:12 }}/>
+                      <div className="skeleton sk-pulse" style={{ flex:1,height:38,borderRadius:12 }}/>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+            <>
             {displayEvents.length === 0 && (
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                 <p style={{ fontSize:32,marginBottom:12 }}>{q?"🔍":"📅"}</p>
@@ -659,6 +682,8 @@ export default function StaffPage() {
                 </div>
               );
             })}
+            </> /* end loadingData else */
+            )} {/* end ternary */}
           </div>
           )} {/* end activeTab !== kelola */}
 
@@ -697,7 +722,22 @@ export default function StaffPage() {
                   style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
               </div>
 
-              {(() => {
+              {loadingData ? (
+                <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                  {Array.from({length:3}).map((_,i) => (
+                    <div key={i} style={{ background:"rgba(255,255,255,0.93)",borderRadius:18,border:"1.5px solid var(--border)",overflow:"hidden",boxShadow:"var(--shadow)" }}>
+                      <div style={{ padding:"16px 20px",display:"flex",alignItems:"center",gap:14 }}>
+                        <div className="skeleton sk-circle sk-pulse" style={{ width:44,height:44,flexShrink:0 }}/>
+                        <div style={{ flex:1 }}>
+                          <div className="skeleton sk-pulse" style={{ width:"55%",height:15,marginBottom:6,borderRadius:7 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:"40%",height:11,borderRadius:5 }}/>
+                        </div>
+                        <div className="skeleton sk-pulse" style={{ width:32,height:32,borderRadius:8,flexShrink:0 }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (() => {
                 const q2 = absensiSearch.trim().toLowerCase();
                 const filtEvs = events.filter(ev => {
                   if (absensiFilter === "upcoming" && (ev.date_end||ev.date) < todayStr) return false;

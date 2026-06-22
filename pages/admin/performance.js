@@ -540,10 +540,22 @@ export default function PerformancePage() {
 
           {/* Stat Cards */}
           <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:16,marginBottom:28 }}>
-            <StatCard icon="📅" label="Event Bulan Ini" value={filteredEvents.length} sub={`${MONTHS[filterMonth]} ${filterYear}`} color="#1e60d5"/>
-            <StatCard icon="👥" label="Staff Aktif" value={staffUsers.filter(u=>u.is_active).length} sub="total terdaftar" color="#7c3aed"/>
-            <StatCard icon="📋" label="Total Pendaftaran" value={totalJoins} sub="event diikuti" color="#0891b2"/>
-            <StatCard icon="✅" label="Total Check-in" value={totalCheckins} sub={`rata-rata ${avgRate}%`} color="#059669"/>
+            {loading ? (
+              Array.from({length:4}).map((_,idx) => (
+                <div key={idx} className="card" style={{ padding:"22px 24px",textAlign:"center" }}>
+                  <div className="skeleton sk-circle sk-pulse" style={{ width:36,height:36,margin:"0 auto 10px" }}/>
+                  <div className="skeleton sk-pulse" style={{ width:60,height:36,margin:"0 auto 6px",borderRadius:10 }}/>
+                  <div className="skeleton sk-pulse" style={{ width:80,height:10,margin:"0 auto",borderRadius:6 }}/>
+                </div>
+              ))
+            ) : (
+              <>
+                <StatCard icon="📅" label="Event Bulan Ini" value={filteredEvents.length} sub={`${MONTHS[filterMonth]} ${filterYear}`} color="#1e60d5"/>
+                <StatCard icon="👥" label="Staff Aktif" value={staffUsers.filter(u=>u.is_active).length} sub="total terdaftar" color="#7c3aed"/>
+                <StatCard icon="📋" label="Total Pendaftaran" value={totalJoins} sub="event diikuti" color="#0891b2"/>
+                <StatCard icon="✅" label="Total Check-in" value={totalCheckins} sub={`rata-rata ${avgRate}%`} color="#059669"/>
+              </>
+            )}
           </div>
 
           {/* Tab Nav */}
@@ -567,7 +579,28 @@ export default function PerformancePage() {
               <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",marginBottom:16,letterSpacing:-0.5 }}>
                 🏆 Leaderboard — {MONTHS[filterMonth]} {filterYear}
               </h2>
-              {perfData.length === 0 ? (
+              {loading ? (
+                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  {Array.from({length:5}).map((_,idx) => (
+                    <div key={idx} style={{ background:"var(--panel-soft)",borderRadius:16,padding:"16px 20px",border:"1.5px solid var(--border)",display:"flex",alignItems:"center",gap:16 }}>
+                      <div className="skeleton sk-pulse" style={{ width:36,height:36,borderRadius:8,flexShrink:0 }}/>
+                      <div className="skeleton sk-circle sk-pulse" style={{ width:42,height:42,flexShrink:0 }}/>
+                      <div style={{ flex:1 }}>
+                        <div className="skeleton sk-pulse" style={{ width:"45%",height:14,marginBottom:6,borderRadius:7 }}/>
+                        <div className="skeleton sk-pulse" style={{ width:"30%",height:10,borderRadius:5 }}/>
+                      </div>
+                      <div style={{ display:"flex",gap:20,flexShrink:0 }}>
+                        {[0,1,2].map(i => (
+                          <div key={i} style={{ textAlign:"center" }}>
+                            <div className="skeleton sk-pulse" style={{ width:32,height:20,margin:"0 auto 4px",borderRadius:6 }}/>
+                            <div className="skeleton" style={{ width:28,height:8,margin:"0 auto",borderRadius:4 }}/>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : perfData.length === 0 ? (
                 <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                   <p style={{ fontSize:32 }}>📊</p>
                   <p style={{ fontWeight:700,marginTop:8 }}>Belum ada data untuk periode ini</p>
@@ -779,6 +812,19 @@ export default function PerformancePage() {
               <h2 style={{ fontSize:18,fontWeight:800,color:"var(--dark)",marginBottom:16,letterSpacing:-0.5 }}>
                 🕐 Log Check-in — {MONTHS[filterMonth]} {filterYear}
               </h2>
+              {loading ? (
+                <div style={{ background:"var(--panel-soft)",borderRadius:18,border:"1.5px solid var(--border)",overflow:"hidden" }}>
+                  {Array.from({length:6}).map((_,i) => (
+                    <div key={i} style={{ display:"grid",gridTemplateColumns:"2fr 2fr 1.5fr 1.5fr 1fr",borderBottom:"1px solid var(--border)" }}>
+                      {["70%","55%","50%","45%","30%"].map((w,j) => (
+                        <div key={j} style={{ padding:"14px 16px" }}>
+                          <div className="skeleton sk-pulse" style={{ width:w,height:12,borderRadius:6 }}/>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
               <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                 <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
                   <thead>
@@ -824,6 +870,7 @@ export default function PerformancePage() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           )}
 
@@ -862,7 +909,22 @@ export default function PerformancePage() {
                   style={{ width:"100%",boxSizing:"border-box",padding:"11px 16px 11px 40px",borderRadius:14,border:"1.5px solid var(--border)",background:"var(--panel-soft)",fontSize:13,fontWeight:500,color:"var(--dark)",outline:"none" }}/>
               </div>
 
-              {(() => {
+              {loading ? (
+                <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                  {Array.from({length:3}).map((_,i) => (
+                    <div key={i} style={{ background:"rgba(255,255,255,0.93)",borderRadius:18,border:"1.5px solid var(--border)",overflow:"hidden",boxShadow:"var(--shadow)" }}>
+                      <div style={{ padding:"16px 20px",display:"flex",alignItems:"center",gap:14 }}>
+                        <div className="skeleton sk-circle sk-pulse" style={{ width:44,height:44,flexShrink:0 }}/>
+                        <div style={{ flex:1 }}>
+                          <div className="skeleton sk-pulse" style={{ width:"50%",height:15,marginBottom:6,borderRadius:7 }}/>
+                          <div className="skeleton sk-pulse" style={{ width:"35%",height:11,borderRadius:5 }}/>
+                        </div>
+                        <div className="skeleton sk-pulse" style={{ width:32,height:32,borderRadius:8,flexShrink:0 }}/>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (() => {
                 const nowWIB = new Date(new Date().getTime() + 7*60*60*1000);
                 const todayStr = nowWIB.toISOString().split("T")[0];
                 const q2 = absensiSearch.trim().toLowerCase();
