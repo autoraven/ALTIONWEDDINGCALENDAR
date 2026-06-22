@@ -518,7 +518,7 @@ export default function StaffPage() {
                 </div>
               ))
             ) : (
-            <>
+            <div className="sk-content">
             {displayEvents.length === 0 && (
               <div style={{ columnSpan:"all",textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                 <p style={{ fontSize:32,marginBottom:12 }}>{q?"🔍":"📅"}</p>
@@ -682,7 +682,7 @@ export default function StaffPage() {
                 </div>
               );
             })}
-            </> /* end loadingData else */
+            </div> /* end loadingData else */
             )} {/* end ternary */}
           </div>
           )} {/* end activeTab !== kelola */}

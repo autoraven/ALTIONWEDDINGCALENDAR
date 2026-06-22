@@ -594,7 +594,7 @@ export default function AdminPanel() {
                 </div>
               </div>
             ) : (
-            <div className="card" style={{ overflow:"hidden",boxShadow:"var(--shadow)" }}>
+            <div className="card sk-content" style={{ overflow:"hidden",boxShadow:"var(--shadow)" }}>
               <div style={{ background:"linear-gradient(135deg,var(--navy),var(--blue-1))",padding:"20px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden" }}>
                 <button onClick={()=>changeMonth(-1)} disabled={isAnimating} style={{ background:"rgba(255,255,255,0.1)",border:"1.5px solid rgba(255,255,255,0.2)",color:"#fff",width:36,height:36,borderRadius:10,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1 }}>‹</button>
                 <div style={{ textAlign:"center",position:"relative",zIndex:1,minWidth:150,height:46,overflow:"hidden" }}>
@@ -947,7 +947,7 @@ export default function AdminPanel() {
                     </div>
                   ))
                 ) : (
-                <>
+                <div className="sk-content">
                 {staffUsers.length === 0 && (
                   <div style={{ padding:"40px",textAlign:"center" }}>
                     <p style={{ fontSize:28,marginBottom:8 }}>👤</p>
@@ -987,7 +987,7 @@ export default function AdminPanel() {
                     </div>
                   ));
                 })()}
-              </>
+                </div>
               )}
               </div>
             </div>

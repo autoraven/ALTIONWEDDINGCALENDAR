@@ -497,6 +497,99 @@ body, .card, header, main, section, aside,
   color: var(--dark);
 }
 
+/* ══════════════════════════════════════════════════════════════
+   SKELETON LOADING — rewritten for smooth, flawless shimmer
+   ══════════════════════════════════════════════════════════════ */
+
+/* Single shimmer keyframe — wide sweep so it feels continuous */
+@keyframes sk-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+/* Fade-in for content that replaces a skeleton */
+@keyframes sk-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Base skeleton ─────────────────────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(214, 224, 245, 0.55);
+  border-radius: 8px;
+  display: block;
+  isolation: isolate;
+}
+
+/* The travelling shimmer pseudo-element */
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 70%
+  );
+  animation: sk-sweep 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Dark mode */
+[data-theme="dark"] .skeleton {
+  background: rgba(26, 42, 72, 0.7);
+}
+[data-theme="dark"] .skeleton::after {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(80, 120, 200, 0.18) 50%,
+    transparent 70%
+  );
+}
+
+/* ── Staggered delay helpers (apply to each .skeleton child) ── */
+.skeleton:nth-child(1)::after { animation-delay: 0s; }
+.skeleton:nth-child(2)::after { animation-delay: 0.08s; }
+.skeleton:nth-child(3)::after { animation-delay: 0.16s; }
+.skeleton:nth-child(4)::after { animation-delay: 0.24s; }
+.skeleton:nth-child(5)::after { animation-delay: 0.32s; }
+.skeleton:nth-child(6)::after { animation-delay: 0.40s; }
+
+/* ── Variants ──────────────────────────────────────────────── */
+.sk-text   { height: 14px; border-radius: 6px; }
+.sk-title  { height: 22px; border-radius: 8px; }
+.sk-h1     { height: 36px; border-radius: 10px; }
+.sk-box    { border-radius: 14px; }
+.sk-circle { border-radius: 50% !important; }
+.sk-btn    { height: 40px; border-radius: 12px; }
+
+/* ── Skeleton → Content reveal ─────────────────────────────── */
+/* Wrap real content in .sk-content to get a smooth fade-in */
+.sk-content {
+  animation: sk-reveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Calendar grid skeleton ────────────────────────────────── */
+.sk-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.sk-cal-cell {
+  min-height: 64px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Legacy compat — sk-pulse no longer pulses, just inherits shimmer */
+.sk-pulse { /* intentionally empty — shimmer comes from .skeleton::after */ }
+
 /* ── BFCache / render-before-vars fix ───────────────────────────────────────
    Header gradient is hardcoded as fallback so if CSS vars haven't resolved yet
    (e.g. back navigation restore), the correct color shows immediately.       */

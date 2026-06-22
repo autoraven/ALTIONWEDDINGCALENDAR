@@ -347,7 +347,7 @@ export default function Home() {
           {loadingData ? (
             <CalendarSkeleton />
           ) : (
-          <div className={mounted?"card fade-up anim-delay-1":"card"} style={{ overflow:"hidden",marginBottom:24,boxShadow:"var(--shadow)" }}>
+          <div className={(mounted?"card fade-up anim-delay-1":"card")+" sk-content"} style={{ overflow:"hidden",marginBottom:24,boxShadow:"var(--shadow)" }}>
 
             <div style={{ background:"linear-gradient(135deg,var(--navy) 0%,var(--blue-1) 100%)",padding:"22px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden" }}>
               <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)",backgroundSize:"20px 20px",pointerEvents:"none" }}/>
@@ -445,7 +445,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-          <div className={mounted?"card fade-up anim-delay-2":"card"} style={{ padding:"24px 32px",boxShadow:"var(--shadow-sm)",position:"relative",overflow:"hidden" }}>
+          <div className={(mounted?"card fade-up anim-delay-2":"card")+" sk-content"} style={{ padding:"24px 32px",boxShadow:"var(--shadow-sm)",position:"relative",overflow:"hidden" }}>
             <div style={{ position:"absolute",top:0,right:0,width:130,height:130,borderRadius:"0 20px 0 100%",background:"linear-gradient(135deg,var(--accent-tint),transparent)",pointerEvents:"none" }}/>
             <div style={{ position:"absolute",bottom:0,left:0,width:80,height:80,borderRadius:"0 100% 0 20px",background:"linear-gradient(315deg,rgba(64,128,240,0.05),transparent)",pointerEvents:"none" }}/>
             <p style={{ fontSize:13,color:"var(--mid)",lineHeight:1.8,marginBottom:18,fontWeight:500,position:"relative" }}>

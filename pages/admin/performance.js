@@ -549,12 +549,12 @@ export default function PerformancePage() {
                 </div>
               ))
             ) : (
-              <>
+              <div className="sk-content" style={{display:"contents"}}>
                 <StatCard icon="📅" label="Event Bulan Ini" value={filteredEvents.length} sub={`${MONTHS[filterMonth]} ${filterYear}`} color="#1e60d5"/>
                 <StatCard icon="👥" label="Staff Aktif" value={staffUsers.filter(u=>u.is_active).length} sub="total terdaftar" color="#7c3aed"/>
                 <StatCard icon="📋" label="Total Pendaftaran" value={totalJoins} sub="event diikuti" color="#0891b2"/>
                 <StatCard icon="✅" label="Total Check-in" value={totalCheckins} sub={`rata-rata ${avgRate}%`} color="#059669"/>
-              </>
+              </div>
             )}
           </div>
 
@@ -600,7 +600,7 @@ export default function PerformancePage() {
                     </div>
                   ))}
                 </div>
-              ) : perfData.length === 0 ? (
+              ) : <div className="sk-content" style={{display:"contents"}}>{perfData.length === 0 ? (
                 <div style={{ textAlign:"center",padding:"48px 0",color:"var(--muted)" }}>
                   <p style={{ fontSize:32 }}>📊</p>
                   <p style={{ fontWeight:700,marginTop:8 }}>Belum ada data untuk periode ini</p>
@@ -649,7 +649,7 @@ export default function PerformancePage() {
                     </div>
                   ))}
                 </div>
-              )}
+              )}</div>}
             </div>
           )}
 
@@ -825,7 +825,7 @@ export default function PerformancePage() {
                   ))}
                 </div>
               ) : (
-              <div style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
+              <div className="sk-content" style={{ background:"var(--panel-soft)",backdropFilter:"blur(12px)",borderRadius:18,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"auto" }}>
                 <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
                   <thead>
                     <tr style={{ background:"rgba(238,244,255,0.8)" }}>
