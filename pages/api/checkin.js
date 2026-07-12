@@ -137,15 +137,16 @@ export default async function handler(req, res) {
     if (!admin_override && !staff_user_id)
       return res.status(400).json({ error: "staff_user_id wajib diisi" });
 
-    // Jika admin_override, verifikasi admin
+    // Jika admin_override, verifikasi admin atau jabatan Head Staff ke atas
     if (admin_override) {
+      const PRIVILEGED = ["Head Staff", "Manager", "Executive", "Ceo"];
       const { data: adminUser } = await supabase
         .from("staff_users")
-        .select("is_admin")
+        .select("is_admin, jabatan")
         .eq("id", admin_user_id)
         .single();
-      if (!adminUser?.is_admin)
-        return res.status(403).json({ error: "Hanya admin yang dapat melakukan check-in untuk staff lain." });
+      if (!adminUser?.is_admin && !PRIVILEGED.includes(adminUser?.jabatan))
+        return res.status(403).json({ error: "Hanya admin atau Head Staff ke atas yang dapat melakukan check-in untuk staff lain." });
     }
 
     // Cek sudah terdaftar di event

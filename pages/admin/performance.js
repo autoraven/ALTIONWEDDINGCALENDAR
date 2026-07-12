@@ -330,7 +330,7 @@ export default function PerformancePage() {
     const res = await fetch("/api/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null }),
+      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null, bypass_limit: true }),
     });
     const data = await res.json();
     setAddStaffLoading(false);

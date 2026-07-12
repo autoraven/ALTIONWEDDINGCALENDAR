@@ -87,7 +87,7 @@ export default async function handler(req, res) {
 
 
   if (req.method === "POST") {
-    const { event_id, name, role } = req.body;
+    const { event_id, name, role, bypass_limit, requester_id } = req.body;
     if (!event_id || !name?.trim()) return res.status(400).json({ error: "Event dan nama wajib diisi" });
 
 
@@ -105,8 +105,25 @@ export default async function handler(req, res) {
       .eq("id", event_id)
       .single();
 
-    // Cek slot limit
-    if (event?.max_staff) {
+    // Cek slot limit — bisa dilewati oleh admin / Head Staff ke atas via Kelola Absensi
+    let allowBypass = false;
+    if (bypass_limit) {
+      if (requester_id) {
+        // Diminta dari staff page: verifikasi role requester di server
+        const { data: requester } = await supabase
+          .from("staff_users")
+          .select("is_admin, jabatan")
+          .eq("id", requester_id)
+          .single();
+        const PRIVILEGED = ["Head Staff", "Manager", "Executive", "Ceo"];
+        allowBypass = requester?.is_admin === true || PRIVILEGED.includes(requester?.jabatan);
+      } else {
+        // Diminta dari admin panel (performance page) yang sudah pakai ADMIN_CREDENTIALS
+        allowBypass = true;
+      }
+    }
+
+    if (event?.max_staff && !allowBypass) {
       const { count } = await supabase
         .from("event_staff")
         .select("id", { count: "exact", head: true })

@@ -74,6 +74,12 @@ function isCheckinOpen(event) {
   return isAfternoonOnEventDay || isMorningAfterEventDay;
 }
 
+// Jabatan yang boleh mengakses "Kelola Event" & menambah staff melewati batas slot
+const PRIVILEGED_JABATAN = ["Head Staff", "Manager", "Executive", "Ceo"];
+function isPrivilegedUser(user) {
+  return user?.is_admin === true || PRIVILEGED_JABATAN.includes(user?.jabatan);
+}
+
 export default function StaffPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -177,7 +183,7 @@ export default function StaffPage() {
 
   async function fetchAll(user) {
     const u = user || currentUser;
-    const isAdminUser = u?.is_admin === true;
+    const isAdminUser = isPrivilegedUser(u);
     setLoadingData(true);
     const fetches = [
       fetch("/api/events"),
@@ -222,7 +228,7 @@ export default function StaffPage() {
     setAddStaffLoading(true); setAddStaffErr("");
     const matched = staffUsers.find(u => u.name.toLowerCase() === name.toLowerCase() && u.is_active);
     const role = matched ? ([matched.jabatan, matched.posisi].filter(Boolean).join(" · ") || "Staff") : "Staff";
-    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null }) });
+    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null, bypass_limit:true, requester_id:currentUser?.id||null }) });
     const data = await res.json();
     setAddStaffLoading(false);
     if (data.error) { setAddStaffErr(data.error); return; }
@@ -475,7 +481,7 @@ export default function StaffPage() {
                   {label} <span style={{ background:activeTab===key?"rgba(255,255,255,0.25)":"rgba(30,96,213,0.1)",color:activeTab===key?"#fff":"var(--blue-1)",borderRadius:20,padding:"1px 7px",fontSize:10,marginLeft:5,fontWeight:800 }}>{count}</span>
                 </button>
               ))}
-              {currentUser?.is_admin && (
+              {isPrivilegedUser(currentUser) && (
                 <button onClick={()=>{
                   setActiveTab("kelola");
                   // Refresh checkins terbaru setiap kali buka tab kelola
@@ -688,7 +694,7 @@ export default function StaffPage() {
           )} {/* end activeTab !== kelola */}
 
           {/* ── KELOLA EVENT (admin only) ────────────────────────────── */}
-          {activeTab === "kelola" && currentUser?.is_admin && (
+          {activeTab === "kelola" && isPrivilegedUser(currentUser) && (
             <div>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12 }}>
                 <div>
