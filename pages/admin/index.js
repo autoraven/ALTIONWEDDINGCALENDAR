@@ -1014,7 +1014,7 @@ export default function AdminPanel() {
                   <input type="text" value={staffUserForm.password} onChange={e=>setStaffUserForm({...staffUserForm,password:e.target.value})} placeholder="Buat password untuk staff ini" className="input" required/>
                 </div>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
-                  <div><label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} placeholder="Contoh: Crew Staff" className="input"/></div>
+                  <div><label className="label">Jabatan <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><select value={staffUserForm.jabatan} onChange={e=>setStaffUserForm({...staffUserForm,jabatan:e.target.value})} className="input"><option value="">— Pilih Jabatan —</option><option value="Crew Staff">Crew Staff</option><option value="Head Staff">Head Staff</option><option value="Manager">Manager</option><option value="Executive">Executive</option><option value="Ceo">Ceo</option></select></div>
                   <div><label className="label">Posisi <span style={{ fontSize:10,color:"var(--muted)",fontWeight:400 }}>opsional</span></label><input value={staffUserForm.posisi} onChange={e=>setStaffUserForm({...staffUserForm,posisi:e.target.value})} placeholder="Contoh: Collective" className="input"/></div>
                 </div>
                 <div style={{ marginBottom:14 }}>
@@ -1066,7 +1066,7 @@ export default function AdminPanel() {
                   <input type="text" value={editStaffUserForm.password} onChange={e=>setEditStaffUserForm({...editStaffUserForm,password:e.target.value})} placeholder="Isi untuk mengganti password…" className="input"/>
                 </div>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14 }}>
-                  <div><label className="label">Jabatan</label><input value={editStaffUserForm.jabatan} onChange={e=>setEditStaffUserForm({...editStaffUserForm,jabatan:e.target.value})} className="input"/></div>
+                  <div><label className="label">Jabatan</label><select value={editStaffUserForm.jabatan} onChange={e=>setEditStaffUserForm({...editStaffUserForm,jabatan:e.target.value})} className="input"><option value="">— Pilih Jabatan —</option><option value="Crew Staff">Crew Staff</option><option value="Head Staff">Head Staff</option><option value="Manager">Manager</option><option value="Executive">Executive</option><option value="Ceo">Ceo</option></select></div>
                   <div><label className="label">Posisi</label><input value={editStaffUserForm.posisi} onChange={e=>setEditStaffUserForm({...editStaffUserForm,posisi:e.target.value})} className="input"/></div>
                 </div>
                 <div style={{ marginBottom:14 }}>
