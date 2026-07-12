@@ -131,7 +131,7 @@ export default async function handler(req, res) {
 
   // POST — check-in
   if (req.method === "POST") {
-    const { event_id, staff_user_id, staff_name, note, admin_override, admin_user_id } = req.body;
+    const { event_id, staff_user_id, staff_name, employee_id, note, admin_override, admin_user_id } = req.body;
     if (!event_id || !staff_name?.trim())
       return res.status(400).json({ error: "event_id dan staff_name wajib diisi" });
     if (!admin_override && !staff_user_id)
@@ -149,27 +149,54 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: "Hanya admin atau Head Staff ke atas yang dapat melakukan check-in untuk staff lain." });
     }
 
-    // Cek sudah terdaftar di event
-    const { data: registered } = await supabase
-      .from("event_staff")
-      .select("id, role")
-      .eq("event_id", event_id)
-      .ilike("name", staff_name.trim())
-      .single();
+    // Cek sudah terdaftar di event — utamakan employee_id, fallback ke nama
+    let registered = null;
+    if (employee_id) {
+      const { data } = await supabase
+        .from("event_staff")
+        .select("id, role, employee_id")
+        .eq("event_id", event_id)
+        .eq("employee_id", employee_id)
+        .maybeSingle();
+      registered = data;
+    }
+    if (!registered) {
+      const { data } = await supabase
+        .from("event_staff")
+        .select("id, role, employee_id")
+        .eq("event_id", event_id)
+        .ilike("name", staff_name.trim())
+        .maybeSingle();
+      registered = data;
+    }
     if (!registered)
       return res.status(403).json({ error: admin_override ? "Staff belum terdaftar di event ini." : "Kamu belum terdaftar di event ini. Daftar terlebih dahulu." });
 
-    // Cek sudah check-in belum
-    let alreadyQuery = supabase
-      .from("staff_checkins")
-      .select("id, checked_in_at")
-      .eq("event_id", event_id);
-    if (admin_override) {
-      alreadyQuery = alreadyQuery.ilike("staff_name", staff_name.trim());
-    } else {
-      alreadyQuery = alreadyQuery.eq("staff_user_id", staff_user_id);
+    // Cek sudah check-in belum — utamakan employee_id, fallback ke staff_user_id/nama
+    const resolvedEmployeeId = employee_id || registered.employee_id || null;
+    let already = null;
+    if (resolvedEmployeeId) {
+      const { data } = await supabase
+        .from("staff_checkins")
+        .select("id, checked_in_at")
+        .eq("event_id", event_id)
+        .eq("employee_id", resolvedEmployeeId)
+        .maybeSingle();
+      already = data;
     }
-    const { data: already } = await alreadyQuery.maybeSingle();
+    if (!already) {
+      let alreadyQuery = supabase
+        .from("staff_checkins")
+        .select("id, checked_in_at")
+        .eq("event_id", event_id);
+      if (admin_override) {
+        alreadyQuery = alreadyQuery.ilike("staff_name", staff_name.trim());
+      } else {
+        alreadyQuery = alreadyQuery.eq("staff_user_id", staff_user_id);
+      }
+      const { data } = await alreadyQuery.maybeSingle();
+      already = data;
+    }
     if (already) {
       const timeStr = new Date(already.checked_in_at).toLocaleTimeString("id-ID", {
         hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta",
@@ -185,20 +212,32 @@ export default async function handler(req, res) {
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const checked_in_at = wib.toISOString().replace("Z", "+07:00");
 
-    // Jika admin_override, resolve staff_user_id dari nama
+    // Jika admin_override, resolve staff_user_id — utamakan employee_id, fallback nama
     let resolvedUserId = staff_user_id || null;
     if (admin_override && !resolvedUserId) {
-      const { data: suByName } = await supabase
-        .from("staff_users")
-        .select("id")
-        .ilike("name", staff_name.trim())
-        .maybeSingle();
-      resolvedUserId = suByName?.id || null;
+      let suMatch = null;
+      if (resolvedEmployeeId) {
+        const { data } = await supabase
+          .from("staff_users")
+          .select("id")
+          .eq("employee_id", resolvedEmployeeId)
+          .maybeSingle();
+        suMatch = data;
+      }
+      if (!suMatch) {
+        const { data } = await supabase
+          .from("staff_users")
+          .select("id")
+          .ilike("name", staff_name.trim())
+          .maybeSingle();
+        suMatch = data;
+      }
+      resolvedUserId = suMatch?.id || null;
     }
 
     const { data, error } = await supabase
       .from("staff_checkins")
-      .insert([{ event_id, staff_user_id: resolvedUserId, staff_name: staff_name.trim(), checked_in_at, note: note?.trim() || (admin_override ? "Check-in oleh Admin" : null) }])
+      .insert([{ event_id, staff_user_id: resolvedUserId, staff_name: staff_name.trim(), employee_id: resolvedEmployeeId, checked_in_at, note: note?.trim() || (admin_override ? "Check-in oleh Admin" : null) }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });

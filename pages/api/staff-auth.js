@@ -27,12 +27,13 @@ export default async function handler(req, res) {
   return res.status(200).json({
     success: true,
     user: {
-      id:       user.id,
-      name:     user.name,
-      username: user.username,
-      jabatan:  user.jabatan,
-      posisi:   user.posisi,
-      is_admin: user.is_admin === true,
+      id:          user.id,
+      name:        user.name,
+      username:    user.username,
+      jabatan:     user.jabatan,
+      posisi:      user.posisi,
+      employee_id: user.employee_id,
+      is_admin:    user.is_admin === true,
     },
   });
 }

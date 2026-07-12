@@ -87,16 +87,30 @@ export default async function handler(req, res) {
 
 
   if (req.method === "POST") {
-    const { event_id, name, role, bypass_limit, requester_id } = req.body;
+    const { event_id, name, role, employee_id, bypass_limit, requester_id } = req.body;
     if (!event_id || !name?.trim()) return res.status(400).json({ error: "Event dan nama wajib diisi" });
 
-
-    const { data: existing } = await supabase
-      .from("event_staff")
-      .select("id")
-      .eq("event_id", event_id)
-      .ilike("name", name.trim())
-      .single();
+    // Cek duplikat — utamakan employee_id (tahan terhadap perubahan nama),
+    // fallback ke nama untuk data lama / entri manual tanpa employee_id.
+    let existing = null;
+    if (employee_id) {
+      const { data } = await supabase
+        .from("event_staff")
+        .select("id")
+        .eq("event_id", event_id)
+        .eq("employee_id", employee_id)
+        .maybeSingle();
+      existing = data;
+    }
+    if (!existing) {
+      const { data } = await supabase
+        .from("event_staff")
+        .select("id")
+        .eq("event_id", event_id)
+        .ilike("name", name.trim())
+        .maybeSingle();
+      existing = data;
+    }
     if (existing) return res.status(409).json({ error: "Nama ini sudah terdaftar di event ini" });
 
     const { data: event } = await supabase
@@ -138,7 +152,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("event_staff")
-      .insert([{ event_id, name: name.trim(), role: role?.trim() || "Staff", joined_at }])
+      .insert([{ event_id, name: name.trim(), role: role?.trim() || "Staff", employee_id: employee_id || null, joined_at }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });

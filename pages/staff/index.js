@@ -80,6 +80,13 @@ function isPrivilegedUser(user) {
   return user?.is_admin === true || PRIVILEGED_JABATAN.includes(user?.jabatan);
 }
 
+// Cocokkan 2 entitas staff berdasarkan employee_id (EMP-xxx) jika tersedia di keduanya,
+// supaya tetap terdeteksi walau nama diganti. Fallback ke nama untuk data lama.
+function sameStaff(a, b) {
+  if (a?.employee_id && b?.employee_id) return a.employee_id === b.employee_id;
+  return (a?.name || "").toLowerCase().trim() === (b?.name || "").toLowerCase().trim();
+}
+
 export default function StaffPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -132,7 +139,7 @@ export default function StaffPage() {
             if (Array.isArray(users)) {
               const fresh = users.find(u => u.id === user.id);
               if (fresh) {
-                const updated = { ...user, is_admin: fresh.is_admin === true, jabatan: fresh.jabatan, posisi: fresh.posisi };
+                const updated = { ...user, is_admin: fresh.is_admin === true, jabatan: fresh.jabatan, posisi: fresh.posisi, employee_id: fresh.employee_id };
                 sessionStorage.setItem("staff_user", JSON.stringify(updated));
                 setCurrentUser(updated);
                 fetchAll(updated);
@@ -228,7 +235,7 @@ export default function StaffPage() {
     setAddStaffLoading(true); setAddStaffErr("");
     const matched = staffUsers.find(u => u.name.toLowerCase() === name.toLowerCase() && u.is_active);
     const role = matched ? ([matched.jabatan, matched.posisi].filter(Boolean).join(" · ") || "Staff") : "Staff";
-    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null, bypass_limit:true, requester_id:currentUser?.id||null }) });
+    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null, employee_id:matched?.employee_id||null, bypass_limit:true, requester_id:currentUser?.id||null }) });
     const data = await res.json();
     setAddStaffLoading(false);
     if (data.error) { setAddStaffErr(data.error); return; }
@@ -261,6 +268,7 @@ export default function StaffPage() {
       body: JSON.stringify({
         event_id: event.id,
         staff_name: staff.name,
+        employee_id: staff.employee_id || null,
         admin_override: true,
         admin_user_id: currentUser.id,
       }),
@@ -294,7 +302,7 @@ export default function StaffPage() {
     const res = await fetch("/api/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_id: event.id, name: currentUser.name, role: staffRole, user_id: currentUser.id }),
+      body: JSON.stringify({ event_id: event.id, name: currentUser.name, role: staffRole, user_id: currentUser.id, employee_id: currentUser.employee_id || null }),
     });
     const data = await res.json();
     setLoading(false);
@@ -306,7 +314,7 @@ export default function StaffPage() {
 
   async function handleLeave(staffId, eventId) {
     const staffEntry = (staffMap[eventId]||[]).find(s => s.id === staffId);
-    if (!staffEntry || staffEntry.name?.toLowerCase().trim() !== currentUser.name?.toLowerCase().trim()) return setError("Kamu hanya bisa menghapus dirimu sendiri.");
+    if (!staffEntry || !sameStaff(staffEntry, currentUser)) return setError("Kamu hanya bisa menghapus dirimu sendiri.");
     if (!confirm("Keluar dari event ini?")) return;
     const res = await fetch(`/api/staff?id=${staffId}`, { method:"DELETE" });
     if (res.ok) setStaffMap(prev => ({ ...prev, [eventId]: (prev[eventId]||[]).filter(s => s.id !== staffId) }));
@@ -323,6 +331,7 @@ export default function StaffPage() {
         event_id: event.id,
         staff_user_id: currentUser.id,
         staff_name: currentUser.name,
+        employee_id: currentUser.employee_id || null,
       }),
     });
     const data = await res.json();
@@ -535,7 +544,7 @@ export default function StaffPage() {
             {[...displayEvents].sort((a,b)=>a.date.localeCompare(b.date)).map(event => {
               const staffList = staffMap[event.id] || [];
               const isPast = (event.date_end || event.date) < todayStr;
-              const myEntry = staffList.find(s => s.name?.toLowerCase().trim() === currentUser.name?.toLowerCase().trim());
+              const myEntry = staffList.find(s => sameStaff(s, currentUser));
               const isFull = event.max_staff && staffList.length >= event.max_staff;
               const isToday = isEventToday(event, todayStr);
               const checkinOpen = isCheckinOpen(event);
@@ -814,7 +823,7 @@ export default function StaffPage() {
                                       <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
                                         style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
                                         <option value="">— Pilih Staff —</option>
-                                        {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
+                                        {staffUsers.filter(u=>u.is_active && !staffList.some(s=>sameStaff(s,u))).map(u=>(
                                           <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>
                                         ))}
                                       </select>
@@ -833,6 +842,7 @@ export default function StaffPage() {
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
                                       const ci = evCheckins.find(c =>
+                                        (s.employee_id && c.employee_id && c.employee_id === s.employee_id) ||
                                         (s.user_id && c.staff_user_id && String(c.staff_user_id) === String(s.user_id)) ||
                                         (c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim())
                                       );

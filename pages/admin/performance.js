@@ -161,6 +161,13 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+// Cocokkan 2 entitas staff berdasarkan employee_id (EMP-xxx) jika tersedia di keduanya,
+// supaya tetap terdeteksi walau nama diganti. Fallback ke nama untuk data lama.
+function sameStaff(a, b) {
+  if (a?.employee_id && b?.employee_id) return a.employee_id === b.employee_id;
+  return (a?.name || "").toLowerCase().trim() === (b?.name || "").toLowerCase().trim();
+}
+
 export default function PerformancePage() {
   const [authed, setAuthed] = useState(false);
   const [adminUser, setAdminUser] = useState("");
@@ -330,7 +337,7 @@ export default function PerformancePage() {
     const res = await fetch("/api/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null, bypass_limit: true }),
+      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null, employee_id: matched?.employee_id || null, bypass_limit: true }),
     });
     const data = await res.json();
     setAddStaffLoading(false);
@@ -350,6 +357,7 @@ export default function PerformancePage() {
       body: JSON.stringify({
         event_id: event.id,
         staff_name: staff.name,
+        employee_id: staff.employee_id || null,
         admin_override: true,
         admin_user_id: loggedInAdminId,
       }),
@@ -389,15 +397,15 @@ export default function PerformancePage() {
   const perfData = staffUsers.filter(u => u.is_active).map(user => {
     const joinedEvents = filteredEvents.filter(ev => {
       const list = staffMap[ev.id] || [];
-      return list.some(s => s.name.toLowerCase() === user.name.toLowerCase());
+      return list.some(s => sameStaff(s, user));
     });
 
     const userCheckins = checkins.filter(c => {
-      // Match by staff_user_id (paksa string agar tidak gagal karena type mismatch uuid vs number)
-      // Fallback: match by staff_name jika staff_user_id null (admin_override tanpa resolvedUserId)
+      // Match by employee_id dulu (tahan perubahan nama), lalu staff_user_id, lalu nama
+      const matchByEmpId = c.employee_id && user.employee_id && c.employee_id === user.employee_id;
       const matchById = c.staff_user_id != null && String(c.staff_user_id) === String(user.id);
-      const matchByName = !c.staff_user_id && c.staff_name?.toLowerCase().trim() === user.name?.toLowerCase().trim();
-      if (!matchById && !matchByName) return false;
+      const matchByName = !c.staff_user_id && !c.employee_id && c.staff_name?.toLowerCase().trim() === user.name?.toLowerCase().trim();
+      if (!matchByEmpId && !matchById && !matchByName) return false;
       // FIX: Filter berdasarkan tanggal EVENT (bukan waktu check-in).
       // Check-in bisa terjadi jam 00:00-06:00 WIB keesokan harinya (window isMorningAfterEventDay),
       // sehingga jika difilter by checked_in_at akan masuk ke bulan yang salah.
@@ -759,7 +767,7 @@ export default function PerformancePage() {
                           const ci = selectedStaff.userCheckins.find(c => String(c.event_id) === String(ev.id));
                           // Cari entry di staffMap untuk mendapat id row event_staff
                           const staffEntry = (staffMap[ev.id] || []).find(
-                            s => s.name.toLowerCase() === selectedStaff.user.name.toLowerCase()
+                            s => sameStaff(s, selectedStaff.user)
                           );
                           return (
                             <tr key={ev.id} style={{ borderBottom:"1px solid var(--border)" }}>
@@ -997,7 +1005,7 @@ export default function PerformancePage() {
                                       <select value={addStaffName} onChange={e=>setAddStaffName(e.target.value)}
                                         style={{ flex:1,minWidth:160,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:13,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
                                         <option value="">— Pilih Staff —</option>
-                                        {staffUsers.filter(u=>u.is_active && !staffList.some(s=>s.name.toLowerCase()===u.name.toLowerCase())).map(u=>(
+                                        {staffUsers.filter(u=>u.is_active && !staffList.some(s=>sameStaff(s,u))).map(u=>(
                                           <option key={u.id} value={u.name}>{u.name}{u.jabatan?` (${u.jabatan})`:""}</option>
                                         ))}
                                       </select>
@@ -1016,6 +1024,7 @@ export default function PerformancePage() {
                                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                     {staffList.map(s => {
                                       const ci = evCheckins.find(c =>
+                                        (s.employee_id && c.employee_id && c.employee_id === s.employee_id) ||
                                         (s.user_id && c.staff_user_id && String(c.staff_user_id) === String(s.user_id)) ||
                                         (c.staff_name?.toLowerCase().trim() === s.name?.toLowerCase().trim())
                                       );
