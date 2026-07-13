@@ -14,7 +14,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
   if (!webhookUrl) return;
 
   const isJoin = type === "join";
-  const isJobdeskUpdate = type === "jobdesk";
+  const isJobdeskUpdate = type === "jobdesk_update";
 
   const isMultiDay = event.date_end && event.date_end !== event.date;
   const dateFormatted = isMultiDay
@@ -39,7 +39,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
       : (isWedding ? 0xe53e3e : 0xf59e0b);   // leave: merah utk wedding, oranye utk event
 
   const embedTitle = isJobdeskUpdate
-    ? `💼 Jobdesk ${staff.name} diperbarui`
+    ? `💼 Jobdesk ${staff.name} Diperbarui oleh Head Staff`
     : isJoin
       ? (isWedding
           ? `💍 ${staff.name} bergabung ke Wedding`
@@ -52,9 +52,9 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
     embeds: [{
       title: embedTitle,
       description: isJobdeskUpdate
-        ? `**${staff.name}** kini bertugas sebagai **💼 ${staff.jobdesk || "-"}** di **${eventLabel}**`
+        ? `Jobdesk **${staff.name}** di **${eventLabel}** diubah menjadi **💼 ${staff.jobdesk || "-"}**`
         : isJoin
-          ? `**${staff.name}** (${staff.role || "Staff"}) telah bergabung ke **${eventLabel}**`
+          ? `**${staff.name}** (${staff.role || "Staff"}${isWedding && staff.jobdesk ? ` · 💼 ${staff.jobdesk}` : ""}) telah bergabung ke **${eventLabel}**`
           : `**${staff.name}** (${staff.role || "Staff"}) telah keluar dari **${eventLabel}**`,
       color: embedColor,
       fields: [
@@ -188,24 +188,24 @@ export default async function handler(req, res) {
     const { data: staffRow } = await supabase.from("event_staff").select("*").eq("id", id).single();
     if (!staffRow) return res.status(404).json({ error: "Data staff tidak ditemukan" });
 
-    // Kalau jobdesk sudah pernah dipilih, hanya Head Staff ke atas yang boleh mengubahnya
-    if (staffRow.jobdesk) {
-      let privileged = false;
-      if (requester_id) {
-        const { data: requester } = await supabase
-          .from("staff_users")
-          .select("is_admin, jabatan")
-          .eq("id", requester_id)
-          .single();
-        const PRIVILEGED = ["Head Staff", "Manager", "Executive", "Ceo"];
-        privileged = requester?.is_admin === true || PRIVILEGED.includes(requester?.jabatan);
-      } else {
-        // Tanpa requester_id = dari admin panel (performance.js, ADMIN_CREDENTIALS)
-        privileged = true;
-      }
-      if (!privileged)
-        return res.status(403).json({ error: "Jobdesk sudah dipilih. Hanya Head Staff ke atas yang bisa mengubahnya." });
+    // Cek apakah requester adalah Head Staff ke atas / admin
+    let privileged = false;
+    if (requester_id) {
+      const { data: requester } = await supabase
+        .from("staff_users")
+        .select("is_admin, jabatan")
+        .eq("id", requester_id)
+        .single();
+      const PRIVILEGED = ["Head Staff", "Manager", "Executive", "Ceo"];
+      privileged = requester?.is_admin === true || PRIVILEGED.includes(requester?.jabatan);
+    } else {
+      // Tanpa requester_id = dari admin panel (performance.js, ADMIN_CREDENTIALS)
+      privileged = true;
     }
+
+    // Kalau jobdesk sudah pernah dipilih, hanya Head Staff ke atas yang boleh mengubahnya
+    if (staffRow.jobdesk && !privileged)
+      return res.status(403).json({ error: "Jobdesk sudah dipilih. Hanya Head Staff ke atas yang bisa mengubahnya." });
 
     // Cek jobdesk belum diambil orang lain di event yang sama
     if (jobdesk) {
@@ -227,15 +227,18 @@ export default async function handler(req, res) {
       .single();
     if (error) return res.status(500).json({ error: error.message });
 
-    // Kirim notifikasi Discord kalau jobdesk berubah (info tim tetap update)
-    const { data: eventForNotif } = await supabase.from("wedding_events").select("*").eq("id", data.event_id).single();
-    if (eventForNotif) {
-      const { data: allStaff } = await supabase
-        .from("event_staff")
-        .select("*")
-        .eq("event_id", data.event_id)
-        .order("joined_at", { ascending: true });
-      await sendDiscordNotification("jobdesk", data, eventForNotif, allStaff || []);
+    // Kirim notifikasi Discord HANYA kalau perubahan dilakukan Head Staff ke atas / admin
+    // (bukan pilihan pertama oleh staff itu sendiri saat daftar — itu sudah ada di webhook "bergabung")
+    if (privileged) {
+      const { data: eventForNotif } = await supabase.from("wedding_events").select("*").eq("id", data.event_id).single();
+      if (eventForNotif) {
+        const { data: allStaff } = await supabase
+          .from("event_staff")
+          .select("*")
+          .eq("event_id", data.event_id)
+          .order("joined_at", { ascending: true });
+        await sendDiscordNotification("jobdesk_update", data, eventForNotif, allStaff || []);
+      }
     }
 
     return res.status(200).json(data);
