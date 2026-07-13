@@ -83,7 +83,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff } = req.body;
+    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff, is_limited } = req.body;
     if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
 
     // date_end harus >= date
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("wedding_events")
-      .insert([{ couple, venue, time, notes, addon, date, date_end: endDate, event_type, created_at, max_staff: max_staff ? parseInt(max_staff) : null }])
+      .insert([{ couple, venue, time, notes, addon, date, date_end: endDate, event_type, created_at, max_staff: max_staff ? parseInt(max_staff) : null, is_limited: is_limited === true }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
@@ -106,14 +106,14 @@ export default async function handler(req, res) {
 
   if (req.method === "PUT") {
     const { id } = req.query;
-    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff } = req.body;
+    const { couple, venue, time, notes, addon, date, date_end, event_type, max_staff, is_limited } = req.body;
     if (!couple || !date) return res.status(400).json({ error: "Nama dan tanggal wajib diisi" });
 
     const endDate = date_end && date_end >= date ? date_end : date;
 
     const { data, error } = await supabase
       .from("wedding_events")
-      .update({ couple, venue, time, notes, addon, date, date_end: endDate, event_type, max_staff: max_staff ? parseInt(max_staff) : null })
+      .update({ couple, venue, time, notes, addon, date, date_end: endDate, event_type, max_staff: max_staff ? parseInt(max_staff) : null, is_limited: is_limited === true })
       .eq("id", id)
       .select()
       .single();

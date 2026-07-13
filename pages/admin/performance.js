@@ -161,6 +161,9 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+// Jobdesk tetap khusus event wedding — sekali diambil, tidak bisa dipilih orang lain di event yang sama
+const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Penghulu"];
+
 // Cocokkan 2 entitas staff berdasarkan employee_id (EMP-xxx) jika tersedia di keduanya,
 // supaya tetap terdeteksi walau nama diganti. Fallback ke nama untuk data lama.
 function sameStaff(a, b) {
@@ -209,6 +212,8 @@ export default function PerformancePage() {
   const [addStaffErr, setAddStaffErr] = useState("");
   const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
   const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
+  const [jobdeskLoading, setJobdeskLoading] = useState({}); // { staffId: bool }
+  const [jobdeskErr, setJobdeskErr] = useState({}); // { staffId: string }
   const [loggedInAdminId, setLoggedInAdminId] = useState(null); // ID admin yang sedang login
 
   const { businessName } = CALENDAR_CONFIG;
@@ -344,6 +349,23 @@ export default function PerformancePage() {
     if (data.error) { setAddStaffErr(data.error); return; }
     setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
     setAddStaffName(""); setAddStaffPanel(null);
+  }
+
+  // ── Pilih / ubah jobdesk wedding (admin panel selalu privileged) ────────
+  async function handlePickJobdesk(staffId, jobdesk, eventId) {
+    if (!jobdesk) return;
+    setJobdeskLoading(prev => ({ ...prev, [staffId]: true }));
+    setJobdeskErr(prev => ({ ...prev, [staffId]: "" }));
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: staffId, jobdesk }),
+    });
+    const data = await res.json();
+    setJobdeskLoading(prev => ({ ...prev, [staffId]: false }));
+    if (data.error) { setJobdeskErr(prev => ({ ...prev, [staffId]: data.error })); return; }
+    const evId = eventId || data.event_id;
+    setStaffMap(prev => ({ ...prev, [evId]: (prev[evId]||[]).map(s => s.id === staffId ? data : s) }));
   }
 
   // ── Admin check-in untuk staff (identik dengan staff/index.js) ───────────
@@ -1036,6 +1058,19 @@ export default function PerformancePage() {
                                           <div style={{ flex:1,minWidth:0 }}>
                                             <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
                                             <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role||"Staff"}</p>
+                                            {ev.event_type === "wedding" && (
+                                              <div style={{ marginTop:4 }}>
+                                                <select value={s.jobdesk||""} disabled={!!jobdeskLoading[s.id]}
+                                                  onChange={e=>handlePickJobdesk(s.id, e.target.value, ev.id)}
+                                                  style={{ fontSize:10,padding:"3px 6px",borderRadius:6,border:"1px solid rgba(124,58,237,0.3)",background:"var(--card)",color:"#7c3aed",fontWeight:700,cursor:"pointer" }}>
+                                                  <option value="">— Jobdesk —</option>
+                                                  {JOBDESK_LIST.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
+                                                    <option key={jd} value={jd}>{jd}</option>
+                                                  ))}
+                                                </select>
+                                                {jobdeskErr[s.id] && <p style={{ fontSize:9,color:"#dc2626",marginTop:2 }}>⚠️ {jobdeskErr[s.id]}</p>}
+                                              </div>
+                                            )}
                                           </div>
                                           <div style={{ flexShrink:0,textAlign:"right" }}>
                                             {ci

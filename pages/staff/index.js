@@ -87,6 +87,9 @@ function sameStaff(a, b) {
   return (a?.name || "").toLowerCase().trim() === (b?.name || "").toLowerCase().trim();
 }
 
+// Jobdesk tetap khusus event wedding — sekali diambil, tidak bisa dipilih orang lain di event yang sama
+const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Penghulu"];
+
 export default function StaffPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -120,6 +123,8 @@ export default function StaffPage() {
   const [deleteRegId, setDeleteRegId] = useState(null);
   const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
   const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
+  const [jobdeskLoading, setJobdeskLoading] = useState({}); // { staffId: bool }
+  const [jobdeskErr, setJobdeskErr] = useState({}); // { staffId: string }
   const { businessName } = CALENDAR_CONFIG;
   // Tanggal hari ini dalam WIB (UTC+7) — bukan UTC
   const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
@@ -241,6 +246,22 @@ export default function StaffPage() {
     if (data.error) { setAddStaffErr(data.error); return; }
     setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
     setAddStaffName(""); setAddStaffPanel(null);
+  }
+
+  async function handlePickJobdesk(staffId, jobdesk, eventId) {
+    if (!jobdesk) return;
+    setJobdeskLoading(prev => ({ ...prev, [staffId]: true }));
+    setJobdeskErr(prev => ({ ...prev, [staffId]: "" }));
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: staffId, jobdesk, requester_id: currentUser?.id || null }),
+    });
+    const data = await res.json();
+    setJobdeskLoading(prev => ({ ...prev, [staffId]: false }));
+    if (data.error) { setJobdeskErr(prev => ({ ...prev, [staffId]: data.error })); return; }
+    const evId = eventId || data.event_id;
+    setStaffMap(prev => ({ ...prev, [evId]: (prev[evId]||[]).map(s => s.id === staffId ? data : s) }));
   }
 
   async function handleAdminDeleteCheckin(ciId) {
@@ -667,6 +688,30 @@ export default function StaffPage() {
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(16,185,129,0.08)",border:"1.5px solid rgba(16,185,129,0.25)",borderRadius:10,padding:"9px 18px" }}>
                             <span>✅</span><span style={{ fontSize:12,fontWeight:700,color:"#059669" }}>Kamu sudah terdaftar</span>
                           </div>
+                          {event.event_type === "wedding" && (
+                            myEntry.jobdesk ? (
+                              <p style={{ fontSize:12,fontWeight:700,color:"var(--blue-1)",marginTop:8 }}>💼 Jobdesk: {myEntry.jobdesk}</p>
+                            ) : (
+                              <div style={{ marginTop:10,textAlign:"left" }}>
+                                <label className="label" style={{ fontSize:11 }}>💼 Pilih Jobdesk Kamu</label>
+                                <select className="input" value="" disabled={!!jobdeskLoading[myEntry.id]}
+                                  onChange={e=>handlePickJobdesk(myEntry.id, e.target.value, event.id)}>
+                                  <option value="">— Pilih Jobdesk —</option>
+                                  {JOBDESK_LIST.filter(jd => !staffList.some(s=>s.jobdesk===jd)).map(jd=>(
+                                    <option key={jd} value={jd}>{jd}</option>
+                                  ))}
+                                </select>
+                                {jobdeskErr[myEntry.id] && <p style={{ fontSize:11,color:"#ef4444",marginTop:4 }}>⚠️ {jobdeskErr[myEntry.id]}</p>}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      );
+                      if (event.is_limited) return (
+                        <div style={{ textAlign:"center",padding:"6px 0 2px" }}>
+                          <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(220,38,38,0.08)",border:"1.5px solid rgba(220,38,38,0.2)",borderRadius:10,padding:"9px 18px" }}>
+                            <span>🔒</span><span style={{ fontSize:12,fontWeight:700,color:"#dc2626" }}>Event Terbatas — hubungi Head Staff untuk didaftarkan</span>
+                          </div>
                         </div>
                       );
                       if (isFull) return (
@@ -854,6 +899,19 @@ export default function StaffPage() {
                                           <div style={{ flex:1,minWidth:0 }}>
                                             <p style={{ fontSize:13,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{s.name}</p>
                                             <p style={{ fontSize:10,color:"var(--muted)" }}>{s.role||"Staff"}</p>
+                                            {ev.event_type === "wedding" && (
+                                              <div style={{ marginTop:4 }}>
+                                                <select value={s.jobdesk||""} disabled={!!jobdeskLoading[s.id]}
+                                                  onChange={e=>handlePickJobdesk(s.id, e.target.value, ev.id)}
+                                                  style={{ fontSize:10,padding:"3px 6px",borderRadius:6,border:"1px solid rgba(124,58,237,0.3)",background:"var(--card)",color:"#7c3aed",fontWeight:700,cursor:"pointer" }}>
+                                                  <option value="">— Jobdesk —</option>
+                                                  {JOBDESK_LIST.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
+                                                    <option key={jd} value={jd}>{jd}</option>
+                                                  ))}
+                                                </select>
+                                                {jobdeskErr[s.id] && <p style={{ fontSize:9,color:"#dc2626",marginTop:2 }}>⚠️ {jobdeskErr[s.id]}</p>}
+                                              </div>
+                                            )}
                                           </div>
                                           <div style={{ flexShrink:0,textAlign:"right" }}>
                                             {ci

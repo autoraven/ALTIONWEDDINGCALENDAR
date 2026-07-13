@@ -188,7 +188,7 @@ export default function AdminPanel() {
   const [isAnimating,setIsAnimating]=useState(false);
   const [showForm,setShowForm]=useState(false);
   const [eventType,setEventType]=useState("");
-  const [form,setForm]=useState({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:""});
+  const [form,setForm]=useState({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",is_limited:false});
   const [formError,setFormError]=useState("");
   const [success,setSuccess]=useState("");
   const [mounted,setMounted]=useState(false);
@@ -198,7 +198,7 @@ export default function AdminPanel() {
   const [hoverDate,setHoverDate]=useState(null);
 
   const [editingEvent, setEditingEvent] = useState(null);
-  const [editForm, setEditForm] = useState({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",date:"",date_end:"",event_type:""});
+  const [editForm, setEditForm] = useState({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",date:"",date_end:"",event_type:"",is_limited:false});
   const [editError, setEditError] = useState("");
   // FIX: loading state untuk edit — mencegah double submit dan modal stuck
   const [editSaving, setEditSaving] = useState(false);
@@ -273,6 +273,7 @@ export default function AdminPanel() {
       date: event.date || "",
       date_end: event.date_end || event.date || "",
       event_type: event.event_type || "",
+      is_limited: event.is_limited === true,
     });
     setEditError("");
     setEditSaving(false);
@@ -329,7 +330,7 @@ export default function AdminPanel() {
       if (booked) return;
       setSelectedRange({start:dateStr, end:dateStr});
       setPickingStep(1);
-      setEventType(""); setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:""}); setFormError(""); setShowForm(true);
+      setEventType(""); setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",is_limited:false}); setFormError(""); setShowForm(true);
     } else if (pickingStep===1) {
       if (dateStr < selectedRange.start) {
         setSelectedRange({start:dateStr, end:selectedRange.start});
@@ -368,7 +369,7 @@ export default function AdminPanel() {
     setEvents(prev => [...prev, newEvent]);
     if (!(data && data.id)) fetchEvents();
 
-    setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:""});
+    setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",is_limited:false});
     setEventType(""); setShowForm(false); setSelectedRange({start:"",end:""}); setPickingStep(0);
     setSuccess("Event berhasil ditambahkan!"); setTimeout(()=>setSuccess(""),3500);
   }
@@ -738,6 +739,15 @@ export default function AdminPanel() {
                           </div>
                           {form.max_staff&&<p style={{ fontSize:11,color:"var(--muted)",marginTop:4,fontWeight:500 }}>💡 Staff hanya bisa daftar hingga <strong>{form.max_staff} orang</strong>.</p>}
                         </div>
+                        <div style={{ marginBottom:14 }}>
+                          <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 12px",borderRadius:12,border:`2px solid ${form.is_limited?"var(--blue-2)":"var(--border)"}`,background:form.is_limited?"var(--cell-booked)":"var(--panel-soft)" }}>
+                            <input type="checkbox" checked={!!form.is_limited} onChange={e=>setForm({...form,is_limited:e.target.checked})} style={{ width:16,height:16 }}/>
+                            <span>
+                              <span style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>🔒 Event Terbatas (Bersyarat)</span>
+                              <p style={{ fontSize:11,color:"var(--muted)",marginTop:2,fontWeight:500 }}>Kalau diaktifkan, staff tidak bisa daftar sendiri — hanya Head Staff ke atas yang bisa menambahkan lewat Kelola Event.</p>
+                            </span>
+                          </label>
+                        </div>
                         <div style={{ display:"flex",gap:10,marginTop:10 }}>
                           <button type="submit" className="btn btn-primary" style={{ flex:1 }}>Simpan</button>
                           <button type="button" onClick={cancelForm} className="btn btn-outline" style={{ flex:1 }}>Batal</button>
@@ -815,6 +825,7 @@ export default function AdminPanel() {
                           {event.time&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>🕐 {event.time}</p>}
                           {event.addon&&<p style={{ fontSize:11,color:"var(--muted)",fontWeight:500 }}>✨ {event.addon}</p>}
                           {event.max_staff&&<p style={{ fontSize:11,fontWeight:700,marginTop:2,color:"var(--blue-1)" }}>👥 Maks. {event.max_staff} staff</p>}
+                          {event.is_limited&&<p style={{ fontSize:11,fontWeight:700,marginTop:2,color:"#dc2626" }}>🔒 Event Terbatas</p>}
                         </div>
                         <div style={{ display:"flex",gap:6,flexShrink:0 }}>
                           <button onClick={()=>handleEdit(event)} className="btn btn-outline" style={{ fontSize:11,padding:"6px 12px",color:"var(--blue-1)",borderColor:"var(--blue-2)" }}>✏️ Edit</button>
@@ -891,6 +902,16 @@ export default function AdminPanel() {
                     <input type="number" min="1" max="99" value={editForm.max_staff} onChange={e=>setEditForm({...editForm,max_staff:e.target.value})} placeholder="Kosongkan = tidak dibatasi" className="input" style={{ paddingRight:60 }}/>
                     {editForm.max_staff && <span style={{ position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"var(--blue-1)",fontWeight:700,pointerEvents:"none" }}>orang</span>}
                   </div>
+                </div>
+
+                <div style={{ marginBottom:20 }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 12px",borderRadius:12,border:`2px solid ${editForm.is_limited?"var(--blue-2)":"var(--border)"}`,background:editForm.is_limited?"var(--cell-booked)":"var(--panel-soft)" }}>
+                    <input type="checkbox" checked={!!editForm.is_limited} onChange={e=>setEditForm({...editForm,is_limited:e.target.checked})} style={{ width:16,height:16 }}/>
+                    <span>
+                      <span style={{ fontSize:13,fontWeight:700,color:"var(--dark)" }}>🔒 Event Terbatas (Bersyarat)</span>
+                      <p style={{ fontSize:11,color:"var(--muted)",marginTop:2,fontWeight:500 }}>Kalau diaktifkan, staff tidak bisa daftar sendiri — hanya Head Staff ke atas yang bisa menambahkan lewat Kelola Event.</p>
+                    </span>
+                  </label>
                 </div>
 
                 <div style={{ display:"flex",gap:10 }}>

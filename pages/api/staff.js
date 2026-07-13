@@ -137,6 +137,10 @@ export default async function handler(req, res) {
       }
     }
 
+    if (event?.is_limited && !allowBypass) {
+      return res.status(403).json({ error: "Event ini bersifat terbatas. Pendaftaran hanya bisa dilakukan oleh Head Staff ke atas melalui Kelola Event." });
+    }
+
     if (event?.max_staff && !allowBypass) {
       const { count } = await supabase
         .from("event_staff")
@@ -166,6 +170,55 @@ export default async function handler(req, res) {
       await sendDiscordNotification("join", data, event, allStaff || []);
     }
     return res.status(201).json(data);
+  }
+
+  // PATCH — pilih / ubah jobdesk (khusus event wedding)
+  if (req.method === "PATCH") {
+    const { id, jobdesk, requester_id } = req.body;
+    if (!id) return res.status(400).json({ error: "id wajib diisi" });
+
+    const { data: staffRow } = await supabase.from("event_staff").select("*").eq("id", id).single();
+    if (!staffRow) return res.status(404).json({ error: "Data staff tidak ditemukan" });
+
+    // Kalau jobdesk sudah pernah dipilih, hanya Head Staff ke atas yang boleh mengubahnya
+    if (staffRow.jobdesk) {
+      let privileged = false;
+      if (requester_id) {
+        const { data: requester } = await supabase
+          .from("staff_users")
+          .select("is_admin, jabatan")
+          .eq("id", requester_id)
+          .single();
+        const PRIVILEGED = ["Head Staff", "Manager", "Executive", "Ceo"];
+        privileged = requester?.is_admin === true || PRIVILEGED.includes(requester?.jabatan);
+      } else {
+        // Tanpa requester_id = dari admin panel (performance.js, ADMIN_CREDENTIALS)
+        privileged = true;
+      }
+      if (!privileged)
+        return res.status(403).json({ error: "Jobdesk sudah dipilih. Hanya Head Staff ke atas yang bisa mengubahnya." });
+    }
+
+    // Cek jobdesk belum diambil orang lain di event yang sama
+    if (jobdesk) {
+      const { data: taken } = await supabase
+        .from("event_staff")
+        .select("id, name")
+        .eq("event_id", staffRow.event_id)
+        .eq("jobdesk", jobdesk)
+        .neq("id", id)
+        .maybeSingle();
+      if (taken) return res.status(409).json({ error: `Jobdesk "${jobdesk}" sudah diambil oleh ${taken.name}.` });
+    }
+
+    const { data, error } = await supabase
+      .from("event_staff")
+      .update({ jobdesk: jobdesk || null })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
   }
 
   if (req.method === "DELETE") {
