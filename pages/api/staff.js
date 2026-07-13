@@ -95,7 +95,7 @@ export default async function handler(req, res) {
 
 
   if (req.method === "POST") {
-    const { event_id, name, role, employee_id, bypass_limit, requester_id } = req.body;
+    const { event_id, name, role, employee_id, jobdesk, bypass_limit, requester_id } = req.body;
     if (!event_id || !name?.trim()) return res.status(400).json({ error: "Event dan nama wajib diisi" });
 
     // Cek duplikat — utamakan employee_id (tahan terhadap perubahan nama),
@@ -158,13 +158,24 @@ export default async function handler(req, res) {
         return res.status(409).json({ error: `Slot staff penuh! Maksimal ${event.max_staff} orang untuk event ini.` });
     }
 
+    // Cek jobdesk belum diambil orang lain di event yang sama (khusus wedding)
+    if (jobdesk) {
+      const { data: taken } = await supabase
+        .from("event_staff")
+        .select("id, name")
+        .eq("event_id", event_id)
+        .eq("jobdesk", jobdesk)
+        .maybeSingle();
+      if (taken) return res.status(409).json({ error: `Jobdesk "${jobdesk}" sudah diambil oleh ${taken.name}.` });
+    }
+
     const now = new Date();
     const wib = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const joined_at = wib.toISOString().replace("Z", "+07:00");
 
     const { data, error } = await supabase
       .from("event_staff")
-      .insert([{ event_id, name: name.trim(), role: role?.trim() || "Staff", employee_id: employee_id || null, joined_at }])
+      .insert([{ event_id, name: name.trim(), role: role?.trim() || "Staff", employee_id: employee_id || null, jobdesk: jobdesk || null, joined_at }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
