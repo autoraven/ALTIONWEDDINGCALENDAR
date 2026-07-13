@@ -162,7 +162,9 @@ function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, 
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 // Jobdesk tetap khusus event wedding — sekali diambil, tidak bisa dipilih orang lain di event yang sama
-const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Penghulu"];
+const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Fotografer/Videografer"];
+// Head Staff ke atas juga bisa pilih "Penghulu" saat mendaftarkan orang lewat Kelola Event
+const JOBDESK_LIST_PRIVILEGED = [...JOBDESK_LIST, "Penghulu"];
 
 // Cocokkan 2 entitas staff berdasarkan employee_id (EMP-xxx) jika tersedia di keduanya,
 // supaya tetap terdeteksi walau nama diganti. Fallback ke nama untuk data lama.
@@ -208,6 +210,8 @@ export default function PerformancePage() {
   const [absensiFilter, setAbsensiFilter] = useState("all"); // "all" | "today" | "upcoming" | "past"
   const [addStaffPanel, setAddStaffPanel] = useState(null); // event_id or null
   const [addStaffName, setAddStaffName] = useState("");
+  const [addStaffJobdesk, setAddStaffJobdesk] = useState("");
+  const [addStaffCustomJobdesk, setAddStaffCustomJobdesk] = useState("");
   const [addStaffLoading, setAddStaffLoading] = useState(false);
   const [addStaffErr, setAddStaffErr] = useState("");
   const [adminCheckinLoading, setAdminCheckinLoading] = useState({}); // { staffId: bool }
@@ -336,19 +340,20 @@ export default function PerformancePage() {
   async function handleAdminAddStaff(eventId) {
     const name = addStaffName.trim();
     if (!name) return;
+    const jobdesk = addStaffJobdesk === "__custom__" ? addStaffCustomJobdesk.trim() : addStaffJobdesk;
     setAddStaffLoading(true); setAddStaffErr("");
     const matched = staffUsers.find(u => u.name.toLowerCase() === name.toLowerCase() && u.is_active);
     const role = matched ? ([matched.jabatan, matched.posisi].filter(Boolean).join(" · ") || "Staff") : "Staff";
     const res = await fetch("/api/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null, employee_id: matched?.employee_id || null, bypass_limit: true }),
+      body: JSON.stringify({ event_id: eventId, name, role, user_id: matched?.id || null, employee_id: matched?.employee_id || null, jobdesk: jobdesk || null, bypass_limit: true }),
     });
     const data = await res.json();
     setAddStaffLoading(false);
     if (data.error) { setAddStaffErr(data.error); return; }
     setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
-    setAddStaffName(""); setAddStaffPanel(null);
+    setAddStaffName(""); setAddStaffJobdesk(""); setAddStaffCustomJobdesk(""); setAddStaffPanel(null);
   }
 
   // ── Pilih / ubah jobdesk wedding (admin panel selalu privileged) ────────
@@ -1014,7 +1019,7 @@ export default function PerformancePage() {
                               <div style={{ marginTop:16 }}>
                                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                                   <p style={{ fontSize:11,fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1 }}>Daftar Staff ({staffList.length})</p>
-                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffErr(""); }}
+                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffJobdesk(""); setAddStaffCustomJobdesk(""); setAddStaffErr(""); }}
                                     style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",borderRadius:10,padding:"6px 14px",fontSize:11,fontWeight:800,color:"#fff",cursor:"pointer",boxShadow:"0 2px 8px rgba(124,58,237,0.3)" }}>
                                     {addStaffPanel===ev.id?"✕ Batal":"+ Tambah Staff"}
                                   </button>
@@ -1036,6 +1041,23 @@ export default function PerformancePage() {
                                         {addStaffLoading?"Menambah...":"✓ Tambah"}
                                       </button>
                                     </div>
+                                    {ev.event_type === "wedding" && (
+                                      <div style={{ marginTop:10 }}>
+                                        <select value={addStaffJobdesk} onChange={e=>setAddStaffJobdesk(e.target.value)}
+                                          style={{ width:"100%",padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:12,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
+                                          <option value="">— Jobdesk (opsional) —</option>
+                                          {JOBDESK_LIST_PRIVILEGED.filter(jd => !staffList.some(s=>s.jobdesk===jd)).map(jd=>(
+                                            <option key={jd} value={jd}>{jd}</option>
+                                          ))}
+                                          <option value="__custom__">✏️ Custom jobdesk...</option>
+                                        </select>
+                                        {addStaffJobdesk === "__custom__" && (
+                                          <input value={addStaffCustomJobdesk} onChange={e=>setAddStaffCustomJobdesk(e.target.value)}
+                                            placeholder="Ketik jobdesk custom, misal: Among Tamu"
+                                            style={{ width:"100%",marginTop:8,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:12,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none" }}/>
+                                        )}
+                                      </div>
+                                    )}
                                     {addStaffErr && <p style={{ fontSize:11,color:"#dc2626",marginTop:8 }}>⚠️ {addStaffErr}</p>}
                                   </div>
                                 )}
@@ -1064,7 +1086,7 @@ export default function PerformancePage() {
                                                   onChange={e=>handlePickJobdesk(s.id, e.target.value, ev.id)}
                                                   style={{ fontSize:10,padding:"3px 6px",borderRadius:6,border:"1px solid rgba(124,58,237,0.3)",background:"var(--card)",color:"#7c3aed",fontWeight:700,cursor:"pointer" }}>
                                                   <option value="">— Jobdesk —</option>
-                                                  {JOBDESK_LIST.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
+                                                  {JOBDESK_LIST_PRIVILEGED.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
                                                     <option key={jd} value={jd}>{jd}</option>
                                                   ))}
                                                 </select>

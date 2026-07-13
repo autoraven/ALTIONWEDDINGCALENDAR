@@ -88,7 +88,9 @@ function sameStaff(a, b) {
 }
 
 // Jobdesk tetap khusus event wedding — sekali diambil, tidak bisa dipilih orang lain di event yang sama
-const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Penghulu"];
+const JOBDESK_LIST = ["PJ", "LO", "Stage Crew", "Ticketing 1", "Ticketing 2", "Soundman", "MC", "Fotografer/Videografer"];
+// Head Staff ke atas juga bisa pilih "Penghulu" saat mendaftarkan orang lewat Kelola Event
+const JOBDESK_LIST_PRIVILEGED = [...JOBDESK_LIST, "Penghulu"];
 
 export default function StaffPage() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -117,6 +119,8 @@ export default function StaffPage() {
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [addStaffPanel, setAddStaffPanel] = useState(null);
   const [addStaffName, setAddStaffName] = useState("");
+  const [addStaffJobdesk, setAddStaffJobdesk] = useState("");
+  const [addStaffCustomJobdesk, setAddStaffCustomJobdesk] = useState("");
   const [addStaffLoading, setAddStaffLoading] = useState(false);
   const [addStaffErr, setAddStaffErr] = useState("");
   const [deleteCheckinId, setDeleteCheckinId] = useState(null);
@@ -125,6 +129,7 @@ export default function StaffPage() {
   const [adminCheckinErr, setAdminCheckinErr] = useState({}); // { staffId: string }
   const [jobdeskLoading, setJobdeskLoading] = useState({}); // { staffId: bool }
   const [jobdeskErr, setJobdeskErr] = useState({}); // { staffId: string }
+  const [pendingJobdesk, setPendingJobdesk] = useState({}); // { eventId: jobdesk } — dipilih SEBELUM daftar
   const { businessName } = CALENDAR_CONFIG;
   // Tanggal hari ini dalam WIB (UTC+7) — bukan UTC
   const nowWIB = new Date(new Date().getTime() + 7 * 60 * 60 * 1000);
@@ -237,15 +242,16 @@ export default function StaffPage() {
   async function handleAdminAddStaff(eventId) {
     const name = addStaffName.trim();
     if (!name) return;
+    const jobdesk = addStaffJobdesk === "__custom__" ? addStaffCustomJobdesk.trim() : addStaffJobdesk;
     setAddStaffLoading(true); setAddStaffErr("");
     const matched = staffUsers.find(u => u.name.toLowerCase() === name.toLowerCase() && u.is_active);
     const role = matched ? ([matched.jabatan, matched.posisi].filter(Boolean).join(" · ") || "Staff") : "Staff";
-    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null, employee_id:matched?.employee_id||null, bypass_limit:true, requester_id:currentUser?.id||null }) });
+    const res = await fetch("/api/staff", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ event_id:eventId, name, role, user_id:matched?.id||null, employee_id:matched?.employee_id||null, jobdesk:jobdesk||null, bypass_limit:true, requester_id:currentUser?.id||null }) });
     const data = await res.json();
     setAddStaffLoading(false);
     if (data.error) { setAddStaffErr(data.error); return; }
     setStaffMap(prev => ({ ...prev, [eventId]: [...(prev[eventId]||[]), data] }));
-    setAddStaffName(""); setAddStaffPanel(null);
+    setAddStaffName(""); setAddStaffJobdesk(""); setAddStaffCustomJobdesk(""); setAddStaffPanel(null);
   }
 
   async function handlePickJobdesk(staffId, jobdesk, eventId) {
@@ -316,19 +322,21 @@ export default function StaffPage() {
     return new Date(dateStr).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
   }
 
-  async function handleJoin(event) {
+  async function handleJoin(event, jobdesk) {
     if (!currentUser) return;
+    if (event.event_type === "wedding" && !jobdesk) return setError("Pilih jobdesk kamu dulu sebelum daftar.");
     setError(""); setLoading(true);
     const staffRole = [currentUser.jabatan, currentUser.posisi].filter(Boolean).join(" · ") || "Staff";
     const res = await fetch("/api/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event_id: event.id, name: currentUser.name, role: staffRole, user_id: currentUser.id, employee_id: currentUser.employee_id || null }),
+      body: JSON.stringify({ event_id: event.id, name: currentUser.name, role: staffRole, user_id: currentUser.id, employee_id: currentUser.employee_id || null, jobdesk: jobdesk || null }),
     });
     const data = await res.json();
     setLoading(false);
     if (data.error) return setError(data.error);
     setStaffMap(prev => ({ ...prev, [event.id]: [...(prev[event.id]||[]), data] }));
+    setPendingJobdesk(prev => ({ ...prev, [event.id]: "" }));
     setSuccess(`✅ ${currentUser.name} berhasil terdaftar!`);
     setTimeout(() => setSuccess(""), 3000);
   }
@@ -732,7 +740,19 @@ export default function StaffPage() {
                               <p style={{ fontSize:10,color:"var(--muted)" }}>{[currentUser.jabatan, currentUser.posisi].filter(Boolean).join(" · ") || "Staff"}</p>
                             </div>
                           </div>
-                          <button onClick={()=>handleJoin(event)} className="btn btn-primary" style={{ width:"100%",fontSize:12,padding:"9px" }} disabled={loading}>
+                          {event.event_type === "wedding" && (
+                            <div style={{ marginBottom:10,textAlign:"left" }}>
+                              <label className="label" style={{ fontSize:11 }}>💼 Pilih Jobdesk (wajib sebelum daftar)</label>
+                              <select className="input" value={pendingJobdesk[event.id]||""}
+                                onChange={e=>setPendingJobdesk(prev=>({...prev,[event.id]:e.target.value}))}>
+                                <option value="">— Pilih Jobdesk —</option>
+                                {JOBDESK_LIST.filter(jd => !staffList.some(s=>s.jobdesk===jd)).map(jd=>(
+                                  <option key={jd} value={jd}>{jd}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          <button onClick={()=>handleJoin(event, pendingJobdesk[event.id])} className="btn btn-primary" style={{ width:"100%",fontSize:12,padding:"9px" }} disabled={loading || (event.event_type==="wedding" && !pendingJobdesk[event.id])}>
                             {loading ? "Mendaftar..." : "+ Daftar ke Event"}
                           </button>
                         </div>
@@ -855,7 +875,7 @@ export default function StaffPage() {
                               <div style={{ marginTop:16 }}>
                                 <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                                   <p style={{ fontSize:11,fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1 }}>Daftar Staff ({staffList.length})</p>
-                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffErr(""); }}
+                                  <button onClick={()=>{ setAddStaffPanel(addStaffPanel===ev.id?null:ev.id); setAddStaffName(""); setAddStaffJobdesk(""); setAddStaffCustomJobdesk(""); setAddStaffErr(""); }}
                                     style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",borderRadius:10,padding:"6px 14px",fontSize:11,fontWeight:800,color:"#fff",cursor:"pointer",boxShadow:"0 2px 8px rgba(124,58,237,0.3)" }}>
                                     {addStaffPanel===ev.id?"✕ Batal":"+ Tambah Staff"}
                                   </button>
@@ -877,6 +897,23 @@ export default function StaffPage() {
                                         {addStaffLoading?"Menambah...":"✓ Tambah"}
                                       </button>
                                     </div>
+                                    {ev.event_type === "wedding" && (
+                                      <div style={{ marginTop:10 }}>
+                                        <select value={addStaffJobdesk} onChange={e=>setAddStaffJobdesk(e.target.value)}
+                                          style={{ width:"100%",padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:12,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none",cursor:"pointer" }}>
+                                          <option value="">— Jobdesk (opsional) —</option>
+                                          {JOBDESK_LIST_PRIVILEGED.filter(jd => !staffList.some(s=>s.jobdesk===jd)).map(jd=>(
+                                            <option key={jd} value={jd}>{jd}</option>
+                                          ))}
+                                          <option value="__custom__">✏️ Custom jobdesk...</option>
+                                        </select>
+                                        {addStaffJobdesk === "__custom__" && (
+                                          <input value={addStaffCustomJobdesk} onChange={e=>setAddStaffCustomJobdesk(e.target.value)}
+                                            placeholder="Ketik jobdesk custom, misal: Among Tamu"
+                                            style={{ width:"100%",marginTop:8,padding:"9px 12px",borderRadius:10,border:"1.5px solid rgba(124,58,237,0.3)",fontSize:12,fontWeight:600,color:"var(--dark)",background:"var(--card)",outline:"none" }}/>
+                                        )}
+                                      </div>
+                                    )}
                                     {addStaffErr && <p style={{ fontSize:11,color:"#dc2626",marginTop:8 }}>⚠️ {addStaffErr}</p>}
                                   </div>
                                 )}
@@ -905,7 +942,7 @@ export default function StaffPage() {
                                                   onChange={e=>handlePickJobdesk(s.id, e.target.value, ev.id)}
                                                   style={{ fontSize:10,padding:"3px 6px",borderRadius:6,border:"1px solid rgba(124,58,237,0.3)",background:"var(--card)",color:"#7c3aed",fontWeight:700,cursor:"pointer" }}>
                                                   <option value="">— Jobdesk —</option>
-                                                  {JOBDESK_LIST.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
+                                                  {JOBDESK_LIST_PRIVILEGED.filter(jd => jd===s.jobdesk || !staffList.some(other=>other.jobdesk===jd)).map(jd=>(
                                                     <option key={jd} value={jd}>{jd}</option>
                                                   ))}
                                                 </select>

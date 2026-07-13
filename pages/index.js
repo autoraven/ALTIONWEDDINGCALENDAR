@@ -103,8 +103,8 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
     return `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   }
 
-  function getEventForDay(dateStr) {
-    return events.find(e => {
+  function getEventsForDay(dateStr) {
+    return events.filter(e => {
       const end = e.date_end || e.date;
       return dateStr >= e.date && dateStr <= end;
     });
@@ -112,8 +112,8 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
 
   function getDayStatus(day) {
     const dateStr = toDateStr(day);
-    const event = getEventForDay(dateStr);
-    if (event) return { status:"booked", event };
+    const dayEvents = getEventsForDay(dateStr);
+    if (dayEvents.length > 0) return { status:"booked", events:dayEvents };
     if (new Date(dateStr) < today) return { status:"past" };
     if (isWeekend(dateStr)) return { status:"available" };
     return { status:"conditional" };
@@ -136,10 +136,9 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
 
         const { day } = cell;
         const dateStr = toDateStr(day);
-        const { status, event } = getDayStatus(day);
+        const { status, events: dayEvents } = getDayStatus(day);
         const isSelected = selectedDay === day;
         const isToday = new Date(dateStr).toDateString() === today.toDateString();
-        const isMultiDay = event && event.date_end && event.date_end !== event.date;
         const s = {
           booked:      { bg:"var(--cell-booked)", dot:"#4080f0", tc:"var(--dark)" },
           conditional: { bg:"var(--cell-cond)", dot:"#ef4444", tc:"var(--muted)" },
@@ -170,13 +169,20 @@ function CalendarGrid({ year, month, events, selectedDay, onSelectDay, today }) 
             </div>
 
             <div style={{ marginTop:"auto",minWidth:0 }}>
-              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,
-                boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
-              {status==="booked"&&event&&(
+              <div style={{ display:"flex",gap:3,alignItems:"center" }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,
+                  boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
+                {status==="booked"&&dayEvents.length>1&&(
+                  <span style={{ fontSize:8,fontWeight:800,color:"#fff",background:"#4080f0",borderRadius:5,padding:"0 4px",lineHeight:"12px" }}>{dayEvents.length}</span>
+                )}
+              </div>
+              {status==="booked"&&dayEvents.length>0&&(
                 <div style={{ fontSize:9,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,
-                  display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",
+                  display:"-webkit-box",WebkitLineClamp:dayEvents.length>1?3:2,WebkitBoxOrient:"vertical",
                   overflow:"hidden",wordBreak:"break-word" }}>
-                  {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+                  {dayEvents.slice(0,2).map((ev,i)=>(
+                    <span key={i}>{ev.event_type==="wedding"?"💍":"🎉"} {ev.couple}{i===0&&dayEvents.length>1?" · ":""}</span>
+                  ))}
                 </div>
               )}
               {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
@@ -412,19 +418,19 @@ export default function Home() {
             <div className="card scale-in" style={{ padding:"24px 28px",borderLeft:"4px solid var(--blue-2)",marginBottom:24,boxShadow:"var(--shadow)" }}>
               <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap" }}>
                 <h3 style={{ fontSize:20,fontWeight:800,color:"var(--navy)",letterSpacing:-0.5 }}>{selectedDay} {MONTHS[month]} {year}</h3>
-                {selectedEvents[0]?.date_end && selectedEvents[0].date_end !== selectedEvents[0].date && (
-                  <span style={{ fontSize:11,background:"rgba(124,58,237,0.1)",color:"#7c3aed",padding:"3px 10px",borderRadius:20,fontWeight:700 }}>
-                    📆 Multi-hari
+                {selectedEvents.length>1 && (
+                  <span style={{ fontSize:11,background:"rgba(64,128,240,0.12)",color:"var(--blue-1)",padding:"3px 10px",borderRadius:20,fontWeight:700 }}>
+                    📌 {selectedEvents.length} Event
                   </span>
                 )}
               </div>
               {selectedEvents.map((e,i)=>(
-                <div key={i}>
+                <div key={i} style={{ marginBottom:i<selectedEvents.length-1?18:0,paddingBottom:i<selectedEvents.length-1?18:0,borderBottom:i<selectedEvents.length-1?"1px solid var(--border)":"none" }}>
                   <p style={{ fontFamily:"'Plus Jakarta Sans',serif",fontSize:24,marginBottom:8 }}>{e.event_type==="wedding"?"💍":"🎉"} {e.couple}</p>
                   <div style={{ display:"flex",flexWrap:"wrap",gap:16 }}>
                     {e.date_end && e.date_end !== e.date && (
-                      <span style={{ fontSize:13,color:"var(--blue-1)",fontWeight:700 }}>
-                        📅 {new Date(e.date).toLocaleDateString("id-ID",{day:"numeric",month:"short"})} — {new Date(e.date_end).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
+                      <span style={{ fontSize:13,color:"#7c3aed",fontWeight:700,background:"rgba(124,58,237,0.1)",padding:"3px 10px",borderRadius:20 }}>
+                        📆 {new Date(e.date).toLocaleDateString("id-ID",{day:"numeric",month:"short"})} — {new Date(e.date_end).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
                       </span>
                     )}
                     {e.venue&&<span style={{ fontSize:13,color:"var(--muted)",fontWeight:500 }}>📍 {e.venue}</span>}

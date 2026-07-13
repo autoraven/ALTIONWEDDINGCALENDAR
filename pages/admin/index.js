@@ -45,6 +45,23 @@ function dateInRange(dateStr, event) {
   return d >= start && d <= end;
 }
 
+const MAX_EVENTS_PER_DAY = 2;
+
+// Hitung jumlah event terbanyak yang bentrok pada hari manapun di rentang [start,end],
+// supaya bisa dukung sampai MAX_EVENTS_PER_DAY event dalam 1 hari yang sama.
+function maxOverlapCount(start, end, events, excludeId) {
+  let max = 0;
+  let d = new Date(start + "T00:00:00");
+  const endD = new Date(end + "T00:00:00");
+  while (d <= endD) {
+    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const count = events.filter(e => e.id !== excludeId && dateInRange(dStr, e)).length;
+    if (count > max) max = count;
+    d.setDate(d.getDate()+1);
+  }
+  return max;
+}
+
 // ─── Delete Confirmation Modal ────────────────────────────────────────────────
 function DeleteModal({ isOpen, onClose, onConfirm, loading, title, description, itemName, itemSub }) {
   if (!isOpen) return null;
@@ -95,9 +112,9 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
   }
   function getDayInfo(day) {
     const dateStr = toDateStr(day);
-    const event = events.find(e => dateInRange(dateStr, e));
+    const dayEvents = events.filter(e => dateInRange(dateStr, e));
     const isPast = new Date(dateStr) < today;
-    if (event) return { status:"booked", event, dateStr };
+    if (dayEvents.length > 0) return { status:"booked", dayEvents, dateStr };
     if (isPast) return { status:"past", dateStr };
     if (isWeekend(dateStr)) return { status:"available", dateStr };
     return { status:"conditional", dateStr };
@@ -118,9 +135,8 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
           <div key={cell.key} style={{ minHeight:64,background:"var(--cell-empty)",borderRight:"1px solid var(--border)",borderBottom:"1px solid var(--border)" }}/>
         );
         const {day}=cell;
-        const {status,event,dateStr}=getDayInfo(day);
+        const {status,dayEvents,dateStr}=getDayInfo(day);
         const isToday=new Date(dateStr).toDateString()===today.toDateString();
-        const isMultiDay = event && event.date_end && event.date_end !== event.date;
 
         const inSelectedRange = selectedRange.start && selectedRange.end &&
           dateStr >= selectedRange.start && dateStr <= selectedRange.end;
@@ -149,10 +165,17 @@ function CalendarGrid({ year, month, events, selectedRange, onDayClick, today, p
               <span style={{ fontSize:12,fontWeight:isToday||isSelected?800:500,color:isToday||isSelected?"#fff":status==="past"?"#ccc":"var(--dark)" }}>{day}</span>
             </div>
             <div style={{ marginTop:"auto",minWidth:0 }}>
-              <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
-              {status==="booked"&&event&&(
-                <div style={{ fontSize:8,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",wordBreak:"break-word" }}>
-                  {event.event_type==="wedding"?"💍":"🎉"} {event.couple}
+              <div style={{ display:"flex",gap:3,alignItems:"center" }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:s.dot,boxShadow:status==="available"?"0 0 7px rgba(16,185,129,0.6)":status==="booked"?"0 0 7px rgba(64,128,240,0.6)":"none" }}/>
+                {status==="booked"&&dayEvents.length>1&&(
+                  <span style={{ fontSize:8,fontWeight:800,color:"#fff",background:"#4080f0",borderRadius:5,padding:"0 4px",lineHeight:"12px" }}>{dayEvents.length}</span>
+                )}
+              </div>
+              {status==="booked"&&dayEvents.length>0&&(
+                <div style={{ fontSize:8,color:"var(--blue-1)",marginTop:2,fontWeight:700,lineHeight:1.3,display:"-webkit-box",WebkitLineClamp:dayEvents.length>1?3:2,WebkitBoxOrient:"vertical",overflow:"hidden",wordBreak:"break-word" }}>
+                  {dayEvents.slice(0,2).map((ev,i)=>(
+                    <span key={i}>{ev.event_type==="wedding"?"💍":"🎉"} {ev.couple}{i===0&&dayEvents.length>1?" · ":""}</span>
+                  ))}
                 </div>
               )}
               {status==="conditional"&&<span style={{ fontSize:7,color:"#ef4444",display:"block",marginTop:2,fontWeight:700 }}>Bersyarat</span>}
@@ -287,12 +310,8 @@ export default function AdminPanel() {
     if (!editForm.couple.trim()) return setEditError("Nama wajib diisi");
     if (editForm.date_end < editForm.date) return setEditError("Tanggal akhir tidak boleh sebelum tanggal mulai");
 
-    const overlap = events.find(ev => {
-      if (ev.id === editingEvent.id) return false;
-      const evStart = ev.date; const evEnd = ev.date_end || ev.date;
-      return editForm.date <= evEnd && (editForm.date_end||editForm.date) >= evStart;
-    });
-    if (overlap) return setEditError(`Tanggal bentrok dengan: ${overlap.couple}`);
+    const overlapCount = maxOverlapCount(editForm.date, editForm.date_end || editForm.date, events, editingEvent.id);
+    if (overlapCount >= MAX_EVENTS_PER_DAY) return setEditError(`Tanggal ini sudah ada ${MAX_EVENTS_PER_DAY} event. Maksimal ${MAX_EVENTS_PER_DAY} event per hari.`);
 
     setEditSaving(true); // tampilkan loading, kunci tombol
 
@@ -326,8 +345,8 @@ export default function AdminPanel() {
   function handleDayClick(dateStr, status) {
     if (status==="past") return;
     if (pickingStep===0) {
-      const booked = events.find(e => dateInRange(dateStr, e));
-      if (booked) return;
+      const countOnDay = events.filter(e => dateInRange(dateStr, e)).length;
+      if (countOnDay >= MAX_EVENTS_PER_DAY) return;
       setSelectedRange({start:dateStr, end:dateStr});
       setPickingStep(1);
       setEventType(""); setForm({couple:"",venue:"",time:"",notes:"",addon:"",max_staff:"",is_limited:false}); setFormError(""); setShowForm(true);
@@ -348,11 +367,8 @@ export default function AdminPanel() {
 
     const start = selectedRange.start;
     const end = selectedRange.end || selectedRange.start;
-    const overlap = events.find(ev => {
-      const evStart = ev.date; const evEnd = ev.date_end || ev.date;
-      return start <= evEnd && end >= evStart;
-    });
-    if (overlap) return setFormError(`Tanggal bentrok dengan event: ${overlap.couple}`);
+    const overlapCount = maxOverlapCount(start, end, events);
+    if (overlapCount >= MAX_EVENTS_PER_DAY) return setFormError(`Tanggal ini sudah ada ${MAX_EVENTS_PER_DAY} event. Maksimal ${MAX_EVENTS_PER_DAY} event per hari.`);
 
     const res = await fetch("/api/events", {
       method: "POST",

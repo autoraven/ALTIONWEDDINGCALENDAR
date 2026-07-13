@@ -14,6 +14,7 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
   if (!webhookUrl) return;
 
   const isJoin = type === "join";
+  const isJobdeskUpdate = type === "jobdesk";
 
   const isMultiDay = event.date_end && event.date_end !== event.date;
   const dateFormatted = isMultiDay
@@ -25,35 +26,42 @@ async function sendDiscordNotification(type, staff, event, allStaff) {
     : `${allStaff.length} orang (tidak dibatasi)`;
 
   const memberList = allStaff.length > 0
-    ? allStaff.map((s, i) => `${i+1}. **${s.name}** — ${s.role}`).join("\n")
+    ? allStaff.map((s, i) => `${i+1}. **${s.name}** — ${s.role}${s.jobdesk ? ` · 💼 ${s.jobdesk}` : ""}`).join("\n")
     : "_Belum ada staff_";
 
   const eventLabel = `${isWedding ? "💍" : "🎉"} ${event.couple}`;
 
   // Warna & judul dibedakan wedding vs event
-  const embedColor = isJoin
-    ? (isWedding ? 0x7c3aed : 0x0fb87a)   // join: ungu utk wedding, hijau utk event
-    : (isWedding ? 0xe53e3e : 0xf59e0b);   // leave: merah utk wedding, oranye utk event
+  const embedColor = isJobdeskUpdate
+    ? 0x0ea5e9
+    : isJoin
+      ? (isWedding ? 0x7c3aed : 0x0fb87a)   // join: ungu utk wedding, hijau utk event
+      : (isWedding ? 0xe53e3e : 0xf59e0b);   // leave: merah utk wedding, oranye utk event
 
-  const embedTitle = isJoin
-    ? (isWedding
-        ? `💍 ${staff.name} bergabung ke Wedding`
-        : `🎉 ${staff.name} bergabung ke Event`)
-    : (isWedding
-        ? `💍 ${staff.name} keluar dari Wedding`
-        : `🎉 ${staff.name} keluar dari Event`);
+  const embedTitle = isJobdeskUpdate
+    ? `💼 Jobdesk ${staff.name} diperbarui`
+    : isJoin
+      ? (isWedding
+          ? `💍 ${staff.name} bergabung ke Wedding`
+          : `🎉 ${staff.name} bergabung ke Event`)
+      : (isWedding
+          ? `💍 ${staff.name} keluar dari Wedding`
+          : `🎉 ${staff.name} keluar dari Event`);
 
   const payload = {
     embeds: [{
       title: embedTitle,
-      description: isJoin
-        ? `**${staff.name}** (${staff.role || "Staff"}) telah bergabung ke **${eventLabel}**`
-        : `**${staff.name}** (${staff.role || "Staff"}) telah keluar dari **${eventLabel}**`,
+      description: isJobdeskUpdate
+        ? `**${staff.name}** kini bertugas sebagai **💼 ${staff.jobdesk || "-"}** di **${eventLabel}**`
+        : isJoin
+          ? `**${staff.name}** (${staff.role || "Staff"}) telah bergabung ke **${eventLabel}**`
+          : `**${staff.name}** (${staff.role || "Staff"}) telah keluar dari **${eventLabel}**`,
       color: embedColor,
       fields: [
         { name: "📅 Tanggal",    value: dateFormatted,   inline: true },
         { name: "🏛️ Venue",     value: event.venue || "-", inline: true },
         { name: "👥 Slot Staff", value: slotInfo,         inline: true },
+        ...(isWedding && staff.jobdesk ? [{ name: "💼 Jobdesk", value: staff.jobdesk, inline: true }] : []),
         { name: `📋 Daftar Staff (${allStaff.length} orang)`, value: memberList, inline: false },
         { name: "🔗 Website", value: "[Klik di sini untuk list staff event!](https://altioneventcalendar.vercel.app/staff)", inline: false },
       ],
@@ -218,6 +226,18 @@ export default async function handler(req, res) {
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
+
+    // Kirim notifikasi Discord kalau jobdesk berubah (info tim tetap update)
+    const { data: eventForNotif } = await supabase.from("wedding_events").select("*").eq("id", data.event_id).single();
+    if (eventForNotif) {
+      const { data: allStaff } = await supabase
+        .from("event_staff")
+        .select("*")
+        .eq("event_id", data.event_id)
+        .order("joined_at", { ascending: true });
+      await sendDiscordNotification("jobdesk", data, eventForNotif, allStaff || []);
+    }
+
     return res.status(200).json(data);
   }
 

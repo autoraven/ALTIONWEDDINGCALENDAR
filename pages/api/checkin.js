@@ -55,7 +55,7 @@ async function appendToSheet({ timestamp, employeeId, staffName, tanggal, jamMas
 }
 
 // ── Discord notification ─────────────────────────────────────────────────────
-async function sendCheckinNotification(staffName, staffRole, discordId, event, checkinTime, allCheckins, totalStaff) {
+async function sendCheckinNotification(staffName, staffRole, staffJobdesk, discordId, event, checkinTime, allCheckins, totalStaff) {
   const isWedding  = event.event_type === "wedding";
   const webhookUrl = isWedding
     ? process.env.DISCORD_CHECKIN_WEBHOOK_WEDDING
@@ -77,7 +77,7 @@ async function sendCheckinNotification(staffName, staffRole, discordId, event, c
 
   const checkinList = allCheckins.length > 0
     ? allCheckins.map((c, i) =>
-        `${i + 1}. ✅ **${c.staff_name}** — ${new Date(c.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" })} WIB`
+        `${i + 1}. ✅ **${c.staff_name}**${c.jobdesk ? ` (💼 ${c.jobdesk})` : ""} — ${new Date(c.checked_in_at).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", timeZone:"Asia/Jakarta" })} WIB`
       ).join("\n")
     : "_Belum ada_";
 
@@ -86,7 +86,7 @@ async function sendCheckinNotification(staffName, staffRole, discordId, event, c
     embeds: [{
       title: isWedding ? `💍 Check-in Wedding: ${event.couple}` : `🎉 Check-in Event: ${event.couple}`,
       color: isWedding ? 0x7c3aed : 0x0ea5e9,
-      description: `${mention} — **${staffRole || "Staff"}** telah hadir dan check-in.`,
+      description: `${mention} — **${staffRole || "Staff"}**${isWedding && staffJobdesk ? ` (💼 ${staffJobdesk})` : ""} telah hadir dan check-in.`,
       fields: [
         { name: "📅 Tanggal Event",  value: dateFormatted,           inline: true },
         { name: "🕐 Waktu Check-in", value: `${timeFormatted} WIB`,  inline: true },
@@ -154,7 +154,7 @@ export default async function handler(req, res) {
     if (employee_id) {
       const { data } = await supabase
         .from("event_staff")
-        .select("id, role, employee_id")
+        .select("id, role, employee_id, jobdesk")
         .eq("event_id", event_id)
         .eq("employee_id", employee_id)
         .maybeSingle();
@@ -163,7 +163,7 @@ export default async function handler(req, res) {
     if (!registered) {
       const { data } = await supabase
         .from("event_staff")
-        .select("id, role, employee_id")
+        .select("id, role, employee_id, jobdesk")
         .eq("event_id", event_id)
         .ilike("name", staff_name.trim())
         .maybeSingle();
@@ -243,19 +243,22 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: error.message });
 
     // Ambil data pendukung
-    const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes] = await Promise.all([
+    const [eventRes, staffUserRes, allCheckinsRes, totalStaffRes, eventStaffRes] = await Promise.all([
       supabase.from("wedding_events").select("*").eq("id", event_id).single(),
       supabase.from("staff_users").select("discord_id, employee_id, jabatan, posisi").eq("id", resolvedUserId).single(),
-      supabase.from("staff_checkins").select("staff_name, checked_in_at").eq("event_id", event_id).order("checked_in_at", { ascending: true }),
+      supabase.from("staff_checkins").select("staff_name, employee_id, checked_in_at").eq("event_id", event_id).order("checked_in_at", { ascending: true }),
       supabase.from("event_staff").select("id", { count: "exact" }).eq("event_id", event_id),
+      supabase.from("event_staff").select("employee_id, jobdesk").eq("event_id", event_id),
     ]);
 
     const event       = eventRes.data;
     const staffUser   = staffUserRes.data;
-    const allCheckins = allCheckinsRes.data || [];
+    const jobdeskMap  = Object.fromEntries((eventStaffRes.data || []).filter(r=>r.employee_id && r.jobdesk).map(r=>[r.employee_id, r.jobdesk]));
+    const allCheckins = (allCheckinsRes.data || []).map(c => ({ ...c, jobdesk: c.employee_id ? jobdeskMap[c.employee_id] : undefined }));
     const totalStaff  = totalStaffRes.count || 0;
     const discordId   = staffUser?.discord_id || null;
     const staffRole   = registered.role || [staffUser?.jabatan, staffUser?.posisi].filter(Boolean).join(" · ") || "Staff";
+    const staffJobdesk = registered.jobdesk || null;
 
     if (event) {
       const wibDate     = new Date(new Date(checked_in_at).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
@@ -266,7 +269,7 @@ export default async function handler(req, res) {
 
       // Kirim Discord + Google Sheets secara paralel
       await Promise.all([
-        sendCheckinNotification(staff_name.trim(), staffRole, discordId, event, checked_in_at, allCheckins, totalStaff),
+        sendCheckinNotification(staff_name.trim(), staffRole, staffJobdesk, discordId, event, checked_in_at, allCheckins, totalStaff),
         appendToSheet({
           timestamp,
           employeeId: staffUser?.employee_id || "",
