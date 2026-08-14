@@ -800,7 +800,12 @@ export default function PerformancePage() {
                             <tr key={ev.id} style={{ borderBottom:"1px solid var(--border)" }}>
                               <td style={{ padding:"12px 16px",fontWeight:700,color:"var(--dark)" }}>{ev.couple}</td>
                               <td style={{ padding:"12px 16px",color:"var(--muted)",fontSize:12 }}>{formatDate(ev.date)}</td>
-                              <td style={{ padding:"12px 16px" }}><span style={{ background:"rgba(238,244,255,0.8)",color:"var(--blue-1)",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600 }}>{ev.event_type==="wedding"?"💍 Wedding":"🎉 Event"}</span></td>
+                              <td style={{ padding:"12px 16px" }}>
+                                <span style={{ background:"rgba(238,244,255,0.8)",color:"var(--blue-1)",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600 }}>{ev.event_type==="wedding"?"💍 Wedding":"🎉 Event"}</span>
+                                {ev.event_type==="wedding" && staffEntry?.jobdesk && (
+                                  <span style={{ marginLeft:6,background:"rgba(124,58,237,0.1)",color:"#7c3aed",padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:700 }}>💼 {staffEntry.jobdesk}</span>
+                                )}
+                              </td>
                               <td style={{ padding:"12px 16px" }}><span style={{ background:"rgba(16,185,129,0.1)",color:"#059669",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:700 }}>✓ Terdaftar</span></td>
                               <td style={{ padding:"12px 16px" }}>
                                 {ci

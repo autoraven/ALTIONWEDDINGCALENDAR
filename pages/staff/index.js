@@ -643,7 +643,12 @@ export default function StaffPage() {
                                     <p style={{ fontSize:12,fontWeight:700,color:"var(--dark)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                       {highlight(s.name,q)}{isMe&&<span style={{ fontSize:9,background:"rgba(16,185,129,0.15)",color:"#059669",borderRadius:6,padding:"1px 5px",fontWeight:700,marginLeft:4 }}>Kamu</span>}
                                     </p>
-                                    <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>{highlight(s.role,q)}</p>
+                                    <p style={{ fontSize:10,color:"var(--muted)",fontWeight:500 }}>
+                                      {highlight(s.role,q)}
+                                      {event.event_type==="wedding" && s.jobdesk && (
+                                        <span style={{ marginLeft:6,fontSize:9,background:"rgba(124,58,237,0.12)",color:"#7c3aed",borderRadius:6,padding:"1px 6px",fontWeight:700 }}>💼 {s.jobdesk}</span>
+                                      )}
+                                    </p>
                                   </div>
                                 </div>
                                 {!isPast && isMe && !checkinOpen && (

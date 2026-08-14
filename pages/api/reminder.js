@@ -52,12 +52,13 @@ async function sendReminder(event, type, discordMap) {
 
   // Daftar staff + Discord mention
   let mentionParts = [];
+  const isWedding = event.event_type === "wedding";
   const memberList = staffList && staffList.length > 0
     ? staffList.map((s, i) => {
         const discordId = discordMap[s.name.toLowerCase().trim()];
         const mention = discordId ? ` <@${discordId}>` : "";
         if (discordId) mentionParts.push(`<@${discordId}>`);
-        return `${i + 1}. **${s.name}**${mention} — ${s.role}`;
+        return `${i + 1}. **${s.name}**${mention} — ${s.role}${isWedding && s.jobdesk ? ` · 💼 ${s.jobdesk}` : ""}`;
       }).join("\n")
     : "_Belum ada staff terdaftar_";
 
