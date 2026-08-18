@@ -473,6 +473,7 @@ export default function StaffPage() {
               </div>
             </div>
             <Link href="/" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>Kalender</Link>
+            <Link href="/billing" className="btn btn-ghost" style={{ fontSize:12,padding:"8px 18px" }}>💰 Billing</Link>
             <ThemeToggle style={{ border:"1.5px solid rgba(255,255,255,0.25)", background:"rgba(255,255,255,0.12)", color:"#fff" }} />
             <button onClick={handleLogout} className="btn btn-danger" style={{ fontSize:12,padding:"8px 18px" }}>Logout</button>
           </div>
@@ -613,6 +614,10 @@ export default function StaffPage() {
 
                   {/* Card Body */}
                   <div style={{ padding:"14px 18px" }}>
+                    <Link href={`/billing?couple=${encodeURIComponent(event.couple||"")}&date=${encodeURIComponent(event.date||"")}&date_end=${encodeURIComponent(event.date_end||"")}&venue=${encodeURIComponent(event.venue||"")}&type=${encodeURIComponent(event.event_type||"wedding")}`}
+                      style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontSize:11,fontWeight:700,color:"#059669",background:"rgba(16,185,129,0.08)",border:"1px solid rgba(16,185,129,0.25)",borderRadius:10,padding:"7px",marginBottom:12,textDecoration:"none" }}>
+                      💰 Rincian Biaya (Billing)
+                    </Link>
                     {event.max_staff && (() => {
                       const filled=staffList.length,max=event.max_staff,pct=Math.min((filled/max)*100,100);
                       const isFull=filled>=max,isNearFull=!isFull&&pct>=75;
