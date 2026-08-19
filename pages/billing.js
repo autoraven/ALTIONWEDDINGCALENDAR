@@ -7,6 +7,7 @@ import { CALENDAR_CONFIG } from "../lib/config";
 const TICKET_PRICE = 1000;
 const MIC_PRICE     = 10000;
 const TAX_RATE      = 0.15;
+const MAX_CHARS     = 200; // batas karakter ringkasan singkat (utk berita transfer/dsb yg suka kepotong)
 
 function formatCurrency(n) {
   const num = Number(n) || 0;
@@ -18,6 +19,32 @@ function formatDateID(dateStr) {
   try {
     return new Date(dateStr).toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
   } catch { return dateStr; }
+}
+
+function formatDateShort(dateStr) {
+  if (!dateStr) return "";
+  try {
+    return new Date(dateStr).toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+  } catch { return dateStr; }
+}
+
+// Input harga yang otomatis kasih titik ribuan saat diketik (100000 -> 100.000),
+// tapi tetap menyimpan angka mentah di state (bukan string berformat).
+function MoneyInput({ value, onChange, placeholder, style }) {
+  const display = value !== "" && value !== null && value !== undefined
+    ? Number(value).toLocaleString("id-ID")
+    : "";
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      className="input"
+      style={style}
+      value={display}
+      onChange={e => onChange(e.target.value.replace(/[^0-9]/g, ""))}
+      placeholder={placeholder}
+    />
+  );
 }
 
 export default function BillingPage() {
@@ -63,7 +90,6 @@ export default function BillingPage() {
       : (parseFloat(t.flatPrice)||0);
   }
 
-  const [copied, setCopied] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
 
   // Prefill dari query string sekali saat halaman siap (tanpa perlu login)
@@ -143,18 +169,54 @@ export default function BillingPage() {
     return lines.join("\n");
   }, [couple, date, dateEnd, venue, isWedding, isNonEvent, clientName, clientFrom, purpose, pelunasanLabel, ticketQty, micQty, ticketTotal, micTotal, pelunasanNum, talents, customTitle, customNum, subtotal, tax, total, businessName]);
 
-  async function handleCopy() {
+  // ── Ringkasan Singkat — 1 kalimat padat, dibatasi MAX_CHARS supaya tidak
+  //    kepotong kalau ditempel ke kolom berita transfer / catatan yang sempit ──
+  const compactRaw = useMemo(() => {
+    const parts = [];
+    const label = isWedding ? "WEDDING" : isNonEvent ? "JASA" : "EVENT";
+
+    if (isNonEvent) {
+      parts.push(`${label} ${clientName || "-"}${clientFrom ? ` (${clientFrom})` : ""}${purpose ? `: ${purpose}` : ""}`);
+    } else {
+      parts.push(`${label} ${couple || "-"}${date ? ` ${formatDateShort(date)}` : ""}${venue ? ` @${venue}` : ""}`);
+    }
+
+    const items = [];
+    if (ticketQty > 0) items.push(`Tiket ${ticketQty}x ${formatCurrency(TICKET_PRICE)}`);
+    if (micQty > 0) items.push(`Mic ${micQty}x ${formatCurrency(MIC_PRICE)}`);
+    if (pelunasanNum > 0) items.push(`${pelunasanLabel} ${formatCurrency(pelunasanNum)}`);
+    talents.forEach(t => {
+      const amount = talentAmount(t);
+      if (amount <= 0) return;
+      items.push(t.type === "penyanyi"
+        ? `Penyanyi${t.name ? ` ${t.name}` : ""} ${parseInt(t.songQty)||0}x lagu ${formatCurrency(amount)}`
+        : `${t.name || "MC"} ${formatCurrency(amount)}`);
+    });
+    if (customTitle.trim() && customNum > 0) items.push(`${customTitle.trim()} ${formatCurrency(customNum)}`);
+
+    if (items.length) parts.push(items.join(", "));
+    parts.push(`Total ${formatCurrency(total)}`);
+
+    return parts.join(" — ");
+  }, [couple, date, venue, isWedding, isNonEvent, clientName, clientFrom, purpose, pelunasanLabel, ticketQty, micQty, pelunasanNum, talents, customTitle, customNum, total]);
+
+  const compactTooLong = compactRaw.length > MAX_CHARS;
+  const compactDescription = compactTooLong ? compactRaw.slice(0, MAX_CHARS - 1) + "…" : compactRaw;
+
+  const [copiedKey, setCopiedKey] = useState(""); // "full" | "compact" | ""
+
+  async function handleCopy(text, key) {
     try {
-      await navigator.clipboard.writeText(description);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(""), 2000);
     } catch {
       // Fallback untuk browser lama / tanpa izin clipboard
       const ta = document.createElement("textarea");
-      ta.value = description;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
-      try { document.execCommand("copy"); setCopied(true); setTimeout(()=>setCopied(false),2000); } catch {}
+      try { document.execCommand("copy"); setCopiedKey(key); setTimeout(()=>setCopiedKey(""),2000); } catch {}
       document.body.removeChild(ta);
     }
   }
@@ -247,7 +309,7 @@ export default function BillingPage() {
 
               <div style={{ marginBottom:14 }}>
                 <label className="label">💵 {pelunasanLabel} <span style={{ fontWeight:400, color:"var(--muted)" }}>(custom, sesuaikan)</span></label>
-                <input type="number" min="0" className="input" value={pelunasan} onChange={e=>setPelunasan(e.target.value)} placeholder="0"/>
+                <MoneyInput value={pelunasan} onChange={setPelunasan} placeholder="0"/>
               </div>
 
               {!isNonEvent && (
@@ -270,10 +332,10 @@ export default function BillingPage() {
                       {t.type === "penyanyi" ? (
                         <div style={{ display:"flex", gap:8 }}>
                           <input type="number" min="0" className="input" style={{ flex:1 }} value={t.songQty} onChange={e=>updateTalent(t.id,"songQty",e.target.value.replace(/[^0-9]/g,""))} placeholder="Jumlah lagu"/>
-                          <input type="number" min="0" className="input" style={{ flex:1 }} value={t.pricePerSong} onChange={e=>updateTalent(t.id,"pricePerSong",e.target.value)} placeholder="Harga / lagu"/>
+                          <MoneyInput value={t.pricePerSong} onChange={v=>updateTalent(t.id,"pricePerSong",v)} placeholder="Harga / lagu" style={{ flex:1 }}/>
                         </div>
                       ) : (
-                        <input type="number" min="0" className="input" value={t.flatPrice} onChange={e=>updateTalent(t.id,"flatPrice",e.target.value)} placeholder="Bayaran (custom)"/>
+                        <MoneyInput value={t.flatPrice} onChange={v=>updateTalent(t.id,"flatPrice",v)} placeholder="Bayaran (custom)"/>
                       )}
                       <p style={{ fontSize:11, color:"var(--muted)", marginTop:6, textAlign:"right", fontWeight:700 }}>Subtotal: {formatCurrency(talentAmount(t))}</p>
                     </div>
@@ -285,28 +347,55 @@ export default function BillingPage() {
                 <p style={{ fontSize:11, fontWeight:700, color:"var(--muted)", marginBottom:8 }}>➕ Item Custom (opsional)</p>
                 <div style={{ display:"flex", gap:8 }}>
                   <input className="input" style={{ flex:2 }} value={customTitle} onChange={e=>setCustomTitle(e.target.value)} placeholder="Judul, cth: Dekorasi Tambahan"/>
-                  <input type="number" min="0" className="input" style={{ flex:1 }} value={customPrice} onChange={e=>setCustomPrice(e.target.value)} placeholder="Harga"/>
+                  <MoneyInput value={customPrice} onChange={setCustomPrice} placeholder="Harga" style={{ flex:1 }}/>
                 </div>
               </div>
             </div>
 
             {/* ── PREVIEW ── */}
-            <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:16, padding:20, boxShadow:"var(--shadow-sm)", display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                <p style={{ fontSize:12, fontWeight:800, color:"var(--muted)", textTransform:"uppercase", letterSpacing:1 }}>Preview (siap disalin)</p>
-                <button onClick={handleCopy} className="btn" style={{ background:copied?"#10b981":"linear-gradient(135deg,var(--blue-2),var(--blue-1))", color:"#fff", fontSize:12, padding:"7px 14px" }}>
-                  {copied ? "✓ Disalin!" : "📋 Salin Teks"}
-                </button>
-              </div>
-              <pre style={{
-                whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily:"'Plus Jakarta Sans',sans-serif",
-                fontSize:13.5, lineHeight:1.7, color:"var(--dark)", background:"var(--panel-soft)",
-                border:"1px solid var(--border)", borderRadius:12, padding:16, flex:1, margin:0, minHeight:280,
-              }}>{description}</pre>
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
-              <div style={{ marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 16px", borderRadius:12, background:"rgba(64,128,240,0.08)", border:"1px solid rgba(64,128,240,0.2)" }}>
-                <span style={{ fontSize:12, fontWeight:700, color:"var(--muted)" }}>Total (sudah + pajak 15%)</span>
-                <span style={{ fontSize:18, fontWeight:800, color:"var(--blue-1)" }}>{formatCurrency(total)}</span>
+              {/* Ringkasan Singkat — khusus untuk disalin, dibatasi karakter */}
+              <div style={{ background:"var(--card)", border:"1.5px solid rgba(16,185,129,0.3)", borderRadius:16, padding:20, boxShadow:"var(--shadow-sm)" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, flexWrap:"wrap", gap:8 }}>
+                  <div>
+                    <p style={{ fontSize:12, fontWeight:800, color:"#059669", textTransform:"uppercase", letterSpacing:1 }}>📏 Ringkasan Singkat</p>
+                    <p style={{ fontSize:10, color:"var(--muted)", marginTop:2 }}>Untuk ditempel di kolom sempit (cth: berita transfer)</p>
+                  </div>
+                  <button onClick={()=>handleCopy(compactDescription,"compact")} className="btn" style={{ background:copiedKey==="compact"?"#10b981":"linear-gradient(135deg,#059669,#10b981)", color:"#fff", fontSize:12, padding:"7px 14px" }}>
+                    {copiedKey==="compact" ? "✓ Disalin!" : "📋 Salin"}
+                  </button>
+                </div>
+                <p style={{
+                  whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily:"'Plus Jakarta Sans',sans-serif",
+                  fontSize:13, lineHeight:1.6, color:"var(--dark)", background:"var(--panel-soft)",
+                  border:"1px solid var(--border)", borderRadius:12, padding:14, margin:0,
+                }}>{compactDescription}</p>
+                <div style={{ display:"flex", justifyContent:"flex-end", marginTop:6 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:compactTooLong?"#dc2626":"var(--muted)" }}>
+                    {compactDescription.length} / {MAX_CHARS} karakter{compactTooLong?" ⚠️ dipotong otomatis":""}
+                  </span>
+                </div>
+              </div>
+
+              {/* Lengkap */}
+              <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:16, padding:20, boxShadow:"var(--shadow-sm)", display:"flex", flexDirection:"column" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                  <p style={{ fontSize:12, fontWeight:800, color:"var(--muted)", textTransform:"uppercase", letterSpacing:1 }}>📄 Rincian Lengkap</p>
+                  <button onClick={()=>handleCopy(description,"full")} className="btn" style={{ background:copiedKey==="full"?"#10b981":"linear-gradient(135deg,var(--blue-2),var(--blue-1))", color:"#fff", fontSize:12, padding:"7px 14px" }}>
+                    {copiedKey==="full" ? "✓ Disalin!" : "📋 Salin"}
+                  </button>
+                </div>
+                <pre style={{
+                  whiteSpace:"pre-wrap", wordBreak:"break-word", fontFamily:"'Plus Jakarta Sans',sans-serif",
+                  fontSize:13.5, lineHeight:1.7, color:"var(--dark)", background:"var(--panel-soft)",
+                  border:"1px solid var(--border)", borderRadius:12, padding:16, flex:1, margin:0, minHeight:240,
+                }}>{description}</pre>
+
+                <div style={{ marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 16px", borderRadius:12, background:"rgba(64,128,240,0.08)", border:"1px solid rgba(64,128,240,0.2)" }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:"var(--muted)" }}>Total (sudah + pajak 15%)</span>
+                  <span style={{ fontSize:18, fontWeight:800, color:"var(--blue-1)" }}>{formatCurrency(total)}</span>
+                </div>
               </div>
             </div>
           </div>
