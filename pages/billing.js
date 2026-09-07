@@ -6,7 +6,7 @@ import { CALENDAR_CONFIG } from "../lib/config";
 // ── Harga tetap ──────────────────────────────────────────────────────────
 const TICKET_PRICE = 1000;
 const MIC_PRICE     = 10000;
-const TAX_RATE      = 0.15;
+const TAX_RATE      = 0.05;
 const MAX_CHARS     = 200; // batas karakter ringkasan singkat (utk berita transfer/dsb yg suka kepotong)
 
 function formatCurrency(n) {
@@ -160,7 +160,7 @@ export default function BillingPage() {
 
     lines.push("");
     lines.push(`Subtotal : ${formatCurrency(subtotal)}`);
-    lines.push(`Pajak Pemerintah (15%) : ${formatCurrency(tax)}`);
+    lines.push(`Pajak Pemerintah (5%) : ${formatCurrency(tax)}`);
     lines.push("──────────────────────");
     lines.push(`TOTAL : ${formatCurrency(total)}`);
     lines.push("");
