@@ -393,7 +393,7 @@ export default function BillingPage() {
                 }}>{description}</pre>
 
                 <div style={{ marginTop:14, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 16px", borderRadius:12, background:"rgba(64,128,240,0.08)", border:"1px solid rgba(64,128,240,0.2)" }}>
-                  <span style={{ fontSize:12, fontWeight:700, color:"var(--muted)" }}>Total (sudah + pajak 15%)</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:"var(--muted)" }}>Total (sudah + pajak 5%)</span>
                   <span style={{ fontSize:18, fontWeight:800, color:"var(--blue-1)" }}>{formatCurrency(total)}</span>
                 </div>
               </div>
